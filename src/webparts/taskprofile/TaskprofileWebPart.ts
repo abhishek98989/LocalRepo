@@ -23,10 +23,11 @@ export interface ITaskprofileWebPartProps {
   MasterTaskListID: 'ec34b38f-0669-480a-910c-f84e92e58adf';
   TaskUsertListID: 'b318ba84-e21d-4876-8851-88b94b9dc300';
   SmartMetadataListID: '01a34938-8c7e-4ea6-a003-cee649e8c67a';
-  SmartInformationListID:'edf0a6fb-f80e-4772-ab1e-666af03f7ccd';
-  DocumentsListID:'d0f88b8f-d96d-4e12-b612-2706ba40fb08';
-  TaskTimeSheetListID:'11d52f95-4231-4852-afde-884d548c7f1b'
-  SiteTaskListID:'091889bd-5339-4d11-960e-a8ff38df414b'
+  SmartInformationListID: 'edf0a6fb-f80e-4772-ab1e-666af03f7ccd';
+  DocumentsListID: 'd0f88b8f-d96d-4e12-b612-2706ba40fb08';
+  TaskTimeSheetListID: '464fb776-e4b3-404c-8261-7d3c50ff343f';
+  TimeEntry: any;
+  SiteCompostion: any;
 }
 
 export default class TaskprofileWebPart extends BaseClientSideWebPart<ITaskprofileWebPartProps> {
@@ -56,14 +57,14 @@ export default class TaskprofileWebPart extends BaseClientSideWebPart<ITaskprofi
         // loginName:this.context.pageContext.user.loginName,
         Context: this.context,
         MasterTaskListID: this.properties.MasterTaskListID,
-       TaskUsertListID: this.properties.TaskUsertListID,
-       SmartMetadataListID: this.properties.SmartMetadataListID,
-       SmartInformationListID:this.properties.SmartInformationListID,
-        DocumentsListID:this.properties.DocumentsListID,
-        TaskTimeSheetListID:this.properties.TaskTimeSheetListID,
-        SiteTaskListID:this.properties.SiteTaskListID
-      
-       }
+        TaskUsertListID: this.properties.TaskUsertListID,
+        SmartMetadataListID: this.properties.SmartMetadataListID,
+        SmartInformationListID: this.properties.SmartInformationListID,
+        DocumentsListID: this.properties.DocumentsListID,
+        TaskTimeSheetListID: this.properties.TaskTimeSheetListID,
+        TimeEntry: this.properties.TimeEntry,
+        SiteCompostion: this.properties.SiteCompostion
+      }
     );
 
     ReactDom.render(element, this.domElement);
@@ -132,9 +133,12 @@ export default class TaskprofileWebPart extends BaseClientSideWebPart<ITaskprofi
                 PropertyPaneTextField('TaskTimeSheetListID', {
                   label: "TaskTimeSheetListID"
                 }),
-                PropertyPaneTextField('SiteTaskListID', {
-                  label: "SiteTaskListID"
-                })
+                PropertyPaneTextField('TimeEntry', {
+                  label: "TimeEntry"
+                }),
+                PropertyPaneTextField('SiteCompostion', {
+                  label: "SiteCompostion"
+                }),
               ]
             }
           ]

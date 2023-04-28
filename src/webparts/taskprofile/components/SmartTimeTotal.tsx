@@ -29,7 +29,8 @@ const SmartTimeTotalFunction = (item: any) => {
         let web = new Web(item.props.siteUrl);
         let MetaData = [];
         MetaData = await web.lists
-            .getByTitle('SmartMetadata')
+            // .getByTitle('SmartMetadata')
+            .getById(item.AllListId.SmartMetadataListID)
             .items
             .top(4999)
             .get();
@@ -42,7 +43,8 @@ const SmartTimeTotalFunction = (item: any) => {
         let web = new Web(item.props.siteUrl);
         let taskUsers = [];
         taskUsers = await web.lists
-            .getByTitle('Task Users')
+            // .getByTitle('Task Users')
+            .getById(item.AllListId.TaskUsertListID)
             .items
             .top(4999)
             .get();
@@ -85,17 +87,23 @@ const SmartTimeTotalFunction = (item: any) => {
         var count = 0;
         if (items.siteType == "Migration" || items.siteType == "ALAKDigital") {
             var allurls = [{ 'Url': "https://hhhhteams.sharepoint.com/sites/HHHH/SP/_api/web/lists/getbyid('9ed5c649-3b4e-42db-a186-778ba43c5c93')/items?$select=" + select + "" }]
+                  //TasksTimesheet2
+       
         }
-        else if (item.props.sitePage == "SH") {
+        else if (item?.props?.sitePage == "SH") {
             var allurls = [{
-                'Url': `${item.props.siteUrl}/_api/web/lists/getbyTitle('TaskTimesheet')/items?$select= ${select}`
+                'Url': `${item?.props?.siteUrl}/_api/web/lists/getbyTitle('TaskTimesheet')/items?$select= ${select}`
             }]
 
         }
         else {
-            var allurls = [{ 'Url': "https://hhhhteams.sharepoint.com/sites/HHHH/SP/_api/web/lists/getbyid('464FB776-E4B3-404C-8261-7D3C50FF343F')/items?$select=" + select + "" },
-                //{ 'Url': `${item.props.siteUrl}/_api/web/lists/getbyTitle('TaskTimesheet')/items?$select= ${select}`}
-            ]
+            var allurls = [{ 
+                // 'Url': "https://hhhhteams.sharepoint.com/sites/HHHH/SP/_api/web/lists/getbyid('464FB776-E4B3-404C-8261-7D3C50FF343F')/items?$select=" + select + "" },
+
+            'Url': `${item?.props?.siteUrl}/_api/web/lists/getbyId('${item.AllListId.TaskTimeSheetListID}')/items?$select=${select}`
+              
+                //	TaskTimeSheetListNew
+        }]
         }
 
 
@@ -107,9 +115,7 @@ const SmartTimeTotalFunction = (item: any) => {
                 method: "GET",
 
                 headers: {
-
-                    "Accept": "application/json; odata=verbose"
-
+               "Accept": "application/json; odata=verbose"
                 },
 
                 success: function (data) {
@@ -381,7 +387,7 @@ const SmartTimeTotalFunction = (item: any) => {
                         </table>
                     </div> </div>
             </span>
-            {isTimeEntry ? <TimeEntry data={item.props} isopen={isTimeEntry} CallBackTimesheet={() => { CallBackTimesheet() }} /> : ''}
+            {isTimeEntry ? <TimeEntry data={item?.props} isopen={isTimeEntry} CallBackTimesheet={() => { CallBackTimesheet() }} /> : ''}
         </>
     )
 }

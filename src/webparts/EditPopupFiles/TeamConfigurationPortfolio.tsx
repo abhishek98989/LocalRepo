@@ -6,6 +6,8 @@ import Tooltip from '../../globalComponents/Tooltip';
 export interface ITeamConfigurationProps {
     parentCallback: (dt: any) => void;
     ItemInfo: any;
+    // AllListId: any;
+    Sitel:any
 }
 
 export interface ITeamConfigurationState {
@@ -20,6 +22,7 @@ export interface ITeamConfigurationState {
 }
 
 const dragItem: any = {};
+let web:any;
 
 export class TeamConfigurationCard extends React.Component<ITeamConfigurationProps, ITeamConfigurationState> {
     constructor(props: ITeamConfigurationProps) {
@@ -46,12 +49,17 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
     private AllUsers: any = [];
     private dragUser: any;
     private async loadTaskUsers() {
-        let web = new Web(this.props.ItemInfo.siteUrl);
+        web = new Web(this.props.Sitel.siteUrl);
+        if (this.props.ItemInfo.siteUrl != undefined) {
+            web = new Web(this.props.Sitel.siteUrl);
+        } else {
+            web = new Web(this.props.Sitel.siteUrl);
+        }
         let results: any = [];
 
         let taskUsers: any = [];
         results = await web.lists
-            .getByTitle('Task Users')
+            .getById(this.props.Sitel.TaskUsertListID)
             .items
             .select('Id', 'IsActive', 'UserGroupId', 'Suffix', 'Title', 'Email', 'SortOrder', 'Role', 'Company', 'ParentID1', 'TaskStatusNotification', 'Status', 'Item_x0020_Cover', 'AssingedToUserId', 'isDeleted', 'AssingedToUser/Title', 'AssingedToUser/Id', 'AssingedToUser/EMail', 'ItemType')
             .filter('IsActive eq 1')
@@ -63,41 +71,55 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
         let self = this;
         results.forEach(function (item: any) {
             if (item.ItemType != 'Group') {
-                if (self.props.ItemInfo.Services.length > 0) {
-                    if (item.Role != null && item.Role.length > 0 &&
-                        item.Role.join(';').indexOf('Service Teams') > -1) {
-                        self.AllUsers.push(item);
+                if (self.props.ItemInfo.Services != undefined && self.props.ItemInfo.Services.length > 0) {
+                    if (item.Role != null && item.Role.length > 0) {
+                        let FindServiceUser = item.Role.join(';').indexOf('Service Teams');
+                        if (FindServiceUser > -1) {
+                            self.AllUsers.push(item);
+                        }
                     }
                 } else {
                     self.AllUsers.push(item);
                 }
-                //self.AllUsers.push(item);
             }
         })
-
         results.forEach(function (item: any) {
             if (item.UserGroupId == undefined) {
                 self.getChilds(item, results);
                 taskUsers.push(item);
             }
         });
-        console.log('Task Users---');
         console.log(taskUsers);
-
         this.setState({
             taskUsers
         })
     }
     private async GetTaskDetails() {
-        let web = new Web(this.props.ItemInfo.siteUrl);
+        let web = new Web(this.props.Sitel.siteUrl);
+        if (this.props.ItemInfo.siteUrl != undefined) {
+            web = new Web(this.props.Sitel.siteUrl);
+        } else {
+            web = new Web(this.props.Sitel.siteUrl);
+        }
         let taskDetails = [];
-        taskDetails = await web.lists
-            .getByTitle(this.props.ItemInfo.listName)
-            .items
-            .getById(this.props.ItemInfo.Id)
-            .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "Team_x0020_Members/Title", "Team_x0020_Members/Id", "Responsible_x0020_Team/Title", "Responsible_x0020_Team/Id", "SharewebTaskType/Title", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
-            .expand("Team_x0020_Members", "AssignedTo", "Responsible_x0020_Team", "SharewebTaskType", "Component", "Services")
-            .get()
+        if (this.props.ItemInfo.listId != undefined) {
+            taskDetails = await web.lists
+                .getById(this.props.ItemInfo.listId)
+                .items
+                .getById(this.props.ItemInfo.Id)
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "Team_x0020_Members/Title", "Team_x0020_Members/Id", "Responsible_x0020_Team/Title", "Responsible_x0020_Team/Id", "SharewebTaskType/Title", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
+                .expand("Team_x0020_Members", "AssignedTo", "Responsible_x0020_Team", "SharewebTaskType", "Component", "Services")
+                .get()
+        } else {
+            taskDetails = await web.lists
+                .getById(this.props.ItemInfo.listName)
+                .items
+                .getById(this.props.ItemInfo.Id)
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "Team_x0020_Members/Title", "Team_x0020_Members/Id", "Responsible_x0020_Team/Title", "Responsible_x0020_Team/Id", "SharewebTaskType/Title", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
+                .expand("Team_x0020_Members", "AssignedTo", "Responsible_x0020_Team", "SharewebTaskType", "Component", "Services")
+                .get()
+        }
+
 
         console.log('Task Details---');
         console.log(taskDetails);
@@ -272,7 +294,6 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                 });
             }
         }
-
         return users;
     }
 
@@ -293,12 +314,13 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                     child.childs.push($data);
             }
         });
-
         this.dropSuccessHandler(true);
-
     }
 
-    private onDropTeam(e: any, array: any, Team: any, AllUser: any) {
+    private onDropTeam(e: any, array: any, Team: any, AllUser: any,userType:any) {
+        if(dragItem.userType != userType){
+
+        
         let $data = dragItem.user;
         let self = this;
         array.forEach(function (user: any, indexParent: any) {
@@ -320,11 +342,12 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                 }
             })
         }
-
         this.dropSuccessHandler(true);
     }
+    }
 
-    private onDropTeam1(e: any, array: any, Team: any, AllUser: any) {
+    private onDropTeam1(e: any, array: any, Team: any, AllUser: any,userType:any) {
+        if(dragItem.userType != userType){
         let $data = dragItem.user;
         let self = this;
         array.forEach(function (user: any, indexParent: any) {
@@ -347,10 +370,9 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
         if (!self.isItemExists(array, $data.Id)) {
             array.push($data);
         }
-
         this.dropSuccessHandler(false);
-
     }
+}
 
     private dropSuccessHandler(isRemove: any) {
         if (isRemove) {
@@ -437,10 +459,10 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                     <div className="row  UserTimeTabGray">
                                         <div className='col-sm-5 ps-1 border-end'>
                                             <div className="col"
-                                                onDrop={(e) => this.onDropTeam1(e, this.state.AssignedToUsers, 'Assigned User', this.state.taskUsers)}
+                                                onDrop={(e) => this.onDropTeam1(e, this.state.AssignedToUsers, 'Assigned User', this.state.taskUsers,'Assigned User')}
                                                 onDragOver={(e) => e.preventDefault()}>
                                                 <div className=" p-1" >
-                                                    <div className='d-flex flex-wrap'>
+                                                    <div className='d-flex flex-wrap' style={{minHeight:"30px", height:"auto"}} >
                                                         {this.state.AssignedToUsers && this.state.AssignedToUsers.map((image: any, index: number) => {
                                                             return <div
                                                                 className="ProirityAssignedUserPhoto"
@@ -459,7 +481,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                         </div>
                                         
                                         <div className="col-sm-7"
-                                            onDrop={(e) => this.onDropTeam(e, this.state.TeamMemberUsers, 'Team Members', this.state.taskUsers)}
+                                            onDrop={(e) => this.onDropTeam(e, this.state.TeamMemberUsers, 'Team Members', this.state.taskUsers,'TeamMemberUsers')}
                                             onDragOver={(e) => e.preventDefault()}>
                                             <div className="p-1">
                                                 <div className='d-flex flex-wrap'>
@@ -485,7 +507,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                         onDragOver={(e) => e.preventDefault()}>
                                             <label className="full_width"></label>
                                         <img title="Drag user here to  remove user from team for this Network Activity." className="width-75"
-                                            src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/icon_Dustbin.png" />
+                                            src={this.props?.ItemInfo?.Portfolio_x0020_Type == 'Service'?"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Service_Icons/icon_Dustbin-green.png":"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/icon_Dustbin.png"}/>
                                     </div>
                                 </div>
                                 </div>

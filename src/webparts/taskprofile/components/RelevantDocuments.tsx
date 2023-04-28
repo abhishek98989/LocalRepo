@@ -5,9 +5,9 @@ import moment from 'moment';
 import { useState, useEffect } from 'react';
 const RelevantDocuments = (props: any) => {
     const [documentData, setDocumentData] = useState([]);
-    const [FileName, setFileName] = useState(props.folderName);
+    // const [FileName, setFileName] = useState(props?.folderName);
     const [Fileurl, setFileurl] = useState("");
-    console.log(props.folderName);
+    // console.log(props?.folderName);
 
     useEffect(() => {
         loadAllSitesDocuments();
@@ -20,8 +20,10 @@ const RelevantDocuments = (props: any) => {
         var filter = (`${props?.siteName}/Id eq ${props?.ID}`);
         console.log(filter);
         try{
-            await web.lists.getByTitle("Documents").items.select("Id,Title,Priority_x0020_Rank,Year,File_x0020_Type,FileLeafRef,FileDirRef,ItemRank,ItemType,Url,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,EncodedAbsUrl")
-            .expand("Author,Editor").filter(`${props.siteName}/Id eq ${props.ID}`).top(4999)
+            // await web.lists.getByTitle("Documents")
+            await web.lists.getById(props.DocumentsListID)
+            .items.select("Id,Title,Priority_x0020_Rank,Year,File_x0020_Type,FileLeafRef,FileDirRef,ItemRank,ItemType,Url,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,EncodedAbsUrl")
+            .expand("Author,Editor").filter(`${props?.siteName}/Id eq ${props?.ID}`).top(4999)
             .get()
             .then((Data: any[]) => {
               

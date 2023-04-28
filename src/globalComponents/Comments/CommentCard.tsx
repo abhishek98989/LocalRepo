@@ -26,7 +26,7 @@ export interface ICommentCardProps {
   listName?: string;
   itemID?: number;
   Context?: any;
-
+  AllListId?:any
 }
 const sp = spfi();
 
@@ -59,8 +59,8 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
 
     this.state = {
       Result: {},
-      listName: (this.params1.get('Site') != undefined ? this.params1.get('Site') : props.listName),
-      itemID: (this.params1.get('taskId') != undefined ? Number(this.params1.get('taskId')) : props.itemID),
+      listName: (this.params1.get('Site') != undefined ? this.params1.get('Site') : props?.listName),
+      itemID: (this.params1.get('taskId') != undefined ? Number(this.params1.get('taskId')) : props?.itemID),
 
       CommenttoPost: '',
       updateComment: false,
@@ -135,9 +135,10 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
     }
     
     if (tempTask["Comments"] != undefined && tempTask["Comments"].length > 0) {
-      tempTask["Comments"].map((item: any) => {
+      tempTask["Comments"]?.map((item: any) => {
         if (item?.AuthorImage != undefined && item?.AuthorImage.toLowerCase().indexOf('https://www.hochhuth-consulting.de/') > -1) {
           var imgurl = item.AuthorImage.split('https://www.hochhuth-consulting.de/')[1];
+          // item.AuthorImage = `${this.props.Context._pageContext._site.absoluteUrl}` + imgurl;
           item.AuthorImage = 'https://hhhhteams.sharepoint.com/sites/HHHH/' + imgurl;
         }
         // item.AuthorImage = user.Item_x0020_Cover !=undefined ?user.Item_x0020_Cover.Url:item.AuthorImage;
@@ -200,7 +201,8 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
     //}); 
     let taskUsers = [];
     taskUsers = await web.lists
-      .getByTitle('Task Users')
+      // .getByTitle('Task Users')TaskUsertListID
+      .getById(this.props?.AllListId?.TaskUsertListID)
       .items
       .select('Id', 'Email', 'Suffix', 'Title', 'Item_x0020_Cover', 'AssingedToUser/Title', 'AssingedToUser/Id', 'AssingedToUser/EMail')
       .filter("ItemType eq 'User'")
@@ -208,29 +210,31 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
       .get();
 
     this.taskUsers = taskUsers;
-
-    for (let index = 0; index < this.taskUsers.length; index++) {
-      this.mentionUsers.push({
-        id: this.taskUsers[index].Title + "{" + this.taskUsers[index].Email + "}",
-        display: this.taskUsers[index].Title
-      });
-
-      if (this.taskUsers[index].Title == "Deepak Trivedi" || this.taskUsers[index].Title == "Stefan Hochhuth" || this.taskUsers[index].Title == "Robert Ungethuem" || this.taskUsers[index].Title == "Mattis Hahn"||this.taskUsers[index].Title=="Ksenia Kozhukhar"||this.taskUsers[index].Title=="Mayank Pal") {
-        this.topCommenters.push({
+     if(this.taskUsers!=undefined&&this.taskUsers.length>0){
+      for (let index = 0; index < this.taskUsers.length; index++) {
+        this.mentionUsers.push({
           id: this.taskUsers[index].Title + "{" + this.taskUsers[index].Email + "}",
-          display: this.taskUsers[index].Title,
-          Title: this.taskUsers[index].Title,
-          ItemCoverURL: (this.taskUsers[index].Item_x0020_Cover != undefined) ?
-            this.taskUsers[index].Item_x0020_Cover.Url :
-            "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"
-        })
+          display: this.taskUsers[index].Title
+        });
+  
+        if (this.taskUsers[index].Title == "Deepak Trivedi" || this.taskUsers[index].Title == "Stefan Hochhuth" || this.taskUsers[index].Title == "Robert Ungethuem" || this.taskUsers[index].Title == "Mattis Hahn"||this.taskUsers[index].Title=="Ksenia Kozhukhar"||this.taskUsers[index].Title=="Mayank Pal") {
+          this.topCommenters.push({
+            id: this.taskUsers[index].Title + "{" + this.taskUsers[index].Email + "}",
+            display: this.taskUsers[index].Title,
+            Title: this.taskUsers[index].Title,
+            ItemCoverURL: (this.taskUsers[index].Item_x0020_Cover != undefined) ?
+              this.taskUsers[index].Item_x0020_Cover.Url :
+              "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"
+          })
+        }
+  
+        if (this.taskUsers[index].AssingedToUser != null && this.taskUsers[index].AssingedToUser.Title == currentUser['Title'])
+          this.currentUser = this.taskUsers[index];
       }
-
-      if (this.taskUsers[index].AssingedToUser != null && this.taskUsers[index].AssingedToUser.Title == currentUser['Title'])
-        this.currentUser = this.taskUsers[index];
-    }
-    console.log(this.topCommenters);
-    console.log(this.mentionUsers);
+      console.log(this.topCommenters);
+      console.log(this.mentionUsers);
+     }
+    
   }
 
   private handleInputChange(e: any) {

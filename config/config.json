@@ -2,8 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
   "version": "2.0",
   "bundles": {
-   
-   "taskprofile-web-part": {
+    "taskprofile-web-part": {
       "components": [
         {
           "entrypoint": "./lib/webparts/taskprofile/TaskprofileWebPart.js",
@@ -26,35 +25,8 @@
           "manifest": "./src/webparts/componentComments/ComponentCommentsWebPart.manifest.json"
         }
       ]
-    },
-    "all-task-user-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/allTaskUser/AllTaskUserWebPart.js",
-          "manifest": "./src/webparts/allTaskUser/AllTaskUserWebPart.manifest.json"
-        }
-      ]
-    },
-    "last-modified-items-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/lastModifiedItems/LastModifiedItemsWebPart.js",
-          "manifest": "./src/webparts/lastModifiedItems/LastModifiedItemsWebPart.manifest.json"
-        }
-      ]
-    },
-    "tasks-view-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/tasksView/TasksViewWebPart.js",
-          "manifest": "./src/webparts/tasksView/TasksViewWebPart.manifest.json"
-        }
-      ]
     }
   },
-  
-  
-  
   "externals": {
     "bootstrap-css": {
       "path": "https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css",
@@ -74,15 +46,8 @@
     }
   },
   "localizedResources": {
-    
     "ServicePortfolioWebPartStrings": "lib/webparts/servicePortfolio/loc/{locale}.js",
     "TaskprofileWebPartStrings": "lib/webparts/taskprofile/loc/{locale}.js",
-   "ComponentEditPopupWebPartStrings": "lib/webparts/componentEditPopup/loc/{locale}.js",
-     "ComponentCommentsWebPartStrings": "lib/webparts/componentComments/loc/{locale}.js",
-    "CreateTaskWebPartStrings": "lib/webparts/createTask/loc/{locale}.js",
-    "AllTaskUserWebPartStrings": "lib/webparts/allTaskUser/loc/{locale}.js",
-    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
-    "LastModifiedItemsWebPartStrings": "lib/webparts/lastModifiedItems/loc/{locale}.js",
-    "TasksViewWebPartStrings": "lib/webparts/tasksView/loc/{locale}.js"}
-   
+    "ComponentCommentsWebPartStrings": "lib/webparts/componentComments/loc/{locale}.js"
+  }
 }

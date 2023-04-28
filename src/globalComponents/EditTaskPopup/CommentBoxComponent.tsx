@@ -6,6 +6,7 @@ import Example from "./SubCommentComponent";
 // import FroalaCommentBox from '../FlorarComponents/FroalaCommentBoxComponent'
 
 const CommentBoxComponent = (commentData: any) => {
+    const Context = commentData.Context;
     const [commentArray, setCommentArray] = useState([])
     const CallBack = commentData.callBack;
     const [postBtnStatus, setPostBtnStatus] = useState(false);
@@ -134,7 +135,7 @@ const CommentBoxComponent = (commentData: any) => {
                                 <div className="Task-panel d-flex  justify-content-between">
                                     <div className={isDisabled ? "my-1" : "my-1 Disabled-Link"}>
                                         {ApprovalStatus ?
-                                            <span className="MR5 ng-scope">
+                                            <span className="MR5">
                                                 <span title="Rejected" onClick={() => SmartLightUpdate(i, "Reject")}
                                                     className={obj.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
                                                 >
@@ -213,6 +214,7 @@ const CommentBoxComponent = (commentData: any) => {
                                         allUsers={commentData.allUsers}
                                         callBack={postBtnHandleCallBack}
                                         CancelCallback={postBtnHandleCallBackCancel}
+                                        Context={Context}
                                     />
                                 </div>
                                 <div>
@@ -226,6 +228,7 @@ const CommentBoxComponent = (commentData: any) => {
                                         ApprovalStatus={ApprovalStatus}
                                         SmartLightStatus={SmartLightStatus}
                                         SmartLightPercentStatus={SmartLightPercentStatus}
+                                        Context={Context}
                                     />
                                 </div>
                             </div>

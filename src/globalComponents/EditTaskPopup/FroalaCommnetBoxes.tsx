@@ -5,6 +5,7 @@ import Example from "./SubCommentComponent";
 import AddCommentComponent from './AddCommentComponent'
 
 export default function FroalaCommnetBoxes(textItems: any) {
+    const Context = textItems.Context;
     const TextItems = textItems.textItems;
     const callBack = textItems.callBack;
     const ItemId: any = textItems.ItemId;
@@ -284,7 +285,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                         <textarea
                                             style={{ width: "100%" }}
                                             className="form-control"
-                                            defaultValue={obj.Title}
+                                            defaultValue={obj.Title.replace(/<[^>]*>/g, ' ')}
                                             name='Title'
                                         ></textarea>
                                     </div>
@@ -296,10 +297,11 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                         Data={obj.Comments != null ? obj.Comments : []}
                                         allFbData={TextItems}
                                         index={currentIndex}
-                                        postStatus={i == Number(currentIndex) && postBtnStatus ? true :false}
+                                        postStatus={i == Number(currentIndex) && postBtnStatus ? true : false}
                                         allUsers={textItems.allUsers}
                                         callBack={postBtnHandleCallBack}
                                         CancelCallback={postBtnHandleCallBackCancel}
+                                        Context={Context}
                                     />
                                 </div>
                                 <div>
@@ -313,6 +315,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                         ApprovalStatus={ApprovalStatus}
                                         SmartLightStatus={SmartLightStatus}
                                         SmartLightPercentStatus={SmartLightPercentStatus}
+                                        Context={Context}
                                     />
                                 </div>
                             </div>
