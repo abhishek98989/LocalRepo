@@ -372,7 +372,7 @@ private approvalcallback(){
           <div className='justify-content-between d-flex'>
             <div className="pt-1">
               {this.props?.ApprovalStatus ?
-                <span className="MR5 ng-scope" ng-disabled="Item.PercentComplete >= 80">
+                <span className="MR5">
                   <span title="Rejected" onClick={()=> this.changeTrafficLigth(this.state.index,"Reject")}
                     className={this.state?.fbData['isShowLight'] == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
                   >
@@ -401,22 +401,22 @@ private approvalcallback(){
                 <li>
                   {this.state.fbData['Completed'] != null && this.state.fbData['Completed'] && 
 
-                    <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
+                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
                   }
                 </li>
                 <li>
                   {this.state.fbData['HighImportance'] != null && this.state.fbData['HighImportance'] &&
-                    <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
+                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
                   }
                 </li>
                 <li>
                   {this.state.fbData['LowImportance'] != null && this.state.fbData['LowImportance'] &&
-                    <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
+                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
                   }
                 </li>
                 <li>
                   {this.state.fbData['Phone'] != null && this.state.fbData['Phone'] &&
-                    <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
+                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
                   }
                 </li>
               </ul>
@@ -437,8 +437,7 @@ private approvalcallback(){
                         {fbComment?.AuthorName} - {fbComment?.Created}
                         <span className='d-flex'>
                           <a  title='Edit' onClick={() => this.openEditModal(fbComment.Title, k, 0, false)}>
-                            {/* <img src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/edititem.gif'></img> */}
-                            {/* <img src={require('../../../Assets/ICON/edit_page.svg')} width="25"></img> */}
+                        
                             <span className='svg__iconbox svg__icon--edit'></span>
                             </a>
                           <a  title='Delete' onClick={() => this.clearComment(false, k, 0)}><span className='svg__iconbox svg__icon--trash'></span></a>
@@ -468,7 +467,7 @@ private approvalcallback(){
             <div className='justify-content-between d-flex'>
               <div>
                 {this.props.ApprovalStatus ?
-                  <span className="MR5 ng-scope" ng-disabled="Item.PercentComplete >= 80">
+                  <span className="MR5">
                     <span title="Rejected"onClick={()=> this.changeTrafficLigthsubtext(this.state.index,j,"Reject")}
                       className={fbSubData.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
                     >
@@ -491,36 +490,36 @@ private approvalcallback(){
 
             <div className="d-flex pe-0">
               <div className="border p-1 me-1">
-                <span className="ng-binding">{this.state.index}.{j + 1}</span>
+                <span >{this.state.index}.{j + 1}</span>
                 <ul className="list-none">
                   <li>
                     {fbSubData?.Completed != null && fbSubData?.Completed &&
-                      <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
+                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
                     }
                   </li>
                   <li>
                     {fbSubData?.HighImportance != null && fbSubData?.HighImportance &&
-                      <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
+                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
                     }
                   </li>
                   <li>
                     {fbSubData?.LowImportance != null && fbSubData?.LowImportance &&
-                      <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
+                      <span><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
                     }
                   </li>
                   <li>
                     {fbSubData?.Phone != null && fbSubData?.Phone &&
-                      <span className="ng-scope"><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
+                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
                     }
                   </li>
                 </ul>
               </div>
 
               <div className="border p-2 full-width text-break">
-                <span className="ng-binding"><span dangerouslySetInnerHTML={{ __html: fbSubData?.Title?.replace(/<[^>]*>/g, '') }}></span></span>
+                <span ><span dangerouslySetInnerHTML={{ __html: fbSubData?.Title?.replace(/<[^>]*>/g, '') }}></span></span>
                 <div className="feedbackcomment col-sm-12 PadR0 mt-10">
                   {fbSubData?.Comments != null && fbSubData.Comments.length > 0 && fbSubData?.Comments?.map((fbComment: any, k: any) => {
-                    return <div className="col-sm-12 d-flex mb-2 add_cmnt my-1 ng-scope">
+                    return <div className="col-sm-12 d-flex mb-2 add_cmnt my-1 ">
                       <div className="col-sm-1 padL-0 wid35">
                         <img className="AssignUserPhoto1" src={fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ?
                           fbComment.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
@@ -530,14 +529,13 @@ private approvalcallback(){
                           {fbComment?.AuthorName} - {fbComment?.Created}
                           <span className='d-flex'>
                             <a  title="Edit" onClick={() => this.openEditModal(fbComment?.Title, k, j, true)}>
-                              {/* <img src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/edititem.gif'></img> */}
-                             {/* <img  src={require('../../../Assets/ICON/edit_page.svg')} width="25"></img> */}
+                           
                              <span className='svg__iconbox svg__icon--edit'></span>
                               </a>
                             <a title='Delete' onClick={() => this.clearComment(true, k, j)}><span className='svg__iconbox svg__icon--trash'></span></a>
                           </span>
                         </div>
-                        <div className="ng-binding"><span dangerouslySetInnerHTML={{ __html: fbComment?.Title }}></span></div>
+                        <div ><span dangerouslySetInnerHTML={{ __html: fbComment?.Title }}></span></div>
                       </div>
                     </div>
                   })}

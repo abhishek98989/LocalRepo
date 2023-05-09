@@ -249,3 +249,7 @@ export default class spservices {
         await this._sp.utility.sendEmail(emailProps);
     }
 }
+
+export function addImage(selectfolder2: string, uploadedImage: any) {
+    throw new Error('Function not implemented.');
+}
