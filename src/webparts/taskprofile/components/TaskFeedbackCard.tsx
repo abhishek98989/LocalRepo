@@ -5,6 +5,7 @@ import pnp, { Web, SearchQuery, SearchResults } from "sp-pnp-js";
 import { Modal } from '@fluentui/react';
 import * as moment from "moment-timezone";
 import EmailComponenet from './emailComponent';
+import ApprovalHistoryPopup from '../../../globalComponents/EditTaskPopup/ApprovalHistoryPopup';
 // import * as moment from "moment-timezone";
 var sunchildcomment: any;
 var countemailbutton:number;
@@ -35,6 +36,12 @@ export interface ITaskFeedbackState {
   CommenttoUpdate: string;
   emailcomponentopen:boolean;
   emailComponentstatus:String;
+  ApprovalCommentcheckbox:boolean;
+  ApprovalHistoryPopup:boolean;
+ ApprovalPointUserData:any
+  ApprovalPointCurrentIndex:number
+ 
+  
 }
 
 export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskFeedbackState> {
@@ -54,7 +61,12 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
       emailcomponentopen:false,
       emailComponentstatus:"",
       updateCommentText: {},
-      CommenttoUpdate: ''
+      CommenttoUpdate: '',
+      ApprovalCommentcheckbox:false,
+      ApprovalHistoryPopup:false,
+      ApprovalPointUserData:'',
+    ApprovalPointCurrentIndex:this.props.index,
+    
     };
   }
   private showhideCommentBox() {
@@ -93,13 +105,33 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
     let txtComment = this.state.CommenttoPost;
     if (txtComment != '') {
       //  var date= moment(new Date()).format('dd MMM yyyy HH:mm')
-      let temp = {
+      var temp:any = {
         AuthorImage: this.props?.CurrentUser != null && this.props?.CurrentUser.length > 0 ? this.props?.CurrentUser[0]['userImage'] : "",
         AuthorName: this.props.CurrentUser != null && this.props.CurrentUser.length > 0 ? this.props.CurrentUser[0]['Title'] : "",
         // Created: new Date().toLocaleString('default',{ month: 'short',day:'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         Created: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
-        Title: txtComment
+        Title: txtComment,
+        // isApprovalComment:this.state.ApprovalCommentcheckbox,
+        // isShowLight:this.props?.feedback?.isShowLight?this.props?.feedback?.isShowLight:""
       };
+      if(this.state.ApprovalCommentcheckbox){
+        temp.isApprovalComment=this.state.ApprovalCommentcheckbox
+        temp.isShowLight=this.props?.feedback?.isShowLight?this.props?.feedback?.isShowLight:"";
+        var approvalDataHistory={
+           ApprovalDate: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
+          Id: this.props.CurrentUser[0].Id,
+           ImageUrl: this.props.CurrentUser[0].userImage,
+            Title: this.props.CurrentUser[0].Title,
+           isShowLight: this.props?.feedback?.isShowLight?this.props?.feedback?.isShowLight:""
+        }
+       
+        if(temp.ApproverData!=undefined){
+          temp.ApproverData.push(approvalDataHistory)
+        }else{
+          temp.ApproverData=[];
+          temp.ApproverData.push(approvalDataHistory);
+        }
+      }
       //Add object in feedback
 
       if (this.props.feedback["Comments"] != undefined) {
@@ -114,6 +146,9 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
         CommenttoPost: '',
       });
       this.props.onPost();
+      this.setState({
+        ApprovalCommentcheckbox:false
+      })
     } else {
       alert('Please input some text.')
     }
@@ -123,13 +158,34 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
   private SubtextPostButtonClick(j: any) {
     let txtComment = this.state.CommenttoPost;
     if (txtComment != '') {
-      let temp = {
+      let temp :any= {
         AuthorImage: this.props.CurrentUser != null && this.props.CurrentUser.length > 0 ? this.props.CurrentUser[0]['userImage'] : "",
         AuthorName: this.props.CurrentUser != null && this.props.CurrentUser.length > 0 ? this.props.CurrentUser[0]['Title'] : "",
         // Created: new Date().toLocaleString('default', { day:'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         Created: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
-        Title: txtComment
+        Title: txtComment,
+        // isApprovalComment:this.state.ApprovalCommentcheckbox,
+        // isShowLight:this.props?.feedback?.Subtext[j].isShowLight!=undefined?this.props?.feedback?.Subtext[j].isShowLight:""
       };
+      if(this.state.ApprovalCommentcheckbox){
+        temp.isApprovalComment=this.state.ApprovalCommentcheckbox
+        temp.isShowLight=this.props?.feedback?.Subtext[j].isShowLight!=undefined?this.props?.feedback?.Subtext[j].isShowLight:""
+        var approvalDataHistory={
+           ApprovalDate: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'), 
+          Id: this.props.CurrentUser[0].Id,
+           ImageUrl: this.props.CurrentUser[0].userImage,
+            Title: this.props.CurrentUser[0].Title,
+           isShowLight: this.props?.feedback?.Subtext[j].isShowLight!=undefined?this.props?.feedback?.Subtext[j].isShowLight:""
+        }
+       
+        if(temp.ApproverData!=undefined){
+          temp.ApproverData.push(approvalDataHistory)
+        }else{
+          temp.ApproverData=[];
+          temp.ApproverData.push(approvalDataHistory);
+        }
+
+      }
       //Add object in feedback
 
       if (this.props.feedback["Subtext"][j].Comments != undefined) {
@@ -144,6 +200,9 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
         CommenttoPost: '',
       });
       this.props.onPost();
+      this.setState({
+        ApprovalCommentcheckbox:false
+      })
     } else {
       alert('Please input some text.')
     }
@@ -162,12 +221,13 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
   private openEditModal(comment: any, indexOfUpdateElement: any, indexOfSubtext: any, isSubtextComment: any) {
     this.setState({
       isModalOpen: true,
-      CommenttoUpdate: comment,
+      CommenttoUpdate: comment?.Title,
       updateCommentText: {
-        'comment': comment,
+        'comment': comment?.Title,
         'indexOfUpdateElement': indexOfUpdateElement,
         'indexOfSubtext': indexOfSubtext,
-        'isSubtextComment': isSubtextComment
+        'isSubtextComment': isSubtextComment,
+        "data":comment
       }
     })
   }
@@ -190,12 +250,17 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
     let txtComment = this.state.CommenttoUpdate
 
     if (txtComment != '') {
-      let temp = {
+      let temp :any= {
         AuthorImage: this.props.CurrentUser != null && this.props.CurrentUser.length > 0 ? this.props.CurrentUser[0]['userImage'] : "",
         AuthorName: this.props.CurrentUser != null && this.props.CurrentUser.length > 0 ? this.props.CurrentUser[0]['Title'] : "",
         Created: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
         Title: txtComment
       };
+      if(this.state?.updateCommentText?.data?.isApprovalComment){
+        temp.isApprovalComment=this.state?.updateCommentText?.data?.isApprovalComment;
+        temp.isShowLight=this.state?.updateCommentText?.data?.isShowLight
+        temp.ApproverData=this.state?.updateCommentText?.data?.ApproverData;
+        }
       if (this.state?.updateCommentText?.isSubtextComment) {
         this.props.feedback.Subtext[this.state.updateCommentText['indexOfSubtext']]['Comments'][this.state.updateCommentText['indexOfUpdateElement']] = temp;
 
@@ -317,8 +382,21 @@ private async changeTrafficLigth  (index:any,item:any){
       
    }
     //await this.changepercentageStatus(item,tempData);
-   
+   var approvalDataHistory={
+      ApprovalDate:new Date(), 
+      Id: this.props.CurrentUser[0].Id,
+       ImageUrl: this.props.CurrentUser[0].userImage,
+        Title: this.props.CurrentUser[0].Title,
+       isShowLight: item
+   }
     tempData.isShowLight = item;
+    if(tempData.ApproverData!=undefined &&  tempData.ApproverData.length>0){
+
+      tempData.ApproverData.push(approvalDataHistory);
+    }else{
+      tempData.ApproverData=[];
+      tempData.ApproverData .push(approvalDataHistory)
+    }
     console.log(tempData);
   
     this.setState({
@@ -345,8 +423,22 @@ if(this.props.fullfeedback!=undefined){
 await this.checkforMail(this.props?.fullfeedback[0]?.FeedBackDescriptions,status,tempData?.Subtext[subchileindex]);
 }
  // await this.changepercentageStatus(status,tempData?.Subtext[subchileindex]);
-
+ var approvalDataHistory={
+  ApprovalDate:new Date(), 
+  Id: this.props.CurrentUser[0].Id,
+   ImageUrl: this.props.CurrentUser[0].userImage,
+    Title: this.props.CurrentUser[0].Title,
+   isShowLight: status
+}
 tempData.Subtext[subchileindex].isShowLight = status;
+if(tempData.Subtext[subchileindex].ApproverData!=undefined &&  tempData.Subtext[subchileindex].ApproverData.length>0){
+
+  tempData.Subtext[subchileindex].ApproverData.push(approvalDataHistory);
+}else{
+  tempData.Subtext[subchileindex].ApproverData=[];
+  tempData.Subtext[subchileindex].ApproverData.push(approvalDataHistory)
+}
+
 console.log(tempData);
 this.setState({
  fbData: tempData,
@@ -358,11 +450,29 @@ console.log(this.state.emailcomponentopen)
 this.props.onPost();
 }
 }
+private ShowApprovalHistory(items:any){
+console.log("this is a Approval function cxall ",items)
+this.setState({
+  ApprovalHistoryPopup:true,
+  ApprovalPointUserData:items,
+  ApprovalPointCurrentIndex:this.props.index-1,
+   
+})
+
+}
+private ApprovalHistoryPopupCallBack(){
+  this.setState({
+    ApprovalHistoryPopup:false
+  })
+}
 private approvalcallback(){
    this.props.approvalcallbacktask();
-  this.setState({
-    emailcomponentopen:false,
-     });
+   this.setState({
+    ApprovalHistoryPopup:false,
+    ApprovalPointUserData:null,
+    ApprovalPointCurrentIndex:null,
+     
+  })
     }
   public render(): React.ReactElement<ITaskFeedbackProps> {
     return (
@@ -371,7 +481,7 @@ private approvalcallback(){
         <div className="col mb-2">
           <div className='justify-content-between d-flex'>
             <div className="pt-1">
-              {this.props?.ApprovalStatus ?
+              {this.props?.ApprovalStatus && this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id?
                 <span className="MR5">
                   <span title="Rejected" onClick={()=> this.changeTrafficLigth(this.state.index,"Reject")}
                     className={this.state?.fbData['isShowLight'] == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
@@ -382,7 +492,12 @@ private approvalcallback(){
                   <span title="Approved" onClick={()=> this.changeTrafficLigth(this.state.index,"Approve")} className={this.state.fbData['isShowLight'] == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
 
                   </span>
+                  {this.state?.fbData['ApproverData']!=undefined && this.state?.fbData?.ApproverData.length>0 &&<span className='px-3'>
+                    <a  onClick={()=>this.ShowApprovalHistory(this.state?.fbData)}>Pre-approved by -</a>
+                    <img  className="imgAuthor"src={this.state?.fbData?.ApproverData[this.state?.fbData?.ApproverData?.length-1]?.ImageUrl}></img> 
+                    </span>}
                 </span>
+                
                 : null
               }
             </div>
@@ -394,7 +509,7 @@ private approvalcallback(){
           </div>
 
 
-          <div className="d-flex p-0">
+          <div className="d-flex p-0 FeedBack-comment ">
             <div className="border p-1 me-1">
               <span>{this.state.index}.</span>
               <ul className='list-none'>
@@ -422,12 +537,13 @@ private approvalcallback(){
               </ul>
             </div>
 
-            <div className="border p-2 full-width text-break">
+            <div className={this.state.fbData.ApproverData!=undefined&&this.state.fbData.ApproverData.length>0?`border p-2 full-width text-break ${this.state.fbData.ApproverData[this.state.fbData.ApproverData.length-1].isShowLight}`:"border p-2 full-width text-break"}
+             title={this.state.fbData.ApproverData!=undefined&&this.state.fbData.ApproverData.length>0? this.state.fbData.ApproverData[this.state.fbData.ApproverData.length-1].isShowLight:""}>
 
               <span dangerouslySetInnerHTML={{ __html: this.state.fbData.Title }}></span>
               <div className="col">
                 {this.state.fbData['Comments'] != null && this.state.fbData['Comments'].length > 0 && this.state.fbData['Comments']?.map((fbComment: any, k: any) => {
-                  return <div className="col d-flex add_cmnt my-1">
+                  return <div className={fbComment.isShowLight!=undefined && fbComment.isApprovalComment?`col d-flex add_cmnt my-1 ${fbComment.isShowLight}`:"col d-flex add_cmnt my-1"}>
                     <div className="col-1 p-0">
                       <img className="AssignUserPhoto1" src={fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ?
                         fbComment.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
@@ -436,7 +552,7 @@ private approvalcallback(){
                       <div className='d-flex justify-content-between align-items-center'>
                         {fbComment?.AuthorName} - {fbComment?.Created}
                         <span className='d-flex'>
-                          <a  title='Edit' onClick={() => this.openEditModal(fbComment.Title, k, 0, false)}>
+                          <a  title='Edit' onClick={() => this.openEditModal(fbComment, k, 0, false)}>
                         
                             <span className='svg__iconbox svg__icon--edit'></span>
                             </a>
@@ -452,11 +568,13 @@ private approvalcallback(){
           </div>
           <div className='d-flex'>
             <div className="col-sm-11 mt-2 p-0" style={{ display: this.state.showcomment }}>
+           {this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id && <span><input type='checkbox'name='approval' checked={this.state.ApprovalCommentcheckbox} onChange={(e)=>this.setState({ApprovalCommentcheckbox:e.target.checked})}/>
+            <span className='mx-2'>Mark as Approval Comment</span></span>}
               <textarea id="txtComment" onChange={(e) => this.handleInputChange(e)} className="form-control full-width" ></textarea>
             </div>
 
-            <div className="col-sm-1 ps-1 mt-2 text-end " style={{ display: this.state.showcomment }}>
-              <button type="button" className="postbtn btn-primary" onClick={() => this.PostButtonClick()}>Post</button>
+            <div className="col-sm-1 full-width mt-2 ps-1 text-end " style={{ display: this.state.showcomment }}>
+              <button type="button" className={this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id?"btn-primary mt-4 postbtn px-3":"btn-primary postbtn px-3"} onClick={() => this.PostButtonClick()}>Post</button>
             </div>
           </div>
 
@@ -477,6 +595,10 @@ private approvalcallback(){
                     <span title="Approved" onClick={()=> this.changeTrafficLigthsubtext(this.state.index,j,"Approve")} className={fbSubData?.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
 
                     </span>
+                  {fbSubData.ApproverData!=undefined && fbSubData.ApproverData.length>0 &&<span className='px-3'>
+                    <a  onClick={()=>this.ShowApprovalHistory(fbSubData)}>Pre-approved by -</a>
+                    <img  className="imgAuthor"src={fbSubData?.ApproverData[fbSubData?.ApproverData?.length-1]?.ImageUrl}></img> 
+                    </span>}
                   </span>
                   : null
                 }
@@ -488,7 +610,7 @@ private approvalcallback(){
               </div>
             </div>
 
-            <div className="d-flex pe-0">
+            <div className="d-flex pe-0 FeedBack-comment">
               <div className="border p-1 me-1">
                 <span >{this.state.index}.{j + 1}</span>
                 <ul className="list-none">
@@ -515,11 +637,12 @@ private approvalcallback(){
                 </ul>
               </div>
 
-              <div className="border p-2 full-width text-break">
+              <div className={fbSubData?.ApproverData!=undefined&& fbSubData?.ApproverData?.length>0?`border p-2 full-width text-break ${fbSubData?.ApproverData[fbSubData?.ApproverData?.length-1].isShowLight}`:"border p-2 full-width text-break"}
+                title={fbSubData?.ApproverData!=undefined&&fbSubData?.ApproverData?.length>0? fbSubData?.ApproverData[fbSubData?.ApproverData.length-1]?.isShowLight:""}>
                 <span ><span dangerouslySetInnerHTML={{ __html: fbSubData?.Title?.replace(/<[^>]*>/g, '') }}></span></span>
                 <div className="feedbackcomment col-sm-12 PadR0 mt-10">
                   {fbSubData?.Comments != null && fbSubData.Comments.length > 0 && fbSubData?.Comments?.map((fbComment: any, k: any) => {
-                    return <div className="col-sm-12 d-flex mb-2 add_cmnt my-1 ">
+                    return <div className={fbComment?.isShowLight!=undefined && fbComment.isApprovalComment?`col-sm-12 d-flex mb-2 add_cmnt my-1 ${fbComment?.isShowLight}`:"col-sm-12 d-flex mb-2 add_cmnt my-1 "}>
                       <div className="col-sm-1 padL-0 wid35">
                         <img className="AssignUserPhoto1" src={fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ?
                           fbComment.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
@@ -528,7 +651,7 @@ private approvalcallback(){
                         <div className="d-flex justify-content-between align-items-center">
                           {fbComment?.AuthorName} - {fbComment?.Created}
                           <span className='d-flex'>
-                            <a  title="Edit" onClick={() => this.openEditModal(fbComment?.Title, k, j, true)}>
+                            <a  title="Edit" onClick={() => this.openEditModal(fbComment, k, j, true)}>
                            
                              <span className='svg__iconbox svg__icon--edit'></span>
                               </a>
@@ -544,11 +667,12 @@ private approvalcallback(){
             </div>
             {sunchildcomment == j ? <div className='d-flex ' >
               <div className="col-sm-11  mt-2 p-0  " style={{ display: this.state.showcomment_subtext }}>
+              {this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id&&<span><input type='checkbox'  checked={this.state?.ApprovalCommentcheckbox}  onChange={(e)=>this.setState({ApprovalCommentcheckbox:e.target?.checked})}/><span className='mx-2'>Mark as Approval Comment</span></span>}
                 <textarea id="txtCommentSubtext" onChange={(e) => this.handleInputChange(e)}  className="form-control full-width" ></textarea>
               </div>
 
-              <div className="col-sm-1 mt-2 ps-1 text-end  " style={{ display: this.state.showcomment_subtext }}>
-                <button type="button" className="postbtn btn-primary" onClick={() => this.SubtextPostButtonClick(j)}>Post</button>
+              <div className="col-sm-1 mt-2 ps-1 full-width text-end  " style={{ display: this.state.showcomment_subtext }}>
+                <button type="button" className={this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id?"btn-primary mt-4 postbtn px-3":"btn-primary postbtn px-3"} onClick={() => this.SubtextPostButtonClick(j)}>Post</button>
               </div>
             </div> : null}
 
@@ -568,7 +692,15 @@ private approvalcallback(){
             <button className='btn btn-default ms-1' onClick={(e) => this.CloseModal(e)}>Cancel</button>
           </footer>
         </Modal>
+        {this.state.ApprovalHistoryPopup?<ApprovalHistoryPopup  
+                         ApprovalPointUserData={this.state.ApprovalPointUserData}
+                        ApprovalPointCurrentIndex={this.state.ApprovalPointCurrentIndex}
+                        ApprovalPointHistoryStatus={this.state.ApprovalHistoryPopup}
+                        callBack={this.ApprovalHistoryPopupCallBack}
+                        />
+                        :null}
       </div>
+     
     );
   }
 

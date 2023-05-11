@@ -657,10 +657,11 @@ const SmartInformation = (props: any) => {
             // Url:allValue?.LinkUrl!=""?allValue?.LinkUrl:""
           });
         console.log(updatedItem)
-        if (allValue.SelectedFolder != "") {
-          alert("Document(s) upload successfully");
-        } else {
+        if (allValue?.LinkUrl != "") {
           alert("Link upload successfully");
+         
+        } else {
+          alert("Document(s) upload successfully");
         }
 
         handleClose();
