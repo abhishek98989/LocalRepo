@@ -199,6 +199,7 @@ let AllAvailableTitle: any = [];
     const CallBackTimesheet = () => {
         setisTimeEntry(false)
         AllTimeSpentDetails = [];
+        EditData(item.props);
      
     }
     return (

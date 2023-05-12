@@ -383,7 +383,7 @@ private async changeTrafficLigth  (index:any,item:any){
    }
     //await this.changepercentageStatus(item,tempData);
    var approvalDataHistory={
-      ApprovalDate:new Date(), 
+      ApprovalDate: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'), 
       Id: this.props.CurrentUser[0].Id,
        ImageUrl: this.props.CurrentUser[0].userImage,
         Title: this.props.CurrentUser[0].Title,
@@ -424,7 +424,7 @@ await this.checkforMail(this.props?.fullfeedback[0]?.FeedBackDescriptions,status
 }
  // await this.changepercentageStatus(status,tempData?.Subtext[subchileindex]);
  var approvalDataHistory={
-  ApprovalDate:new Date(), 
+  ApprovalDate: moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'), 
   Id: this.props.CurrentUser[0].Id,
    ImageUrl: this.props.CurrentUser[0].userImage,
     Title: this.props.CurrentUser[0].Title,
@@ -460,19 +460,25 @@ this.setState({
 })
 
 }
-private ApprovalHistoryPopupCallBack(){
+// private ApprovalHistoryPopupCallBack(){
+// this.setState({
+//     ApprovalHistoryPopup:false,
+//     ApprovalPointUserData:null,
+//     ApprovalPointCurrentIndex:null,
+     
+//   })
+// }
+private ApprovalHistoryPopupCallBack= React.useCallback(()=>{
   this.setState({
-    ApprovalHistoryPopup:false
-  })
-}
-private approvalcallback(){
-   this.props.approvalcallbacktask();
-   this.setState({
     ApprovalHistoryPopup:false,
     ApprovalPointUserData:null,
     ApprovalPointCurrentIndex:null,
      
   })
+},[])
+private approvalcallback(){
+   this.props.approvalcallbacktask();
+   
     }
   public render(): React.ReactElement<ITaskFeedbackProps> {
     return (
