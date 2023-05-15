@@ -39,7 +39,7 @@ export interface ITaskFeedbackState {
   ApprovalCommentcheckbox:boolean;
   ApprovalHistoryPopup:boolean;
  ApprovalPointUserData:any
-  ApprovalPointCurrentIndex:number
+  ApprovalPointCurrentIndex:any
  
   
 }
@@ -460,26 +460,28 @@ this.setState({
 })
 
 }
-// private ApprovalHistoryPopupCallBack(){
-// this.setState({
+private ApprovalHistoryPopupCallBack(){
+this.setState({
+    ApprovalHistoryPopup:false,
+    ApprovalPointUserData:'',
+    ApprovalPointCurrentIndex:null,
+     
+  })
+}
+// private ApprovalHistoryPopupCallBack= React.useCallback(()=>{
+//   this.setState({
 //     ApprovalHistoryPopup:false,
 //     ApprovalPointUserData:null,
 //     ApprovalPointCurrentIndex:null,
      
 //   })
-// }
-private ApprovalHistoryPopupCallBack= React.useCallback(()=>{
-  this.setState({
-    ApprovalHistoryPopup:false,
-    ApprovalPointUserData:null,
-    ApprovalPointCurrentIndex:null,
-     
-  })
-},[])
+// },[])
 private approvalcallback(){
-   this.props.approvalcallbacktask();
-   
-    }
+  this.props.approvalcallbacktask();
+ this.setState({
+   emailcomponentopen:false,
+    });
+   }
   public render(): React.ReactElement<ITaskFeedbackProps> {
     return (
       <div>
@@ -487,7 +489,7 @@ private approvalcallback(){
         <div className="col mb-2">
           <div className='justify-content-between d-flex'>
             <div className="pt-1">
-              {this.props?.ApprovalStatus && this.props?.Approver?.Id==this.props?.CurrentUser[0]?.Id?
+              {this.props?.ApprovalStatus?
                 <span className="MR5">
                   <span title="Rejected" onClick={()=> this.changeTrafficLigth(this.state.index,"Reject")}
                     className={this.state?.fbData['isShowLight'] == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
@@ -543,7 +545,7 @@ private approvalcallback(){
               </ul>
             </div>
 
-            <div className={this.state.fbData.ApproverData!=undefined&&this.state.fbData.ApproverData.length>0?`border p-2 full-width text-break ${this.state.fbData.ApproverData[this.state.fbData.ApproverData.length-1].isShowLight}`:"border p-2 full-width text-break"}
+            <div className="border p-2 full-width text-break"
              title={this.state.fbData.ApproverData!=undefined&&this.state.fbData.ApproverData.length>0? this.state.fbData.ApproverData[this.state.fbData.ApproverData.length-1].isShowLight:""}>
 
               <span dangerouslySetInnerHTML={{ __html: this.state.fbData.Title }}></span>
@@ -643,7 +645,7 @@ private approvalcallback(){
                 </ul>
               </div>
 
-              <div className={fbSubData?.ApproverData!=undefined&& fbSubData?.ApproverData?.length>0?`border p-2 full-width text-break ${fbSubData?.ApproverData[fbSubData?.ApproverData?.length-1].isShowLight}`:"border p-2 full-width text-break"}
+              <div className="border p-2 full-width text-break"
                 title={fbSubData?.ApproverData!=undefined&&fbSubData?.ApproverData?.length>0? fbSubData?.ApproverData[fbSubData?.ApproverData.length-1]?.isShowLight:""}>
                 <span ><span dangerouslySetInnerHTML={{ __html: fbSubData?.Title?.replace(/<[^>]*>/g, '') }}></span></span>
                 <div className="feedbackcomment col-sm-12 PadR0 mt-10">
@@ -702,7 +704,7 @@ private approvalcallback(){
                          ApprovalPointUserData={this.state.ApprovalPointUserData}
                         ApprovalPointCurrentIndex={this.state.ApprovalPointCurrentIndex}
                         ApprovalPointHistoryStatus={this.state.ApprovalHistoryPopup}
-                        callBack={this.ApprovalHistoryPopupCallBack}
+                        callBack={()=>this.ApprovalHistoryPopupCallBack()}
                         />
                         :null}
       </div>

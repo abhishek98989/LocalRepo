@@ -227,7 +227,7 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
      this. smartMetaDataIcon=data;
 
     }).catch((error:any)=>{
-
+    console.log(error)
     });
   }
 
