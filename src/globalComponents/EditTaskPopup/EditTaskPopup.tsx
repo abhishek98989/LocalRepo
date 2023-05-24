@@ -827,6 +827,7 @@ const EditTaskPopup = (Items: any) => {
                     setSmartComponentData([]);
                     console.log("Popup component linkedComponent", DataItem);
                 }
+                setIsServices(false);
             }
             if (Type == "Component") {
                 if (DataItem != undefined && DataItem.length > 0) {
@@ -850,7 +851,9 @@ const EditTaskPopup = (Items: any) => {
                     setSmartComponentData(DataItem);
                     setSmartServicesData([])
                     console.log("Popup component smartComponent ", DataItem)
+
                 }
+                setIsComponent(false)
             }
         }
     }, [])

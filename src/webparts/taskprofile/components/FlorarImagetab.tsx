@@ -9,7 +9,7 @@ import Froala from "react-froala-wysiwyg";
 const defaultContent = "";
 let FileName:any;
 export interface ITeamConfigurationProps {
-    callBack: (dt: any) => void;
+    callBack: (dt: any,FileName:any) => void;
 }
 
 const froalaEditorConfig: any= {
@@ -99,7 +99,7 @@ export default class App extends React.Component<ITeamConfigurationProps> {
     private imageArrayUpdateFunction = (ImageData: any) => {
         let tempArray = ImageData.toString();
         let data1 = tempArray.split('"')
-        this.props.callBack(data1[1]);
+        this.props.callBack(data1[1],FileName);
     }
 
 }
