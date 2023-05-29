@@ -260,7 +260,7 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
       DocumentsListID: this.props.DocumentsListID,
       SmartInformationListID: this.props.SmartInformationListID,
       siteUrl: this.props.siteUrl,
-      TaskTypeID:'21b55c7b-5748-483a-905a-62ef663972dc',
+      TaskTypeID:this.props.TaskTypeID,
       isShowTimeEntry: isShowTimeEntry,
       isShowSiteCompostion: isShowSiteCompostion
     }
@@ -1532,7 +1532,7 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
         </section>
         <section>
           <div className="row">
-            {this.state.Result != undefined && this.state.Result.Id != undefined && this.state.Result.SharewebTaskType != "" && this.state.Result.SharewebTaskType != undefined && this.state.Result.SharewebTaskType != 'Task' ? <TasksTable props={this.state.Result}AllListId={AllListId}  /> : ''}
+            {this.state.Result != undefined && this.state.Result.Id != undefined && this.state.Result.SharewebTaskType != "" && this.state.Result.SharewebTaskType != undefined && this.state.Result.SharewebTaskType != 'Task' ? <TasksTable props={this.state.Result}AllListId={AllListId} Context={this.props?.Context}  /> : ''}
           </div>
           <div className='row'>
             {/* {this.state.Result?.Portfolio_x0020_Type!=undefined &&<TaskWebparts props={this.state.Result}/>} */}

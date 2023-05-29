@@ -8,8 +8,7 @@ import TeamConfigurationCard from '../../../globalComponents/TeamConfiguration/T
 import ComponentPortPolioPopup from '../../EditPopupFiles/ComponentPortfolioSelection';
 import Picker from '../../../globalComponents/EditTaskPopup/SmartMetaDataPicker';
 import EditTaskPopup from '../../../globalComponents/EditTaskPopup/EditTaskPopup';
-import * as Moment from 'moment';
-import * as moment from "moment-timezone";
+import * as Moment from 'moment'
 import Tooltip from '../../../globalComponents/Tooltip';
 import { data } from 'jquery';
 
@@ -218,7 +217,7 @@ const CreateWS = (props: any) => {
             .items
             .select("FolderID,Shareweb_x0020_ID,SharewebTaskLevel1No,SharewebTaskLevel2No,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,FileLeafRef,Title,Id,Priority_x0020_Rank,PercentComplete,Priority,Created,Modified,SharewebTaskType/Id,SharewebTaskType/Title,SharewebTaskType/Level,SharewebTaskType/Prefix,ParentTask/Id,ParentTask/Title,ParentTask/Shareweb_x0020_ID,Author/Id,Author/Title,Editor/Id,Editor/Title")
             .expand("SharewebTaskType,ParentTask,Author,Editor,AssignedTo")
-            .filter(("SharewebTaskType/Title eq 'Workstream'") && ("ParentTask/Id eq '" + AllItems.Id + "'"))
+            .filter(("SharewebTaskType/Title eq 'Workstream'") && ("ParentTask/Id eq '" + AllItems?.Id + "'"))
             .orderBy("Created", false)
             .top(4999)
             .get()
@@ -370,7 +369,7 @@ const CreateWS = (props: any) => {
                 res.data['SiteIcon'] = AllItems.SiteIcon
                 res.data['listId'] = AllItems.listId
                 res.data['SharewebTaskType'] = { Title: 'Workstream' }
-                res.data.DueDate = res?.data?.DueDate ?  Moment(res?.data?.DueDate).format("MM-DD-YYYY"):'',
+                res.data.DueDate = res?.data?.DueDate ?  Moment(res?.data?.DueDate).format("DD-MM-YYYY"):'',
                     res.data['siteType'] = AllItems.siteType
                 res.data['Shareweb_x0020_ID'] = SharewebID
                 setIsPopupComponent(true)
@@ -609,9 +608,9 @@ const CreateWS = (props: any) => {
             setcheckedTask(false)
         }
 
-        let web = new Web(dynamicList.siteUrl);
+        let web = new Web(dynamicList?.siteUrl);
         TaskTypeItems = await web.lists
-            .getById(dynamicList.TaskTypeID)
+            .getById(dynamicList?.TaskTypeID)
             .items
             .select("Id,Title,Shareweb_x0020_Edit_x0020_Column,Prefix,Level")
             .top(4999)
@@ -687,13 +686,13 @@ const CreateWS = (props: any) => {
         if (item == 'Today') {
             setMyDate({ ...myDate, editDate: dates, selectDateName: item });
         }
-        if (item == 'Tomorrow') {
+         if (item == 'Tomorrow') {
             setMyDate({ ...myDate, editDate: dates.setDate(dates.getDate() + 1), selectDateName: item })
         }
-        if (item == 'This Week') {
+         if (item == 'This Week') {
             setMyDate({ ...myDate, editDate: new Date(dates.setDate(dates.getDate() - dates.getDay() + 7)), selectDateName: item });
         }
-        if (item == 'This Month') {
+         if (item == 'This Month') {
             let lastDay = new Date(dates.getFullYear(), dates.getMonth() + 1, 0);
             setMyDate({ ...myDate, editDate: lastDay, selectDateName: item  });
         }
@@ -705,10 +704,11 @@ const CreateWS = (props: any) => {
             setMyDate({ ...myDate, editDate: dates, selectDateName: "Today" });
         }
     })
-    
+
     const AddchildItem = () => {
         setShowChildData(true)
         setInputFields([...inputFields, {
+            Title:'',
             ItemRank: '',
             Priority: '',
             DueDate: '',
@@ -857,7 +857,7 @@ const CreateWS = (props: any) => {
                 isOpen={TaskStatuspopup}
                 onDismiss={closeTaskStatusUpdatePoup}
                 isBlocking={false}
-                className={(AllItems?.Portfolio_x0020_Type == 'Service')||(AllItems.Services!=undefined&& AllItems.Services.length>0) ? "serviepannelgreena" : ""}
+                className={AllItems?.Portfolio_x0020_Type == 'Service' ? "serviepannelgreena" : ""}
             >
                 <div className="modal-body border p-3 bg-f5f5 active">
                     <div className='row'>
@@ -1032,7 +1032,7 @@ const CreateWS = (props: any) => {
                                 // value={myDate != null ? Moment(new Date(myDate)).format('YYYY-MM-DD') : ''}
                                 // onChange={(e) => setMyDate(`${e.target.value}`)}
                                 // dateFormat="dd/MM/yyyy"
-                                value={myDate.editDate != null ? Moment(new Date(myDate.editDate)).format('YYYY-MM-DD') : ''}
+                                value={myDate.editDate != null ? Moment(new Date(myDate.editDate)).format('YYYY-MM-DD') : ""}
                                 onChange={(e: any) => setMyDate({ ...myDate, editDate: e.target.value })} />
 
                             <div className="">
@@ -1065,7 +1065,7 @@ const CreateWS = (props: any) => {
 
                     </div>
                     <div className='row mt-2'>
-                        <TeamConfigurationCard ItemInfo={AllItems} AllListId={dynamicList} parentCallback={DDComponentCallBack}></TeamConfigurationCard>
+                      {AllItems!=undefined && dynamicList!=undefined && <TeamConfigurationCard ItemInfo={AllItems} AllListId={dynamicList} parentCallback={DDComponentCallBack}></TeamConfigurationCard>}
                     </div>
                     <div className='row'>
                         <div className='col-sm-12 mt-1'>
@@ -1082,6 +1082,13 @@ const CreateWS = (props: any) => {
                             const { Priority, DueDate, ItemRank, Description } = data;
                             return (
                                 <div>
+                                      
+                                      <div className="col-sm-8 pad0">
+                            <label className="full-width"></label>
+                            <input className="full-width" type="text"
+                                placeholder="Enter Child Item Title"  onChange={(e: any) => AllItems.Title = e.target.value}
+                            />
+                        </div>
                                     <div className="row my-3" key={index}>
                                         <div className="col-sm-4">
                                             <fieldset>

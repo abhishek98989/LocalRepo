@@ -14,17 +14,19 @@ import GlobalCommanTable, { IndeterminateCheckbox } from "../GroupByReactTableCo
 import HighlightableCell from "../GroupByReactTableComponents/highlight";
 import ShowTaskTeamMembers from "../ShowTaskTeamMembers";
 var LinkedServicesBackupArray: any = [];
-const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType }: any) => {
+var MultiSelectedData: any = [];
+const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, selectionType }: any) => {
     const [modalIsOpen, setModalIsOpen] = React.useState(false);
     const [data, setData] = React.useState([]);
     const [CheckBoxData, setCheckBoxData] = React.useState([]);
-    const [selectedComponent, setSelectedComponent] = React.useState('');
+    const [selectedComponent, setSelectedComponent] = React.useState([]);
     const [AllUsers, setTaskUser] = React.useState([]);
+    const [ShowingAllData, setShowingData] = React.useState([])
     const PopupType: any = props?.PopupType;
     let GlobalArray: any = [];
     React.useEffect(() => {
         if (props.smartComponent != undefined && props.smartComponent.length > 0)
-            setSelectedComponent(props?.smartComponent[0]);
+            setSelectedComponent(props?.smartComponent);
         GetComponents();
 
     },
@@ -33,7 +35,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType }:
         Call(callBack, type, functionType);
     }
     const setModalIsOpenToFalse = () => {
-        Example([{}], ComponentType, "Close");
+        Example([], ComponentType, "Close");
     }
     const setModalIsOpenToOK = () => {
         if (props.linkedComponent != undefined && props?.linkedComponent.length == 0)
@@ -43,26 +45,67 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType }:
             props.linkedComponent = CheckBoxData;
         }
         setModalIsOpen(false);
-        Example(CheckBoxData, ComponentType, "Save");
+        if (selectionType == "Multi") {
+            Example(MultiSelectedData, ComponentType, "Save");
+        } else {
+            Example(CheckBoxData, ComponentType, "Save");
+        }
+        MultiSelectedData = [];
     }
     const handleOpen = (item: any) => {
         item.show = item.show = item?.show == true ? false : true;
         setData(data => ([...data]));
     };
     const GetComponents = async () => {
+        let selectedDataArray:any=[];
+        if(props?.smartComponent!=undefined&&props?.smartComponent?.length>0){
+            selectedDataArray=props?.smartComponent;
+        }
         let PropsObject: any = {
             MasterTaskListID: Dynamic.MasterTaskListID,
             siteUrl: Dynamic.siteUrl,
             ComponentType: ComponentType,
-            TaskUserListId: Dynamic.TaskUsertListID
+            TaskUserListId: Dynamic.TaskUsertListID,
+            selectedItems:selectedDataArray
         }
         GlobalArray = await globalCommon.GetServiceAndComponentAllData(PropsObject);
-        if (GlobalArray.GroupByData != undefined && GlobalArray.GroupByData.length > 0) {
+        if (GlobalArray?.GroupByData != undefined && GlobalArray?.GroupByData?.length > 0) {
             setData(GlobalArray.GroupByData);
             LinkedServicesBackupArray = GlobalArray.GroupByData;
         }
         setModalIsOpen(true);
     }
+
+
+    const callBackData = React.useCallback((elem: any, ShowingData: any,selectedArray:any) => {
+        if (selectionType == "Multi") {
+            // if (elem != undefined) {
+            //     const foundObject = MultiSelectedData.find((obj:any) => obj.Id === elem.Id);
+            //     if(foundObject){
+            //         MultiSelectedData.filter((obj:any) => obj.Id !== elem.Id);
+            //     }else{
+            //         MultiSelectedData.push(elem);
+            //     }
+               
+            // } else {
+            //     console.log("elem", elem);
+            // }
+            MultiSelectedData=selectedArray;
+        } else {
+            if (elem != undefined) {
+                setCheckBoxData([elem])
+                console.log("elem", elem);
+            } else {
+                console.log("elem", elem);
+            }
+            if (ShowingData != undefined) {
+                setShowingData([ShowingData])
+            }
+        }
+
+    }, []);
+
+
     const onRenderCustomHeader = (
     ) => {
         return (
@@ -260,22 +303,10 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType }:
             })
         })
     })
-    const [ShowingAllData, setShowingData] = React.useState([])
-    const callBackData = React.useCallback((elem: any, ShowingData: any) => {
-        if (elem != undefined) {
-            setCheckBoxData([elem])
-            console.log("elem", elem);
-        } else {
-            console.log("elem", elem);
-        }
-        if (ShowingData != undefined) {
-            setShowingData([ShowingData])
-        }
-    }, []);
 
     return (
         <Panel type={PanelType.custom} customWidth="1100px" isOpen={modalIsOpen} onDismiss={setModalIsOpenToFalse} onRenderHeader={onRenderCustomHeader}
-            isBlocking={false}
+            isBlocking={modalIsOpen}
             onRenderFooter={CustomFooter}
         >
             <div className={ComponentType == "Service" ? "serviepannelgreena" : ""}>
@@ -316,5 +347,4 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType }:
             </div>
         </Panel >
     )
-};
-export default ServiceComponentPortfolioPopup;
+}; export default ServiceComponentPortfolioPopup;

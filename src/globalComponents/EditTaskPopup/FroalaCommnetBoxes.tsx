@@ -146,12 +146,40 @@ export default function FroalaCommnetBoxes(textItems: any) {
             const obj = { ...State[id], [name]: value };
             copy[id] = obj;
             setState(copy);
-
         }
         if (e.target.matches("input")) {
             const { id } = e.currentTarget.dataset;
             const { name, value } = e.target;
             if (name == "SeeAbove") {
+                if (value == 'false') {
+                    const { id } = e.currentTarget.dataset;
+                    let Index = Number(id) + 1;
+                    let NewTitle: any = "";
+                    if (UpdatedFeedBackParentArray[id].Title != undefined && UpdatedFeedBackParentArray[id].Title.length > 0) {
+                        NewTitle = UpdatedFeedBackParentArray[id].Title + " (See " + Index + ")";
+                    } else {
+                        NewTitle = "( See " + Index + ")"
+                    }
+                    UpdatedFeedBackParentArray[id].Title = NewTitle;
+                    const copy = [...State];
+                    const obj = { ...State[id], Title: NewTitle };
+                    copy[id] = obj;
+                    setState(copy);
+                } else {
+                    const { id } = e.currentTarget.dataset;
+                    let Index = Number(id) + 1;
+                    let NewTitle: any = "";
+                    if (UpdatedFeedBackParentArray[id].Title != undefined && UpdatedFeedBackParentArray[id].Title.length > 0) {
+                        NewTitle = UpdatedFeedBackParentArray[id].Title.replace(`(See ${Index})`, "");
+                    } else {
+                        NewTitle = "";
+                    }
+                    UpdatedFeedBackParentArray[id].Title = NewTitle;
+                    const copy = [...State];
+                    const obj = { ...State[id], Title: NewTitle };
+                    copy[id] = obj;
+                    setState(copy);
+                }
                 UpdatedFeedBackParentArray[id].SeeAbove = (value == "true" ? false : true)
             }
             if (name == "Phone") {
@@ -265,19 +293,19 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             {ApprovalStatus ?
                                                 <div>
                                                     {/* {isCurrentUserApprover ? */}
-                                                        <div className={isCurrentUserApprover ? "alignCenter" : "alignCenter Disabled-Link"}>
-                                                            <span className="MR5 ng-scope" ng-disabled="Item.PercentComplete >= 80">
-                                                                <span title="Rejected" onClick={() => SmartLightUpdateSubComment(i, "Reject")}
-                                                                    className={obj.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
-                                                                >
-                                                                </span>
-                                                                <span title="Maybe" onClick={() => SmartLightUpdateSubComment(i, "Maybe")} className={obj.isShowLight == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
-                                                                </span>
-                                                                <span title="Approved" onClick={() => SmartLightUpdateSubComment(i, "Approve")} className={obj.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
-                                                                </span>
+                                                    <div className={isCurrentUserApprover ? "alignCenter mt-1" : "alignCenter Disabled-Link mt-1"}>
+                                                        <span className="MR5 ng-scope" ng-disabled="Item.PercentComplete >= 80">
+                                                            <span title="Rejected" onClick={() => SmartLightUpdateSubComment(i, "Reject")}
+                                                                className={obj.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
+                                                            >
                                                             </span>
-                                                        </div>
-                                                        {/* :null} */}
+                                                            <span title="Maybe" onClick={() => SmartLightUpdateSubComment(i, "Maybe")} className={obj.isShowLight == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
+                                                            </span>
+                                                            <span title="Approved" onClick={() => SmartLightUpdateSubComment(i, "Approve")} className={obj.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                    {/* :null} */}
                                                 </div>
                                                 : null
                                             }
@@ -363,6 +391,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                                 style={{ width: "100%" }}
                                                 className={`form-control`}
                                                 defaultValue={obj?.Title?.replace(/<[^>]*>/g, ' ')}
+                                                value={obj?.Title?.replace(/<[^>]*>/g, ' ')}
                                                 name='Title'
                                             ></textarea>
                                         </div>
@@ -396,6 +425,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             SmartLightPercentStatus={SmartLightPercentStatus}
                                             isCurrentUserApprover={isCurrentUserApprover}
                                             Context={Context}
+                                            isFirstComment ={false}
                                         />
                                     </div>
                                 </div>
@@ -414,7 +444,6 @@ export default function FroalaCommnetBoxes(textItems: any) {
                     />
                     : null
                 }
-
             </div>
         )
     }

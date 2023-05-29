@@ -22,6 +22,7 @@ export default function subCommentComponent(SubTextItemsArray: any) {
     const [ApprovalPointUserData, setApprovalPointUserData] = useState<any>([]);
     const [ApprovalPointCurrentIndex, setApprovalPointCurrentIndex] = useState('');
     const currentArrayIndex = SubTextItemsArray.currentIndex
+    const isFirstComment = SubTextItemsArray.isFirstComment
     let ApprovalStatus: any = SubTextItemsArray.ApprovalStatus;
     let SmartLightPercentStatus: any = SubTextItemsArray.SmartLightPercentStatus;
     let SmartLightStatus: any = SubTextItemsArray.SmartLightStatus;
@@ -224,14 +225,14 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                     className="col"
                                     onChange={handleChangeChild}
                                 >
-                                    <div className="Task-panel alignCenter justify-content-between ">
+                                    <div className="Task-panel alignCenter justify-content-between">
                                         <div className="alignCenter">
                                             <span className="me-1">{`${SubTextItemsArray.index}.${index + 1}`}</span>
                                             <div className="d-flex">
                                                 {ApprovalStatus ?
                                                     <div>
                                                         {/* {isCurrentUserApprover ? */}
-                                                        <div className={isCurrentUserApprover ? "alignCenter" : "alignCenter Disabled-Link"} >
+                                                        <div className={isCurrentUserApprover ? "alignCenter mt-1" : "alignCenter Disabled-Link mt-1"} >
                                                             <span className="MR5 ng-scope" ng-disabled="Item.PercentComplete >= 80">
                                                                 <span title="Rejected" onClick={() => SmartLightUpdateSubChildComment(index, "Reject")}
                                                                     className={obj.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
@@ -242,7 +243,7 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                                                 <span title="Approved" onClick={() => SmartLightUpdateSubChildComment(index, "Approve")} className={obj.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
                                                                 </span>
                                                             </span>
-                                                        </div> 
+                                                        </div>
                                                         {/* : null} */}
                                                     </div>
                                                     : null
@@ -345,7 +346,7 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                     <ApprovalHistoryPopup
                         ApprovalPointUserData={ApprovalPointUserData}
                         ApprovalPointCurrentIndex={ApprovalPointCurrentIndex}
-                        currentArrayIndex={currentArrayIndex + 1}
+                        currentArrayIndex={isFirstComment ? 0 : currentArrayIndex + 1}
                         ApprovalPointHistoryStatus={ApprovalPointHistoryStatus}
                         callBack={ApprovalHistoryPopupCallBack}
                     />
