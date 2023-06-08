@@ -211,12 +211,15 @@ export class TaskFeedbackCard extends React.Component<ITaskFeedbackProps, ITaskF
   }
 
   private clearComment(isSubtextComment: any, indexOfDeleteElement: any, indexOfSubtext: any) {
-    if (isSubtextComment) {
-      this.props.feedback["Subtext"][indexOfSubtext]?.Comments?.splice(indexOfDeleteElement, 1)
-    } else {
-      this.props.feedback["Comments"]?.splice(indexOfDeleteElement, 1);
+    if (confirm("Are you sure, you want to delete this?")) {
+      if (isSubtextComment) {
+        this.props.feedback["Subtext"][indexOfSubtext]?.Comments?.splice(indexOfDeleteElement, 1)
+      } else {
+        this.props.feedback["Comments"]?.splice(indexOfDeleteElement, 1);
+      }
+      this.props.onPost();
     }
-    this.props.onPost();
+    
   }
 
   private openEditModal(comment: any, indexOfUpdateElement: any, indexOfSubtext: any, isSubtextComment: any) {
