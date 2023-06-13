@@ -20,6 +20,7 @@ import "froala-editor/css/froala_editor.pkgd.min.css";
 
 import Froala from "react-froala-wysiwyg";
 //import "bootstrap/dist/css/bootstrap.min.css";
+let AutoCompleteItemsArray: any = [];
 var AssignedToIds: any = [];
 var ResponsibleTeamIds: any = [];
 var TaskTypeItems: any = [];
@@ -36,17 +37,18 @@ var BackupCat: any = "";
 var FeedBackItemArray: any = [];
 var NewArray: any = [];
 var feedbackArray: any = [];
-var dynamicList:any={}
+var dynamicList: any = {}
 var SiteTypeBackupArray: any = [];
-var counts=0
-var isModelChange= false
-var TaskImagess:any=[]
+var counts = 0
+var isModelChange = false
+var TaskImagess: any = []
 const defaultContent = "";
-let defaultfile =[];
+let defaultfile = [];
+let ShowCategoryDatabackup: any = [];
 const CreateActivity = (props: any) => {
-    if(props.SelectedProp != undefined && props.SelectedProp.SelectedProp != undefined){
+    if (props.SelectedProp != undefined && props.SelectedProp.SelectedProp != undefined) {
         dynamicList = props.SelectedProp.SelectedProp;
-    }else{
+    } else {
         dynamicList = props.SelectedProp;
     }
     if (props != undefined) {
@@ -59,13 +61,20 @@ const CreateActivity = (props: any) => {
 
         console.log(props)
     }
-    const [TaskImages,setTaskImages] = React.useState([])
+    const [TaskImages, setTaskImages] = React.useState([])
+    const [AllCategoryData, setAllCategoryData] = React.useState([]);
+    const [SearchedCategoryData, setSearchedCategoryData] = React.useState([]);
     const [TaskStatuspopup, setTaskStatuspopup] = React.useState(true);
     const [date, setDate] = React.useState(undefined);
     const [siteTypess, setSiteType] = React.useState([]);
     const [Categories, setCategories] = React.useState([]);
+    const [categorySearchKey, setCategorySearchKey] = React.useState('');
     const [checkedCat, setcheckedCat] = React.useState(false);
     const [IsComponent, setIsComponent] = React.useState(false);
+    const [PhoneStatus, setPhoneStatus] = React.useState(false);
+    const [EmailStatus, setEmailStatus] = React.useState(false);
+    const [ImmediateStatus, setImmediateStatus] = React.useState(false);
+    const [ApprovalStatus, setApprovalStatus] = React.useState(false);
     const [SharewebComponent, setSharewebComponent] = React.useState('');
     const [selectPriority, setselectPriority] = React.useState('');
     const [Priorityy, setPriorityy] = React.useState(false);
@@ -86,36 +95,37 @@ const CreateActivity = (props: any) => {
     const [count, setCount] = React.useState(0);
     var [isActive, setIsActive] = React.useState({ siteType: false, });
     const [save, setSave] = React.useState({ Title: '', siteType: [], linkedServices: [], recentClick: undefined, DueDate: undefined, taskCategory: '' })
-    const [post, setPost] = React.useState({ Title: ''})
-   
+    const [post, setPost] = React.useState({ Title: '' })
+
 
     var CheckCategory: any = []
     CheckCategory.push({ "TaxType": "Categories", "Title": "Phone", "Id": 199, "ParentId": 225 }, { "TaxType": "Categories", "Title": "Email Notification", "Id": 276, "ParentId": 225 }, { "TaxType": "Categories", "Title": "Approval", "Id": 227, "ParentId": 225 },
         { "TaxType": "Categories", "Title": "Immediate", "Id": 228, "parentId": 225 });
 
 
-  
+
     React.useEffect(() => {
+        loadAllCategoryData("Categories");
         if (AllItems?.Clientcategories != undefined && AllItems?.Clientcategories?.length > 0) {
             AllItems.Clientcategories.forEach((value: any) => {
                 ClientCategoriesData.push(value)
             })
         }
         if (AllItems?.Portfolio_x0020_Type != undefined) {
-            if (AllItems?.Portfolio_x0020_Type == 'Component'|| (AllItems.Component != undefined && AllItems.Component.length >0)) {
+            if (AllItems?.Portfolio_x0020_Type == 'Component' || (AllItems.Component != undefined && AllItems.Component.length > 0)) {
                 smartComponentData.push(AllItems);
             }
             smartComponentData = smartComponentData?.filter((val: any, id: any, array: any) => {
                 return array.indexOf(val) == id;
             })
-    
-            if (AllItems?.Portfolio_x0020_Type == 'Service' || (AllItems.Service != undefined && AllItems.Service.length >0) ) {
+
+            if (AllItems?.Portfolio_x0020_Type == 'Service' || (AllItems.Service != undefined && AllItems.Service.length > 0)) {
                 linkedComponentData.push(AllItems);
             }
             linkedComponentData = linkedComponentData?.filter((val: any, id: any, array: any) => {
                 return array.indexOf(val) == id;
             })
-    
+
             linkedComponentData = linkedComponentData?.filter((val: any, id: any, array: any) => {
                 return array.indexOf(val) == id;
             })
@@ -127,7 +137,7 @@ const CreateActivity = (props: any) => {
             if (AllItems?.Component != undefined && AllItems?.Component?.length > 0) {
                 smartComponentData.push(AllItems);
             }
-    
+
             if (AllItems?.Services != undefined && AllItems?.Services?.length > 0) {
                 linkedComponentData.push(AllItems);
             }
@@ -137,11 +147,11 @@ const CreateActivity = (props: any) => {
             smartComponentData = smartComponentData?.filter((val: any, id: any, array: any) => {
                 return array.indexOf(val) == id;
             })
-    
+
         }
         GetSmartMetadata();
     }, [linkedComponentData])
- 
+
 
     const GetSmartMetadata = async () => {
         var SitesTypes: any = [];
@@ -175,33 +185,33 @@ const CreateActivity = (props: any) => {
                 }
             })
 
-            if(AllItems.listId != undefined){
-            let web = new Web(dynamicList.siteUrl);
-            let componentDetails = [];
-            componentDetails = await web.lists
-                .getById(AllItems.listId)
-                .items
-                .select("FolderID,Shareweb_x0020_ID,SharewebTaskLevel1No,SharewebTaskLevel2No,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,FileLeafRef,Title,Id,Priority_x0020_Rank,PercentComplete,Priority,Created,Modified,SharewebTaskType/Id,SharewebTaskType/Title,SharewebTaskType/Level,SharewebTaskType/Prefix,ParentTask/Id,ParentTask/Title,ParentTask/Shareweb_x0020_ID,Author/Id,Author/Title,Editor/Id,Editor/Title")
-                .expand("SharewebTaskType,ParentTask,Author,Editor,AssignedTo")
-                .filter(("SharewebTaskType/Title eq 'Workstream'") && ("ParentTask/Id eq '" + AllItems?.Id + "'"))
-                .orderBy("Created", false)
-                .top(4999)
-                .get()
-            console.log(componentDetails)
-            if (componentDetails?.length == 0) {
-                WorstreamLatestId = 1;
-            } else {
-                WorstreamLatestId = componentDetails[0]?.SharewebTaskLevel2No + 1;
+            if (AllItems.listId != undefined) {
+                let web = new Web(dynamicList.siteUrl);
+                let componentDetails = [];
+                componentDetails = await web.lists
+                    .getById(AllItems.listId)
+                    .items
+                    .select("FolderID,Shareweb_x0020_ID,SharewebTaskLevel1No,SharewebTaskLevel2No,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,FileLeafRef,Title,Id,Priority_x0020_Rank,PercentComplete,Priority,Created,Modified,SharewebTaskType/Id,SharewebTaskType/Title,SharewebTaskType/Level,SharewebTaskType/Prefix,ParentTask/Id,ParentTask/Title,ParentTask/Shareweb_x0020_ID,Author/Id,Author/Title,Editor/Id,Editor/Title")
+                    .expand("SharewebTaskType,ParentTask,Author,Editor,AssignedTo")
+                    .filter(("SharewebTaskType/Title eq 'Workstream'") && ("ParentTask/Id eq '" + AllItems?.Id + "'"))
+                    .orderBy("Created", false)
+                    .top(4999)
+                    .get()
+                console.log(componentDetails)
+                if (componentDetails?.length == 0) {
+                    WorstreamLatestId = 1;
+                } else {
+                    WorstreamLatestId = componentDetails[0]?.SharewebTaskLevel2No + 1;
+                }
+                getTasktype();
             }
-            getTasktype();
         }
-        }
-      
+
 
         setSiteType(SitesTypes)
         SiteTypeBackupArray = SitesTypes;
 
-       
+
     }
     const getTasktype = async () => {
         if (AllItems?.NoteCall == 'Task') {
@@ -258,12 +268,16 @@ const CreateActivity = (props: any) => {
             }
         })
         setSiteType(tempArray);
-      
+
         getActivitiesDetails(value)
-      
+
         setSave({ ...save, recentClick: isActiveItem })
     };
     const Call = React.useCallback((item1: any, type: any) => {
+        setIsComponentPicker(false);
+        setIsComponent(false);
+        setIsClientPopup(false);
+        setSearchedCategoryData([]);
         if (type == "SmartComponent") {
             var ComponentData: any = []
             if (AllItems != undefined && item1 != undefined) {
@@ -282,17 +296,33 @@ const CreateActivity = (props: any) => {
                 title.Title = item1.categories;
                 item1.categories.map((itenn: any) => {
                     if (!isItemExists(CategoriesData, itenn.Id)) {
+
                         CategoriesData.push(itenn);
                     }
 
                 })
                 item1.SharewebCategories?.map((itenn: any) => {
+
                     CategoriesData.push(itenn)
                 })
 
                 setCategoriesData(CategoriesData)
+            }
+        }
+        if (type = "Category-Task-Footertable") {
 
+            setPhoneStatus(false)
+            setEmailStatus(false)
+            setImmediateStatus(false)
+            setApprovalStatus(false)
 
+            if (item1 != undefined && item1.length > 0) {
+                item1?.map((itenn: any) => {
+                    selectedCategoryTrue(itenn.Title)
+
+                })
+
+                setCategoriesData(item1)
             }
         }
         if (type == "ClientCategory") {
@@ -336,10 +366,8 @@ const CreateActivity = (props: any) => {
             })
             //   setUpdate(update+2)
         }
-        setIsComponentPicker(false);
-        setIsComponent(false);
-        setIsClientPopup(false);
-        
+
+
     }, []);
     const EditComponentPicker = (item: any) => {
         setIsComponentPicker(true);
@@ -367,7 +395,7 @@ const CreateActivity = (props: any) => {
         imageAllowedTypes: ["jpeg", "jpg", "png", "gif"],
         placeholderText: "Copy & Paste Image Here!",
         key: 'nB3B2F2A1C2F2E1rA1C7A6D6E1D4G3E1C10C6eUd1QBRVCDLPAZMBQ==',
-    
+
         events: {
             "image.beforeUpload": function (files: any, arg1: any, arg2: any) {
                 defaultfile = files;
@@ -390,12 +418,12 @@ const CreateActivity = (props: any) => {
                         var base64String: any = reader.result;
                         console.log('Base64 String - ', base64String);
                         ImageRawData = base64String.substring(base64String.indexOf(', ') + 1)
-    
+
                     }
                     if (ImageRawData.length > 0) {
-                      imageArrayUpdateFunction(ImageRawData);
+                        imageArrayUpdateFunction(ImageRawData);
                     }
-    
+
                 }
                 editor.popups.hideAll();
                 return false;
@@ -416,7 +444,7 @@ const CreateActivity = (props: any) => {
     //     imageAllowedTypes: ["jpeg", "jpg", "png", "gif"],
     //     placeholderText: "Copy & Paste Image Here!",
     //     key: 'nB3B2F2A1C2F2E1rA1C7A6D6E1D4G3E1C10C6eUd1QBRVCDLPAZMBQ==',
-    
+
     //     events: {
     //         "image.beforeUpload": function (defaultfile: any, arg1: any, arg2: any) {
     //             // defaultfile = files;
@@ -440,36 +468,36 @@ const CreateActivity = (props: any) => {
     //                     var base64String: any = reader.result;
     //                     console.log('Base64 String - ', base64String);
     //                     ImageRawData = base64String.substring(base64String.indexOf(', ') + 1)
-    
+
     //                 }
     //                 if (ImageRawData.length > 0) {
     //                   imageArrayUpdateFunction(ImageRawData);
     //                 }
-    
+
     //             }
     //             editor.popups.hideAll();
     //             return false;
     //         }
     //     }
     // };
-    const copyImage=(dt:any)=>{
-       
-            let DataObject = {
-                data_url: dt,
-                file: "Image/jpg"
-            }
-            let arrayIndex: any = TaskImages?.length
-            TaskImagess.push(DataObject)
-            setTaskImages(TaskImagess)
-        
-       
+    const copyImage = (dt: any) => {
+
+        let DataObject = {
+            data_url: dt,
+            file: "Image/jpg"
+        }
+        let arrayIndex: any = TaskImages?.length
+        TaskImagess.push(DataObject)
+        setTaskImages(TaskImagess)
+
+
     }
-   const  imageArrayUpdateFunction = (ImageData: any) => {
-    let tempArray = ImageData.toString();
-    let data1 = tempArray.split('"')
-    copyImage(data1[1]);
-}
-    const FlorarImageUploadComponentCallBack = (dt:any) => {
+    const imageArrayUpdateFunction = (ImageData: any) => {
+        let tempArray = ImageData.toString();
+        let data1 = tempArray.split('"')
+        copyImage(data1[1]);
+    }
+    const FlorarImageUploadComponentCallBack = (dt: any) => {
         copyImage(dt)
     }
     const deleteCategories = (id: any) => {
@@ -508,8 +536,8 @@ const CreateActivity = (props: any) => {
     }
     var LatestTaskNumber: any = ''
     var SharewebID: any = ''
-   
-    const getActivitiesDetails =  async(item: any) => {
+
+    const getActivitiesDetails = async (item: any) => {
         console.log(item)
         let web = new Web(dynamicList.siteUrl);
         let componentDetails = [];
@@ -572,9 +600,9 @@ const CreateActivity = (props: any) => {
                 }
             }
         })
-    
-    
-    
+
+
+
 
     }
     const closeTaskStatusUpdatePoup = (res: any) => {
@@ -590,14 +618,14 @@ const CreateActivity = (props: any) => {
             }
         });
     };
-    
+
     const HtmlEditorCallBack = React.useCallback((EditorData: any) => {
-      
+
         if (EditorData.length > 8) {
             AllItems.Body = EditorData;
 
             let param: any = Moment(new Date().toLocaleString())
-          
+
             FeedBackItem['Title'] = "FeedBackPicture" + param;
             FeedBackItem['FeedBackDescriptions'] = [];
             FeedBackItem.FeedBackDescriptions = [{
@@ -605,9 +633,9 @@ const CreateActivity = (props: any) => {
             }]
             FeedBackItem['ImageDate'] = "" + param;
             FeedBackItem['Completed'] = '';
-           
+
         }
-       
+
 
     }, [])
     const saveNoteCall = () => {
@@ -650,10 +678,10 @@ const CreateActivity = (props: any) => {
 
         // })
         if (linkedComponentData.length == 0) {
-            if(portfolioId != ''){
+            if (portfolioId != '') {
                 RelevantPortfolioIds.push(portfolioId)
             }
-            
+
         }
         if (linkedComponentData != undefined && linkedComponentData?.length > 0) {
             linkedComponentData?.map((com: any) => {
@@ -752,7 +780,7 @@ const CreateActivity = (props: any) => {
                         res.data['listId'] = value?.listId
                         res.data['SharewebTaskType'] = { Title: 'Activities' }
                         res.data.DueDate = date ? Moment(date).format("MM-DD-YYYY") : null,
-                        res.data['siteType'] = value.siteName
+                            res.data['siteType'] = value.siteName
                         res.data['Shareweb_x0020_ID'] = value?.SharewebID
                         res.data.ParentTaskId = AllItems.Id
 
@@ -760,7 +788,7 @@ const CreateActivity = (props: any) => {
                         let fileName: any = '';
                         let tempArray: any = [];
                         // let SiteUrl = SiteUrl;
-                        if(TaskImages != undefined && TaskImages.length>0){
+                        if (TaskImages != undefined && TaskImages.length > 0) {
                             TaskImages?.map(async (imgItem: any, index: number) => {
                                 if (imgItem.data_url != undefined && imgItem.file != undefined) {
                                     let date = new Date()
@@ -769,39 +797,39 @@ const CreateActivity = (props: any) => {
                                     let ImgArray = {
                                         ImageName: fileName,
                                         UploadeDate: Moment(new Date()).format("DD/MM/YYYY"),
-                                        imageDataUrl:dynamicList?.siteUrl + '/Lists/' + res.data.siteType + '/Attachments/' + res?.data.Id + '/' + fileName,
+                                        imageDataUrl: dynamicList?.siteUrl + '/Lists/' + res.data.siteType + '/Attachments/' + res?.data.Id + '/' + fileName,
                                         ImageUrl: imgItem.data_url,
                                         //UserImage: res.AuthotImage != null ? res.data.AuthotImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
-                                       // UserName: res.AuthotName != null ? res.AuthotName : res.AuthotName,
+                                        // UserName: res.AuthotName != null ? res.AuthotName : res.AuthotName,
                                         // UserImage: 'https://hhhhteams.sharepoint.com/sites/HHHH/SP/PublishingImages/Portraits/Samir%20Gayatri.jpg?updated=194315',
                                         // UserName: "Test Dev",
                                     };
                                     tempArray.push(ImgArray);
                                 }
-                                })
-                                tempArray?.map((tempItem: any) => {
-                                    tempItem.Checked = false
-                                })
-                                var src = TaskImages[0].data_url?.split(",")[1];
-                                var byteArray = new Uint8Array(atob(src)?.split("")?.map(function (c) {
-                                    return c.charCodeAt(0);
-                                }));
-                                const data: any = byteArray
-                                var fileData = '';
-                                for (var i = 0; i < byteArray.byteLength; i++) {
-                                    fileData += String.fromCharCode(byteArray[i]);
-                                }
-                                if (res.data.listId != undefined){
-                                        let web = new Web(dynamicList?.siteUrl);
-                                        let item =  web.lists.getById(res.data.listId).items.getById(res.data.Id);
-                                        item.attachmentFiles.add(fileName, data);
-                                        console.log("Attachment added");
-                                        UpdateBasicImageInfoJSON(tempArray,res.data); 
-                                   
-                                }
+                            })
+                            tempArray?.map((tempItem: any) => {
+                                tempItem.Checked = false
+                            })
+                            var src = TaskImages[0].data_url?.split(",")[1];
+                            var byteArray = new Uint8Array(atob(src)?.split("")?.map(function (c) {
+                                return c.charCodeAt(0);
+                            }));
+                            const data: any = byteArray
+                            var fileData = '';
+                            for (var i = 0; i < byteArray.byteLength; i++) {
+                                fileData += String.fromCharCode(byteArray[i]);
+                            }
+                            if (res.data.listId != undefined) {
+                                let web = new Web(dynamicList?.siteUrl);
+                                let item = web.lists.getById(res.data.listId).items.getById(res.data.Id);
+                                item.attachmentFiles.add(fileName, data);
+                                console.log("Attachment added");
+                                UpdateBasicImageInfoJSON(tempArray, res.data);
+
+                            }
                         }
-                      
-                        
+
+
                         console.log(res);
                         closeTaskStatusUpdatePoup(res);
                         console.log(res);
@@ -839,17 +867,17 @@ const CreateActivity = (props: any) => {
                         if (Task?.Events != undefined && Task?.Portfolio_x0020_Type == 'Events') {
                             SharewebID = 'EA' + AllItems?.SharewebTaskLevel1No + '-T' + LatestId;
                         }
-                        if(AllItems.SharewebTaskLevel1No == undefined){
-                            WorstreamLatestId  = AllItems?.SharewebTaskLevel1No;
+                        if (AllItems.SharewebTaskLevel1No == undefined) {
+                            WorstreamLatestId = AllItems?.SharewebTaskLevel1No;
                         }
-                       
+
                         let web = new Web(dynamicList.siteUrl);
                         await web.lists.getById(value.listId).items.add({
                             Title: save.Title != undefined && save.Title != '' ? save.Title : post.Title,
                             ComponentId: { "results": Component },
                             Categories: categoriesItem ? categoriesItem : null,
                             Priority_x0020_Rank: AllItems.Priority_x0020_Rank,
-                           // DueDate: date != undefined ? new Date(date).toDateString() : date,
+                            // DueDate: date != undefined ? new Date(date).toDateString() : date,
                             DueDate: date != undefined ? Moment(date).format("MM-DD-YYYY") : null,
                             ServicesId: { "results": RelevantPortfolioIds },
                             SharewebCategoriesId: { "results": CategoryID },
@@ -870,14 +898,14 @@ const CreateActivity = (props: any) => {
                             res.data['SiteIcon'] = value.Item_x005F_x0020_Cover?.Url
                             res.data['SharewebTaskType'] = { Title: 'Task' }
                             res.data.DueDate = date ? Moment(date).format("MM-DD-YYYY") : null,
-                            res.data['Shareweb_x0020_ID'] = SharewebID
+                                res.data['Shareweb_x0020_ID'] = SharewebID
                             res.data['siteType'] = value?.siteName
-                            res.data.Created=new Date();
-                            res.data.Author={
+                            res.data.Created = new Date();
+                            res.data.Author = {
                                 Id: res?.data?.AuthorId
                             }
-                            res.data.listId=value.listId
-                            
+                            res.data.listId = value.listId
+
                             console.log(res);
                             closeTaskStatusUpdatePoup(res);
                         })
@@ -891,33 +919,33 @@ const CreateActivity = (props: any) => {
 
 
     }
-  const UpdateBasicImageInfoJSON=async (tempArray:any,item:any)=>{
-    var UploadImageArray: any = []
-    if (tempArray != undefined && tempArray.length > 0) {
-        tempArray?.map((imgItem: any) => {
-            if (imgItem.imageDataUrl != undefined && imgItem.imageDataUrl != null) {
-                let tempObject: any = {
-                    ImageName: imgItem.ImageName,
-                    ImageUrl: imgItem.imageDataUrl,
-                    UploadeDate: imgItem.UploadeDate,
-                   // UserName: imgItem.UserName,
-                   // UserImage: imgItem.UserImage
+    const UpdateBasicImageInfoJSON = async (tempArray: any, item: any) => {
+        var UploadImageArray: any = []
+        if (tempArray != undefined && tempArray.length > 0) {
+            tempArray?.map((imgItem: any) => {
+                if (imgItem.imageDataUrl != undefined && imgItem.imageDataUrl != null) {
+                    let tempObject: any = {
+                        ImageName: imgItem.ImageName,
+                        ImageUrl: imgItem.imageDataUrl,
+                        UploadeDate: imgItem.UploadeDate,
+                        // UserName: imgItem.UserName,
+                        // UserImage: imgItem.UserImage
+                    }
+                    UploadImageArray.push(tempObject)
+                } else {
+                    UploadImageArray.push(imgItem);
                 }
-                UploadImageArray.push(tempObject)
-            } else {
-                UploadImageArray.push(imgItem);
+            })
+        }
+        if (UploadImageArray != undefined && UploadImageArray.length > 0) {
+            try {
+                let web = new Web(dynamicList?.siteUrl);
+                await web.lists.getById(item.listId).items.getById(item.Id).update({ BasicImageInfo: JSON.stringify(UploadImageArray) }).then((res: any) => { console.log("Image JSON Updated !!") })
+            } catch (error) {
+                console.log("Error Message :", error);
             }
-        })
-    }
-    if (UploadImageArray != undefined && UploadImageArray.length > 0) {
-        try {
-            let web = new Web(dynamicList?.siteUrl);
-            await web.lists.getById(item.listId).items.getById(item.Id).update({ BasicImageInfo: JSON.stringify(UploadImageArray) }).then((res: any) => { console.log("Image JSON Updated !!") })
-        } catch (error) {
-            console.log("Error Message :", error);
         }
     }
-  }
     const DDComponentCallBack = (dt: any) => {
         // setTeamConfig(dt)
         setisDropItem(dt.isDrop)
@@ -999,10 +1027,10 @@ const CreateActivity = (props: any) => {
     }
     const onRenderCustomHeaderMain = () => {
         return (
-            <div className={AllItems?.Portfolio_x0020_Type == 'Service'||AllItems?.Services?.length>0?"serviepannelgreena d-flex full-width pb-1":"d-flex full-width pb-1"} >
+            <div className={AllItems?.Portfolio_x0020_Type == 'Service' || AllItems?.Services?.length > 0 ? "serviepannelgreena d-flex full-width pb-1" : "d-flex full-width pb-1"} >
                 <div style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
                     <h2 className='heading'>
-                        {`Create Quick Option - ${AllItems?.NoteCall}` }
+                        {`Create Quick Option - ${AllItems?.NoteCall}`}
                     </h2>
                 </div>
                 <Tooltip ComponentId={AllItems?.Id} />
@@ -1015,14 +1043,14 @@ const CreateActivity = (props: any) => {
             value.selectSiteName = true;
         })
         setSite('Site Name')
-        setCount(count+1)
+        setCount(count + 1)
     }
-    let ArrayImage: any[]=[]
+    let ArrayImage: any[] = []
     const onModelChange = (model: any) => {
-        isModelChange=true;
+        isModelChange = true;
         let edData = model;
         let imgArray = model.split("=")
-       
+
         imgArray?.map((data: any, index: any) => {
             if (imgArray?.length > 8) {
                 if (index == 1) {
@@ -1035,6 +1063,243 @@ const CreateActivity = (props: any) => {
         elem.innerHTML = edData;
         imageArrayUpdateFunction(ArrayImage);
     };
+
+    //  ###################  Smart Category Auto Suggesution Functions  ##################
+    const autoSuggestionsForCategory = (e: any) => {
+        let searchedKey: any = e.target.value;
+        setCategorySearchKey(e.target.value);
+        let tempArray: any = [];
+        if (searchedKey?.length > 0) {
+            AutoCompleteItemsArray?.map((itemData: any) => {
+                if (itemData.Newlabel.toLowerCase().includes(searchedKey.toLowerCase())) {
+                    tempArray.push(itemData);
+                }
+            })
+            setSearchedCategoryData(tempArray);
+        } else {
+            setSearchedCategoryData([]);
+        }
+    }
+    var AutoCompleteItems: any = [];
+    const loadAllCategoryData = function (SmartTaxonomy: any) {
+        var AllTaskusers = []
+        var AllMetaData: any = []
+        var TaxonomyItems: any = []
+        var url = (`${dynamicList.siteUrl}/_api/web/lists/getbyid('${dynamicList?.SmartMetadataListID}')/items?$select=Id,Title,IsVisible,ParentID,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable,IsSendAttentionEmail/Id,IsSendAttentionEmail/Title,IsSendAttentionEmail/EMail&$expand=IsSendAttentionEmail&$orderby=SortOrder&$top=4999&$filter=TaxType eq '` + SmartTaxonomy + "'")
+        $.ajax({
+            url: url,
+            method: "GET",
+            headers: {
+                "Accept": "application/json; odata=verbose"
+            },
+            success: function (data) {
+                AllTaskusers = data.d.results;
+                $.each(AllTaskusers, function (index: any, item: any) {
+                    if (item.Title.toLowerCase() == 'pse' && item.TaxType == 'Client Category') {
+                        item.newTitle = 'EPS';
+                    }
+                    else if (item.Title.toLowerCase() == 'e+i' && item.TaxType == 'Client Category') {
+                        item.newTitle = 'EI';
+                    }
+                    else if (item.Title.toLowerCase() == 'education' && item.TaxType == 'Client Category') {
+                        item.newTitle = 'Education';
+                    }
+                    else {
+                        item.newTitle = item.Title;
+                    }
+                    AllMetaData.push(item);
+
+                })
+                if (SmartTaxonomy == "Categories") {
+                    TaxonomyItems = loadSmartTaxonomyPortfolioPopup(AllMetaData, SmartTaxonomy);
+                    setAllCategoryData(TaxonomyItems)
+                    TaxonomyItems?.map((items: any) => {
+                        if (items.Title == "Actions") {
+                            ShowCategoryDatabackup = ShowCategoryDatabackup.concat(items.childs)
+                        }
+                    })
+
+                }
+            },
+            error: function (error: any) {
+                console.log('Error:', error)
+            }
+        })
+    };
+    // **************** this is for Smart Category Data fetch from Backend and Call Back functions ******************
+
+    //  ######################  This is Smart Category Get Data Call From Backend and Bulid Nested Array According to Parent Child Categories #######################
+
+    var loadSmartTaxonomyPortfolioPopup = (AllTaxonomyItems: any, SmartTaxonomy: any) => {
+        var TaxonomyItems: any = [];
+        var uniqueNames: any = [];
+        $.each(AllTaxonomyItems, function (index: any, item: any) {
+            if (item.ParentID == 0 && SmartTaxonomy == item.TaxType) {
+                TaxonomyItems.push(item);
+                getChilds(item, AllTaxonomyItems);
+                if (item.childs != undefined && item.childs.length > 0) {
+                    TaxonomyItems.push(item)
+                }
+                uniqueNames = TaxonomyItems.filter((val: any, id: any, array: any) => {
+                    return array.indexOf(val) == id;
+                });
+            }
+        });
+        return uniqueNames;
+    }
+    const getChilds = (item: any, items: any) => {
+        item.childs = [];
+        $.each(items, function (index: any, childItem: any) {
+            if (childItem.ParentID != undefined && parseInt(childItem.ParentID) == item.ID) {
+                childItem.isChild = true;
+                item.childs.push(childItem);
+                getChilds(childItem, items);
+            }
+        });
+    }
+
+    if (AllCategoryData?.length > 0) {
+        AllCategoryData?.map((item: any) => {
+            if (item.newTitle != undefined) {
+                item['Newlabel'] = item.newTitle;
+                AutoCompleteItems.push(item)
+                if (item.childs != null && item.childs != undefined && item.childs.length > 0) {
+                    item.childs.map((childitem: any) => {
+                        if (childitem.newTitle != undefined) {
+                            childitem['Newlabel'] = item['Newlabel'] + ' > ' + childitem.Title;
+                            AutoCompleteItems.push(childitem)
+                        }
+                        if (childitem.childs.length > 0) {
+                            childitem.childs.map((subchilditem: any) => {
+                                if (subchilditem.newTitle != undefined) {
+                                    subchilditem['Newlabel'] = childitem['Newlabel'] + ' > ' + subchilditem.Title;
+                                    AutoCompleteItems.push(subchilditem)
+                                }
+                            })
+                        }
+                    })
+                }
+            }
+        })
+    }
+
+    AutoCompleteItemsArray = AutoCompleteItems.reduce(function (previous: any, current: any) {
+        var alredyExists = previous.filter(function (item: any) {
+            return item.Title === current.Title
+        }).length > 0
+        if (!alredyExists) {
+            previous.push(current)
+        }
+        return previous
+    }, [])
+
+    //  ###################  Smart Category slection Common Functions with Validations ##################
+
+    const setSelectedCategoryData = (selectCategoryData: any, usedFor: any) => {
+        setCategorySearchKey("");
+        console.log(selectCategoryData)
+        selectedCategoryTrue(selectCategoryData[0].Title)
+
+        setIsComponentPicker(false);
+        let data: any = CategoriesData
+        data = data.concat(selectCategoryData)
+        setCategoriesData(CategoriesData => [...data])
+
+
+        setSearchedCategoryData([]);
+
+        // setCategoriesData(data)
+    }
+    // ==============CHANGE Category function==============
+    const CategoryChange = (e: any, typeValue: any, IdValue: any) => {
+        let statusValue: any = e.currentTarget.checked;
+        let type: any = typeValue;
+        let Id: any = IdValue;
+        if (statusValue) {
+
+            selectedCategoryTrue(type)
+            console.log(ShowCategoryDatabackup)
+            let array: any = [];
+
+            array = array.concat(CategoriesData);
+            ShowCategoryDatabackup.map((items: any) => {
+                if (items.Title == type) {
+                    array.push(items)
+                }
+            })
+
+            setCategoriesData(CategoriesData => [...array])
+        }
+        if (statusValue == false) {
+
+            selectedCategoryFalse(type)
+            console.log(ShowCategoryDatabackup)
+            let array: any = [];
+
+            array = array.concat(CategoriesData);
+            array?.map((item: any, index: any) => {
+
+                if (item.Title == type) {
+                    array.splice(index, 1);
+                }
+            })
+            setCategoriesData(CategoriesData => [...array])
+        }
+
+
+    }
+
+    const selectedCategoryFalse = (type: any) => {
+        if (type == "Phone") {
+            setPhoneStatus(false)
+        }
+        if (type == "Email Notification") {
+            setEmailStatus(false)
+        }
+        if (type == "Immediate") {
+            setImmediateStatus(false)
+        }
+        if (type == "Approval") {
+            setApprovalStatus(false)
+        }
+    }
+    const selectedCategoryTrue = (type: any) => {
+        if (type == "Phone") {
+            setPhoneStatus(true)
+        }
+        if (type == "Email Notification") {
+            setEmailStatus(true)
+        }
+        if (type == "Immediate") {
+            setImmediateStatus(true)
+        }
+        if (type == "Approval") {
+            setApprovalStatus(true)
+        }
+    }
+    // ################ this is for Smart category change and remove function #############
+
+    //   const removeCategoryItem = (TypeCategory: any, TypeId: any) => {
+    //     let tempString: any;
+
+    //     let tempArray2: any = [];
+    //     tempShareWebTypeData = [];
+    //     ShareWebTypeData?.map((dataType: any) => {
+    //         if (dataType.Id != TypeId) {
+    //             tempArray2.push(dataType)
+    //             tempShareWebTypeData.push(dataType);
+    //         }
+    //     })
+    //     if (tempArray2 != undefined && tempArray2.length > 0) {
+    //         tempArray2.map((itemData: any) => {
+    //             tempString = tempString != undefined ? tempString + ";" + itemData.Title : itemData.Title
+    //         })
+    //     }
+    //     setCategoriesData(tempString);
+    //     tempCategoryData = tempString;
+    //     setShareWebTypeData(tempArray2);
+    // }
+
     return (
         <>
             <Panel
@@ -1044,13 +1309,13 @@ const CreateActivity = (props: any) => {
                 isOpen={TaskStatuspopup}
                 onDismiss={closeTaskStatusUpdatePoup}
                 isBlocking={false}
-                className={AllItems?.Portfolio_x0020_Type == 'Service'||AllItems?.Services?.length>0?"serviepannelgreena":""}
-                
+                className={AllItems?.Portfolio_x0020_Type == 'Service' || AllItems?.Services?.length > 0 ? "serviepannelgreena" : ""}
+
             >
-                <div className= "modal-body active">
+                <div className="modal-body active">
 
 
-                    <div className={AllItems?.Portfolio_x0020_Type == 'Events' ? 'app component clearfix eventpannelorange' : (AllItems?.Portfolio_x0020_Type == 'Service'||AllItems?.Services?.length>0 ? 'app component clearfix serviepannelgreena' : 'app component clearfix')}>
+                    <div className={AllItems?.Portfolio_x0020_Type == 'Events' ? 'app component clearfix eventpannelorange' : (AllItems?.Portfolio_x0020_Type == 'Service' || AllItems?.Services?.length > 0 ? 'app component clearfix serviepannelgreena' : 'app component clearfix')}>
                         <div className='row mt-2 border Create-taskpage'>
                             {(AllItems?.Item_x0020_Type == 'Component' || AllItems?.Item_x0020_Type == 'SubComponent' || AllItems?.Item_x0020_Type == 'Feature') &&
                                 <fieldset>
@@ -1083,11 +1348,11 @@ const CreateActivity = (props: any) => {
                             <div className='col-sm-10'>
                                 <div className="row">
                                     <div className="col-sm-10 mb-10 mt-2">
-                                        <label className="full_width"><span style={{color:"black"}}>
-                                            Task Name </span> <a id='siteName' 
+                                        <label className="full_width"><span style={{ color: "black" }}>
+                                            Task Name </span> <a id='siteName'
                                                 onClick={SelectSiteType}> Site Name</a>
                                         </label>
-                                        <input className="form-control" type="text"  placeholder="Enter Task Name"
+                                        <input className="form-control" type="text" placeholder="Enter Task Name"
                                             defaultValue={`${AllItems?.Title}${site}`} onChange={(e) => setPost({ ...post, Title: e.target.value })} />
 
                                     </div>
@@ -1096,7 +1361,7 @@ const CreateActivity = (props: any) => {
                                         <input type="date" className="form-control"
                                             defaultValue={Moment(date).format("DD/MM/YYYY")}
                                             onChange={handleDatedue}
-                                            
+
 
 
                                         />
@@ -1104,24 +1369,24 @@ const CreateActivity = (props: any) => {
                                 </div>
                                 <div className='row mt-2'>
 
-                                    <TeamConfigurationCard ItemInfo={AllItems} AllListId={dynamicList}  parentCallback={DDComponentCallBack}></TeamConfigurationCard>
+                                    <TeamConfigurationCard ItemInfo={AllItems} AllListId={dynamicList} parentCallback={DDComponentCallBack}></TeamConfigurationCard>
 
                                 </div>
                                 <div className='row'>
                                     <div className='col-sm-5'>
-                                   
+
                                         {/* <FroalaImageUploadComponent 
                                          callBack={copyImage} /> */}
-                                          <div className="Florar-Editor-Image-Upload-Container" id="uploadImageFroalaEditor">
-                <Froala
-                    model={defaultContent}
-                    onModelChange={isModelChange==false?onModelChange:undefined}
-                    tag="textarea"
-                    config={isModelChange==false?froalaEditorConfig:undefined}
-                ></Froala>
-               
-            </div>
-                                    
+                                        <div className="Florar-Editor-Image-Upload-Container" id="uploadImageFroalaEditor">
+                                            <Froala
+                                                model={defaultContent}
+                                                onModelChange={isModelChange == false ? onModelChange : undefined}
+                                                tag="textarea"
+                                                config={isModelChange == false ? froalaEditorConfig : undefined}
+                                            ></Froala>
+
+                                        </div>
+
                                     </div>
                                     <div className='col-sm-7'>
                                         <HtmlEditorCard
@@ -1212,10 +1477,10 @@ const CreateActivity = (props: any) => {
                                                         <>
                                                             <div className="block d-flex full-width justify-content-between mb-1 p-2">
                                                                 <div>
-                                                                    <a className="hreflink " target="_blank" style={{color: "#ffffff !important"}} data-interception="off" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>
+                                                                    <a className="hreflink " target="_blank" style={{ color: "#ffffff !important" }} data-interception="off" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>
                                                                         {com.Title}
                                                                     </a>
-                                                                    <span  className='bg-light svg__iconbox svg__icon--cross' onClick={() =>  setLinkedComponentData([])}> </span> 
+                                                                    <span className='bg-light svg__iconbox svg__icon--cross' onClick={() => setLinkedComponentData([])}> </span>
                                                                     {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => setLinkedComponentData([])} /> */}
                                                                 </div>
                                                             </div>
@@ -1233,25 +1498,25 @@ const CreateActivity = (props: any) => {
                                 }
 
                                 <div className="col-sm-12  inner-tabb">
-                                    
-                                        {smartComponentData ? smartComponentData?.map((com: any) => {
-                                            return (
-                                              
-                                                    <div className="block d-flex justify-content-between mb-1" >
-                                                       
-                                                        <a className='Portfolio-Title'  target="_blank" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
-                                                     
-                                                        <a className='text-end'>
-                                                            <span  className='bg-light svg__iconbox svg__icon--cross' onClick={() => setSmartComponentData([])}></span>
-                                                            {/* <img className="mx-2" src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => setSmartComponentData([])} /> */}
-                                                        </a>
-                                                    </div>
-                                            
-                                            )
-                                        }) : null}
+
+                                    {smartComponentData ? smartComponentData?.map((com: any) => {
+                                        return (
+
+                                            <div className="block d-flex justify-content-between mb-1" >
+
+                                                <a className='Portfolio-Title' target="_blank" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
+
+                                                <a className='text-end'>
+                                                    <span className='bg-light svg__iconbox svg__icon--cross' onClick={() => setSmartComponentData([])}></span>
+                                                    {/* <img className="mx-2" src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => setSmartComponentData([])} /> */}
+                                                </a>
+                                            </div>
+
+                                        )
+                                    }) : null}
 
 
-                                    
+
                                 </div>
 
 
@@ -1287,7 +1552,7 @@ const CreateActivity = (props: any) => {
                                     <div className="col-sm-12">
                                         <div className="col-sm-12 padding-0 input-group">
                                             <label className="full_width">Categories</label>
-                                            <input type="text" className="ui-autocomplete-input form-control" id="txtCategories" />
+                                            <input type="text" className="ui-autocomplete-input form-control" id="txtCategories" value={categorySearchKey} onChange={(e) => autoSuggestionsForCategory(e)} />
 
                                             <span className="input-group-text">
 
@@ -1303,8 +1568,21 @@ const CreateActivity = (props: any) => {
 
 
                                 </div>
+                                {SearchedCategoryData?.length > 0 ? (
+                                    <div className="SmartTableOnTaskPopup">
+                                        <ul className="list-group">
+                                            {SearchedCategoryData.map((item: any) => {
+                                                return (
+                                                    <li className="hreflink list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => setSelectedCategoryData([item], "For-Auto-Search")} >
+                                                        <a>{item.Newlabel}</a>
+                                                    </li>
+                                                )
+                                            }
+                                            )}
+                                        </ul>
+                                    </div>) : null}
 
-                                <div className="row">
+                                {/* <div className="row">
                                     <div className="col-sm-12 mt-2">
                                         {CheckCategory?.map((item: any) => {
                                             return (
@@ -1321,6 +1599,53 @@ const CreateActivity = (props: any) => {
                                     </div>
 
 
+                                </div> */}
+                                <div className="col">
+                                    <div className="col">
+                                        <div
+                                            className="form-check">
+                                            <input className="form-check-input rounded-0"
+                                                name="Phone"
+                                                type="checkbox" checked={PhoneStatus}
+                                                value={`${PhoneStatus}`}
+                                                onClick={(e) => CategoryChange(e, "Phone", 199)}
+                                            />
+                                            <label className="form-check-label">Phone</label>
+                                        </div>
+                                        <div
+                                            className="form-check">
+                                            <input className="form-check-input rounded-0"
+                                                type="checkbox"
+                                                checked={EmailStatus}
+                                                value={`${EmailStatus}`}
+                                                onClick={(e) => CategoryChange(e, "Email Notification", 276)}
+                                            />
+                                            <label>Email Notification</label>
+
+                                        </div>
+                                        <div
+                                            className="form-check">
+                                            <input className="form-check-input rounded-0"
+                                                type="checkbox"
+                                                checked={ImmediateStatus}
+                                                value={`${ImmediateStatus}`}
+                                                onClick={(e) => CategoryChange(e, "Immediate", 228)} />
+                                            <label>Immediate</label>
+                                        </div>
+
+                                    </div>
+                                    <div className="form-check ">
+                                        <label className="full-width">Approval</label>
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input rounded-0"
+                                            name="Approval"
+                                            checked={ApprovalStatus}
+                                            value={`${ApprovalStatus}`}
+                                            onClick={(e) => CategoryChange(e, "Approval", 227)}
+
+                                        />
+                                    </div>
                                 </div>
                                 {CategoriesData != undefined ?
                                     <div>
@@ -1333,7 +1658,7 @@ const CreateActivity = (props: any) => {
                                                             <a style={{ color: "#fff !important" }} target="_blank" data-interception="off" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?${AllItems?.Id}`}>
                                                                 {type.Title}
                                                             </a>
-                                                            <span  className='bg-light svg__iconbox svg__icon--cross' onClick={() => deleteCategories(type?.Id)}></span>
+                                                            <span className='bg-light svg__iconbox svg__icon--cross' onClick={() => deleteCategories(type?.Id)}></span>
                                                             {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => deleteCategories(type?.Id)} className="p-1" /> */}
                                                         </div>
                                                     }
@@ -1370,10 +1695,10 @@ const CreateActivity = (props: any) => {
                                                     {(type.Title != "Phone" && type.Title != "Email Notification" && type.Title != "Approval" && type.Title != "Immediate") &&
 
                                                         <div className="block d-flex full-width justify-content-between mb-1 p-2">
-                                                            <a  target="_blank" data-interception="off" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?${AllItems?.Id}`}>
+                                                            <a target="_blank" data-interception="off" href={`${dynamicList.siteUrl}/SitePages/Portfolio-Profile.aspx?${AllItems?.Id}`}>
                                                                 {type.Title}
                                                             </a>
-                                                            <span  className='bg-light svg__iconbox svg__icon--cross' onClick={() =>  deleteClientCategories(type.Id)}> </span> 
+                                                            <span className='bg-light svg__iconbox svg__icon--cross' onClick={() => deleteClientCategories(type.Id)}> </span>
                                                             {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => deleteClientCategories(type.Id)} className="p-1" /> */}
                                                         </div>
                                                     }
@@ -1414,9 +1739,9 @@ const CreateActivity = (props: any) => {
                 </div>
 
             </Panel>
-            {(IsComponent && AllItems?.Portfolio_x0020_Type == 'Service') && <LinkedComponent props={SharewebComponent} Dynamic={dynamicList}  Call={Call}></LinkedComponent>}
-            {(IsComponent && AllItems?.Portfolio_x0020_Type == 'Component') && <ComponentPortPolioPopup props={SharewebComponent} Dynamic={dynamicList}  Call={Call}></ComponentPortPolioPopup>}
-            {IsComponentPicker && <Picker props={SharewebCategory} AllListId={dynamicList} closePopupCallBack={Call}></Picker>}
+            {(IsComponent && AllItems?.Portfolio_x0020_Type == 'Service') && <LinkedComponent props={SharewebComponent} Dynamic={dynamicList} Call={Call}></LinkedComponent>}
+            {(IsComponent && AllItems?.Portfolio_x0020_Type == 'Component') && <ComponentPortPolioPopup props={SharewebComponent} Dynamic={dynamicList} Call={Call}></ComponentPortPolioPopup>}
+            {IsComponentPicker && <Picker props={SharewebCategory} selectedCategoryData={CategoriesData} usedFor="Task-Footertable" AllListId={dynamicList} Call={Call}></Picker>}
             {IsClientPopup && <ClientCategoryPupup props={SharewebCategory} Call={Call}></ClientCategoryPupup>}
         </>
     )

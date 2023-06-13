@@ -12,9 +12,9 @@ var AutoCompleteItemsArray: any = [];
 var SelectedCategoryBackupArray: any = [];
 const Picker = (item: any) => {
     const usedFor = item.usedFor;
-    const isServiceTask: any = item.isServiceTask!=undefined?item.isServiceTask:item?.props.Services?.length>0?true:false;
-    const AllListIdData: any = item.AllListId;
-    const siteUrls: any = item.AllListId.siteUrl;
+    const isServiceTask: any = item?.isServiceTask!=undefined?item.isServiceTask:item?.props?.Services?.length>0?true:false;
+    const AllListIdData: any = item?.AllListId;
+    const siteUrls: any = item?.AllListId?.siteUrl;
     const selectedCategoryData: any = item.selectedCategoryData;
     const [PopupSmartTaxanomy, setPopupSmartTaxanomy] = React.useState(true);
     const [AllCategories, setAllCategories] = React.useState([]);
@@ -40,12 +40,19 @@ const Picker = (item: any) => {
         setPopupSmartTaxanomy(false)
         NewArray = []
         setSelect([])
-        item.closePopupCallBack();
+        item?.Call()
+        item?.closePopupCallBack();
         SelectedCategoryBackupArray = [];
     }
     const saveCategories = () => {
         if (usedFor == "Task-Popup") {
             item.CallBack(SelectedCategoryBackupArray);
+            NewArray = []
+            SelectedCategoryBackupArray = [];
+            setSelect([])
+        }
+        else if(usedFor=="Task-Footertable"){
+             item?.Call(select, "Category-Task-Footertable")
             NewArray = []
             SelectedCategoryBackupArray = [];
             setSelect([])
@@ -127,7 +134,7 @@ const Picker = (item: any) => {
     }
 
     const selectPickerData = (item: any) => {
-        if (usedFor == "Task-Popup") {
+        if (usedFor == "Task-Popup"||usedFor=="Task-Footertable") {
             let tempArray: any = [];
             let checkDataExistCount = 0;
             if (SelectedCategoryBackupArray != undefined && SelectedCategoryBackupArray.length > 0) {
@@ -169,7 +176,7 @@ const Picker = (item: any) => {
     function Example(callBack: any, type: any) {
         NewArray = []
         setSelect([])
-        item.Call(callBack.props, type);
+        item?.Call(callBack.props, type);
     }
     const setModalIsOpenToFalse = () => {
         setPopupSmartTaxanomy(false)
@@ -292,7 +299,7 @@ const Picker = (item: any) => {
                 isBlocking={PopupSmartTaxanomy}
             // onRenderFooter={customFooter}
             >
-                <div id="SmartTaxonomyPopup" className={(item.props.Portfolio_x0020_Type != undefined && item.props.Portfolio_x0020_Type == "Service") ? "serviepannelgreena" : ""}>
+                <div id="SmartTaxonomyPopup" className={(item?.props?.Portfolio_x0020_Type != undefined && item?.props?.Portfolio_x0020_Type == "Service") ? "serviepannelgreena" : ""}>
                     <div className={isServiceTask ? "modal-body serviepannelgreena" : "modal-body"}>
                         {/* <table className="ms-dialogHeaderDescription">
                             <tbody>
