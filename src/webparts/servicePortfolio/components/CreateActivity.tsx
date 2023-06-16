@@ -309,7 +309,7 @@ const CreateActivity = (props: any) => {
                 setCategoriesData(CategoriesData)
             }
         }
-        if (type = "Category-Task-Footertable") {
+        if (type =="Category-Task-Footertable") {
 
             setPhoneStatus(false)
             setEmailStatus(false)
@@ -325,7 +325,7 @@ const CreateActivity = (props: any) => {
                 setCategoriesData(item1)
             }
         }
-        if (type == "ClientCategory") {
+        if (type =="ClientCategory") {
             var Data: any = []
             if (item1 != undefined && item1.Clientcategories != "") {
                 var title: any = {};
@@ -341,7 +341,7 @@ const CreateActivity = (props: any) => {
 
             }
         }
-        if (type == "LinkedComponent") {
+        if (type =="LinkedComponent") {
             let ServiceData: any = []
             if (item1?.linkedComponent?.length > 0) {
                 // Item.props.linkedComponent = item1.linkedComponent;

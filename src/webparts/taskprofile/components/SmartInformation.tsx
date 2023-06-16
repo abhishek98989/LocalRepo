@@ -1364,8 +1364,7 @@ setEditdocumentsData(data);
       {isopencomonentservicepopup && servicespopup && <LinkedComponent props={allValue?.componentservicesetdata} Call={ServiceComponentCallBack} Dynamic={props.AllListId}></LinkedComponent>} */}
       {isopencomonentservicepopup && componentpopup &&
         <ServiceComponentPortfolioPopup
-
-          props={allValue?.componentservicesetdata}
+        props={allValue?.componentservicesetdata}
           Dynamic={props.AllListId}
           ComponentType={"Component"}
           Call={ComponentServicePopupCallBack}
@@ -1373,7 +1372,7 @@ setEditdocumentsData(data);
         />
       }
       {isopencomonentservicepopup && servicespopup &&
-        <ServiceComponentPortfolioPopup
+        <ServiceComponentPortfolioPopup 
           props={allValue?.componentservicesetdata}
           Dynamic={props.AllListId}
           Call={ComponentServicePopupCallBack}

@@ -2264,7 +2264,8 @@ const EditTaskPopup = (Items: any) => {
             ClientCategoryId: { "results": (ClientCategoryIDs != undefined && ClientCategoryIDs.length > 0) ? ClientCategoryIDs : [] },
             SiteCompositionSettings: (SiteCompositionSetting != undefined && SiteCompositionSetting.length > 0) ? JSON.stringify(SiteCompositionSetting) : EditData.SiteCompositionSettings,
             ApproverHistory: ApproverHistoryData?.length > 0 ? JSON.stringify(ApproverHistoryData) : null,
-            EstimatedTime: EditData.EstimatedTime ? EditData.EstimatedTime : null
+            EstimatedTime: EditData.EstimatedTime ? EditData.EstimatedTime : null,
+            // Modified:Moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY hh:mm A'),
         }
         return UpdateDataObject;
     }
