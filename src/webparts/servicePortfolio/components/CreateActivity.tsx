@@ -422,6 +422,13 @@ const CreateActivity = (props: any) => {
                 console.log("Popup component linkedComponent", item1.linkedComponent)
             }
         }
+        if (type == "Service") {
+           
+       
+            setSmartComponentData(item1);
+            console.log("Popup component taskfootertable", item1)
+        }
+
 
         if (CategoriesData != undefined) {
             CategoriesData?.forEach(function (type: any) {

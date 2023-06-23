@@ -3,14 +3,14 @@ import { useState, useEffect } from 'react';
 import { Panel, PanelType } from 'office-ui-fabric-react';
 import { ImPriceTags } from 'react-icons/im';
 import Tooltip from "../Tooltip";
-import { Suggest } from "@pnp/sp/search";
+import { Web } from "sp-pnp-js";
 
 var AutoCompleteItemsArray: any = [];
 var SelectedClientCategoryBackupArray: any = [];
 var BackupSiteTypeData: any = [];
 const SiteCompositionComponent = (Props: any) => {
     const SiteData = Props.SiteTypes;
-    var ClientTime = Props.ClientTime;
+    var ClientTime = Props.ClientTime != undefined ? Props.ClientTime : [];
     var SitesTaggingData: any = Props.SitesTaggingData
     const isPortfolioConncted = Props.isPortfolioConncted;
     const AllListIdData: any = Props.AllListId
@@ -19,7 +19,7 @@ const SiteCompositionComponent = (Props: any) => {
     const callBack = Props.callBack;
     const currentListName = Props.currentListName;
     const ServicesTaskCheck = Props.isServiceTask;
-    const SiteCompositionSettings = (Props.SiteCompositionSettings != undefined ? JSON.parse(Props.SiteCompositionSettings) : [{ Proportional: false, Manual: false, Portfolio: false, localSiteComposition: false }]);
+    const SiteCompositionSettings = (Props.SiteCompositionSettings != undefined ? JSON.parse(Props.SiteCompositionSettings) : [{ Proportional: true, Manual: false, Portfolio: false, localSiteComposition: false }]);
     const SelectedClientCategoryFromProps = Props.SelectedClientCategory;
     const [SiteTypes, setSiteTypes] = useState([]);
     const [selectedSiteCount, setSelectedSiteCount] = useState(Props.ClientTime.length);
@@ -33,7 +33,7 @@ const SiteCompositionComponent = (Props: any) => {
     const [SearchedKeyForEI, setSearchedKeyForEI] = useState('');
     const [SearchedKeyForEducation, setSearchedKeyForEducation] = useState('');
     const [SearchedKeyForMigration, setSearchedKeyForMigration] = useState('');
-    const [SearchWithDescriptionStatus, setSearchWithDescriptionStatus] = useState(false);
+    const [SearchWithDescriptionStatus, setSearchWithDescriptionStatus] = useState(true);
     const [SearchedClientCategoryData, setSearchedClientCategoryData] = useState([]);
     const [SearchedClientCategoryDataForInput, setSearchedClientCategoryDataForInput] = useState([]);
     const [selectedClientCategory, setSelectedClientCategory] = useState([]);
@@ -63,19 +63,24 @@ const SiteCompositionComponent = (Props: any) => {
             setSelectedClientCategory(SelectedClientCategoryFromProps);
             SelectedClientCategoryFromProps?.map((dataItem: any) => {
                 if (dataItem.siteName == "EPS") {
-                    setEPSClientCategory([dataItem])
+                    // setEPSClientCategory([dataItem])
+                    EPSClientCategory.push(dataItem);
                 }
                 if (dataItem.siteName == "EI") {
-                    setEIClientCategory([dataItem])
+                    // setEIClientCategory([dataItem])
+                    EIClientCategory.push(dataItem);
                 }
                 if (dataItem.siteName == "Education") {
-                    setEducationClientCategory([dataItem])
+                    // setEducationClientCategory([dataItem])
+                    EducationClientCategory.push(dataItem);
                 }
                 if (dataItem.siteName == "Migration") {
-                    setMigrationClientCategory([dataItem])
+                    // setMigrationClientCategory([dataItem])
+                    MigrationClientCategory.push(dataItem);
                 }
-                SelectedClientCategoryBackupArray.push(dataItem);
+                // SelectedClientCategoryBackupArray.push(dataItem);
             })
+            SelectedClientCategoryBackupArray = SelectedClientCategoryFromProps;
         }
         if (SiteData != undefined && SiteData.length > 0) {
             SiteData.map((SiteItem: any) => {
@@ -146,8 +151,14 @@ const SiteCompositionComponent = (Props: any) => {
                         })
                         setClientTimeData(tempDataForRemove);
                         SiteCompositionObject.ClientTime = tempDataForRemove;
+                        SiteCompositionObject.selectedClientCategory = SelectedClientCategoryBackupArray;
                         ClientTime = tempDataForRemove;
-                        callBack(SiteCompositionObject);
+                        if (tempDataForRemove?.length > 0) {
+                            callBack(SiteCompositionObject, "dataExits");
+                        } else {
+                            callBack(SiteCompositionObject, "dataDeleted")
+                        }
+
                     } else {
                         DataItem.BtnStatus = true
                         setSelectedSiteCount(selectedSiteCount + 1);
@@ -157,15 +168,16 @@ const SiteCompositionComponent = (Props: any) => {
                             localSiteComposition: true,
                             siteIcons: DataItem.Item_x005F_x0020_Cover
                         }
-                        ClientTime.push(object);
+                        ClientTimeData.push(object);
                         let tempData: any = [];
-                        ClientTime?.map((TimeData: any) => {
+                        ClientTimeData?.map((TimeData: any) => {
                             TimeData.ClienTimeDescription = (100 / (selectedSiteCount + 1)).toFixed(1);
                             tempData.push(TimeData);
                         })
                         setClientTimeData(tempData);
                         SiteCompositionObject.ClientTime = tempData;
-                        callBack(SiteCompositionObject);
+                        SiteCompositionObject.selectedClientCategory = SelectedClientCategoryBackupArray;
+                        callBack(SiteCompositionObject, "dataExits");
                     }
                 }
                 TempArray.push(DataItem)
@@ -187,7 +199,7 @@ const SiteCompositionComponent = (Props: any) => {
                 tempData.push(TimeData);
             })
             SiteCompositionObject.ClientTime = tempData;
-            callBack(SiteCompositionObject);
+            callBack(SiteCompositionObject, "dataExits");
             setIsPortfolioComposition(false);
             setCheckBoxStatus(false);
         }
@@ -234,7 +246,7 @@ const SiteCompositionComponent = (Props: any) => {
         }
         SiteCompositionObject.SiteCompositionSettings = SiteCompositionSettings;
         SiteCompositionObject.ClientTime = ClientTimeData;
-        callBack(SiteCompositionObject);
+        callBack(SiteCompositionObject, "dataExits");
         // }
 
     }
@@ -302,17 +314,22 @@ const SiteCompositionComponent = (Props: any) => {
         // setSelectedClientCategory([]);
         setSearchedKey('');
         setClientCategoryPopupStatus(true);
-        BuildIndividualAllDataArray(SiteParentId);
+        BuildIndividualAllDataArray(SiteParentId, SiteName);
     }
 
-    const BuildIndividualAllDataArray = (SiteParentId: any) => {
+    const BuildIndividualAllDataArray = (SiteParentId: any, SiteName: any) => {
         let ParentArray: any = [];
         AutoCompleteItemsArray = [];
         if (AllClientCategoryData != undefined && AllClientCategoryData.length > 0) {
             AllClientCategoryData?.map((ArrayData: any) => {
                 if (ArrayData.ParentId == SiteParentId) {
                     ArrayData.Child = [];
-                    ArrayData.newLabel = ArrayData.siteName + " > " + ArrayData.Title;
+                    if (ArrayData?.siteName == null || ArrayData?.siteName) {
+                        ArrayData.newLabel = SiteName + " > " + ArrayData.Title;
+                        ArrayData.siteName = SiteName
+                    } else {
+                        ArrayData.newLabel = ArrayData.siteName + " > " + ArrayData.Title;
+                    }
                     ParentArray.push(ArrayData)
                     AutoCompleteItemsArray.push(ArrayData);
                 }
@@ -320,17 +337,52 @@ const SiteCompositionComponent = (Props: any) => {
         }
         if (ParentArray != undefined && ParentArray.length > 0) {
             ParentArray.map((parentArray: any) => {
+                parentArray.Child = [];
                 AllClientCategoryData.map((AllData: any) => {
                     if (parentArray.Id == AllData.ParentId) {
                         AllData.newLabel = parentArray.newLabel + " > " + AllData.Title
+                        if (AllData?.siteName == null || AllData?.siteName == undefined) {
+                            AllData.siteName = SiteName;
+                        }
                         parentArray.Child.push(AllData);
                         AutoCompleteItemsArray.push(AllData);
                     }
                 })
             })
         }
+        if (ParentArray != undefined && ParentArray.length > 0) {
+            ParentArray.map((parentArray: any) => {
+                if (parentArray.Child?.length > 0) {
+                    parentArray.Child?.map((childData: any) => {
+                        childData.Child = []
+                        AllClientCategoryData.map((AllData: any) => {
+                            if (childData.Id == AllData.ParentId) {
+                                AllData.newLabel = childData.newLabel + " > " + AllData.Title
+                                if (AllData?.siteName == null || AllData?.siteName == undefined) {
+                                    AllData.siteName = SiteName;
+                                }
+                                childData.Child.push(AllData);
+                                AutoCompleteItemsArray.push(AllData);
+                            }
+                        })
+                    })
+                }
+            })
+        }
         setSelectedSiteClientCategoryData(ParentArray);
     }
+
+    // const AddSiteNameInSmartMetaData = async (CatgeoryData: any) => {
+    //     try {
+    //         let web = new Web(siteUrls);
+    //         await web.lists.getById(`${AllListIdData.SmartMetadataListID}`).items.getById(CatgeoryData.Id).update({
+    //             siteName: CatgeoryData.siteName
+    //         }).then(() => {
+    //             console.log("Site Name Updated");
+    //         })
+    //     } catch (error) {
+    //     }
+    // }
 
     const AutoSuggestionForClientCategory = (e: any, usedFor: any) => {
         let SearchedKey: any = e.target.value;
@@ -353,10 +405,13 @@ const SiteCompositionComponent = (Props: any) => {
                             })
                         }
                     })
+                    const finalData = TempArray.filter((val: any, id: any, array: any) => {
+                        return array.indexOf(val) == id;
+                    })
                     if (usedFor == "Popup") {
-                        setSearchedClientCategoryData(TempArray)
+                        setSearchedClientCategoryData(finalData)
                     } else {
-                        setSearchedClientCategoryDataForInput(TempArray)
+                        setSearchedClientCategoryDataForInput(finalData)
                     }
                 }
             } else {
@@ -389,7 +444,7 @@ const SiteCompositionComponent = (Props: any) => {
         }
     }
 
-    const SelectClientCategoryFromAutoSuggestion = (selectedCategory: any) => {
+    const SelectClientCategoryFromAutoSuggestion = (selectedCategory: any, Type: any) => {
         setSearchedKey('');
         setSearchedKeyForEPS("")
         setSearchedKeyForEI("")
@@ -397,11 +452,11 @@ const SiteCompositionComponent = (Props: any) => {
         setSearchedKeyForMigration("")
         setSearchedClientCategoryData([]);
         setSearchedClientCategoryDataForInput([]);
-        SelectedClientCategoryFromDataList(selectedCategory);
+        SelectedClientCategoryFromDataList(selectedCategory, Type);
 
     }
 
-    const SelectedClientCategoryFromDataList = (selectedCategory: any) => {
+    const SelectedClientCategoryFromDataList = (selectedCategory: any, Type: any) => {
         if (ClientCategoryPopupSiteName == "EPS") {
             EPSClientCategory[0] = selectedCategory;
         }
@@ -418,11 +473,14 @@ const SiteCompositionComponent = (Props: any) => {
         // SelectedClientCategoryBackupArray
         setSearchedKey('');
         setSearchedClientCategoryData([]);
-        saveSelectedClientCategoryData();
+        if (Type == "Main") {
+            saveSelectedClientCategoryData();
+        }
         // setSelectedClientCategory(selectedClientCategory);
     }
 
     const saveSelectedClientCategoryData = () => {
+        let isCategorySelected: any = false;
         let TempArray: any = [];
         if (EPSClientCategory != undefined && EPSClientCategory.length > 0) {
             EPSClientCategory?.map((EPSData: any) => {
@@ -446,10 +504,11 @@ const SiteCompositionComponent = (Props: any) => {
         }
         if (TempArray != undefined && TempArray.length > 0) {
             SiteCompositionObject.selectedClientCategory = TempArray;
+            isCategorySelected = true;
         }
-        callBack(SiteCompositionObject);
+        callBack(SiteCompositionObject, "dataExits");
         AutoCompleteItemsArray = [];
-        SelectedClientCategoryBackupArray = [];
+        SelectedClientCategoryBackupArray = TempArray;
         setClientCategoryPopupStatus(false);
     }
 
@@ -506,8 +565,10 @@ const SiteCompositionComponent = (Props: any) => {
                 }
             })
             SiteCompositionObject.ClientTime = ClientTimeTemp;
+            SiteCompositionObject.selectedClientCategory = SelectedClientCategoryBackupArray;
+            SiteCompositionObject.SiteCompositionSettings = SiteCompositionSettings;
         }
-        callBack(SiteCompositionObject);
+        callBack(SiteCompositionObject, "dataExits");
     }
 
     // ************************ this is for the auto Suggestion fuction for all Client Category ******************
@@ -515,23 +576,25 @@ const SiteCompositionComponent = (Props: any) => {
     const autoSuggestionsForClientCategoryIdividual = (e: any, siteType: any, SiteId: any) => {
         let SearchedKey: any = e.target.value;
         setClientCategoryPopupSiteName(siteType);
+        setSearchWithDescriptionStatus(false);
+
         if (siteType == "EPS") {
-            BuildIndividualAllDataArray(SiteId);
+            BuildIndividualAllDataArray(SiteId, siteType);
             AutoSuggestionForClientCategory(e, "For-Input");
             setSearchedKeyForEPS(SearchedKey);
         }
         if (siteType == "EI") {
-            BuildIndividualAllDataArray(SiteId);
+            BuildIndividualAllDataArray(SiteId, siteType);
             AutoSuggestionForClientCategory(e, "For-Input");
             setSearchedKeyForEI(SearchedKey);
         }
         if (siteType == "Education") {
-            BuildIndividualAllDataArray(SiteId);
+            BuildIndividualAllDataArray(SiteId, siteType);
             AutoSuggestionForClientCategory(e, "For-Input");
             setSearchedKeyForEducation(SearchedKey);
         }
         if (siteType == "Migration") {
-            BuildIndividualAllDataArray(SiteId);
+            BuildIndividualAllDataArray(SiteId, siteType);
             AutoSuggestionForClientCategory(e, "For-Input");
             setSearchedKeyForMigration(SearchedKey);
         }
@@ -553,18 +616,35 @@ const SiteCompositionComponent = (Props: any) => {
             </div>
         )
     }
+    const onRenderFooter = () => {
+        return (
+            <footer
+                className={ServicesTaskCheck ? "serviepannelgreena bg-f4 pe-2 py-2 text-end" : "bg-f4 pe-2 py-2 text-end"}
+                style={{ position: "absolute", width: "100%", bottom: "0" }}
+            >
+                <span>
+                    <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >
+                        Manage Smart Taxonomy
+                    </a>
+                </span>
+                <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveSelectedClientCategoryData} >
+                    Save
+                </button>
+            </footer>
+        )
+    }
+
     let TotalPercent: any = 0;
     return (
         <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
-            {console.log("All Category Data in Div ======", AllClientCategoryData)}
             <div className="col-sm-12 ps-3">
                 <input
                     type="radio"
                     id="Proportional"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0].Proportional : false}
+                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
                     onChange={() => ChangeSiteCompositionSettings("Proportional")}
                     name="SiteCompositions"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0].Proportional : false}
+                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
                     title="add Proportional Time"
                     className="me-1"
                 />
@@ -573,10 +653,10 @@ const SiteCompositionComponent = (Props: any) => {
                     type="radio"
                     id="Manual"
                     name="SiteCompositions"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0].Manual : false}
+                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
                     title="add manual Time"
                     className="mx-1"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0].Manual : false}
+                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
                     onChange={() => ChangeSiteCompositionSettings("Manual")}
                 />
                 <label>Manual</label>
@@ -584,9 +664,9 @@ const SiteCompositionComponent = (Props: any) => {
                     type="radio"
                     id="Portfolio"
                     name="SiteCompositions"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0].Portfolio : false}
+                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
                     title="Portfolio"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0].Portfolio : false}
+                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
                     onChange={() => ChangeSiteCompositionSettings("Portfolio")}
                     className="mx-1" />
                 <label>
@@ -597,20 +677,12 @@ const SiteCompositionComponent = (Props: any) => {
                     <input
                         type="checkbox"
                         className="form-check-input mb-0 ms-2 mt-1 mx-1 rounded-0"
-                        defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0].localSiteComposition : false}
+                        defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.localSiteComposition : false}
                         onChange={() => ChangeSiteCompositionSettings("Overridden")}
                     />
-                    <label title="If this is checked then it should consider site allocations in Time Entry from Task otherwise from tagged component.">
+                    <label data-toggle="tooltip" data-placement="bottom" title="If this is checked then it should consider site allocations in Time Entry from Task otherwise from tagged component.">
                         Overridden
                     </label>
-                    {/* <label className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                        Overridden
-                        <span className="svg__iconbox svg__icon--info"></span>
-                        <span className="popover__content">
-                            if this is checked then it should consider site allocations from Task otherwise from tagged component.
-                        </span>
-
-                    </label> */}
                 </span>
             </div>
             <div className="my-2 ps-3">
@@ -619,7 +691,7 @@ const SiteCompositionComponent = (Props: any) => {
                         <tbody>
                             {SiteTypes?.map((siteData: any, index: any) => {
                                 if (siteData.Title !== "Health" && siteData.Title !== "Offshore Tasks" && siteData.Title !== "Gender" && siteData.Title !== "Small Projects") {
-                                    if (siteData.ClienTimeDescription != undefined || siteData.ClienTimeDescription != null) {
+                                    if (siteData?.ClienTimeDescription != undefined || siteData?.ClienTimeDescription != null) {
                                         let num: any = Number(siteData.ClienTimeDescription).toFixed(0);
                                         TotalPercent = TotalPercent + Number(num);
                                     }
@@ -648,11 +720,11 @@ const SiteCompositionComponent = (Props: any) => {
                                             <td className="m-0 p-1" style={{ width: "12%" }}>
                                                 {ProportionalStatus ?
                                                     <>{isPortfolioComposition ? <input
-                                                        type="number" min="1"
+                                                        type="number" min="1" max='100'
                                                         value={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
                                                         className="form-control p-1" readOnly={true} style={{ cursor: "not-allowed" }}
                                                         onChange={(e) => ChangeTimeManuallyFunction(e, siteData.Title)}
-                                                    /> : <input type="number" min="1"
+                                                    /> : <input type="number" min="1" max='100'
                                                         style={ProportionalStatus && siteData.BtnStatus ? { cursor: "not-allowed" } : {}}
                                                         defaultValue={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
                                                         value={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
@@ -660,11 +732,11 @@ const SiteCompositionComponent = (Props: any) => {
                                                     />}  </>
                                                     : <> {siteData.BtnStatus ?
                                                         <input
-                                                            type="number" min="1"
+                                                            type="number" min="1" max='100'
                                                             defaultValue={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
-                                                            className="form-control p-1"
+                                                            className="form-control p-1" style={{ width: "100%" }}
                                                             onChange={(e) => ChangeTimeManuallyFunction(e, siteData.Title)}
-                                                        /> : <input type="number" readOnly={true} style={{ cursor: "not-allowed" }}
+                                                        /> : <input type="number" readOnly={true} style={{ cursor: "not-allowed", width: "100%" }}
                                                         />}</>
                                                 }
                                             </td>
@@ -675,7 +747,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                 {ProportionalStatus ? <span>{siteData.BtnStatus && TotalTime ? (TotalTime / selectedSiteCount).toFixed(2) + " h" : siteData.BtnStatus ? "0 h" : null}</span> : <span>{siteData.BtnStatus && TotalTime ? (siteData.ClienTimeDescription ? (siteData.ClienTimeDescription * TotalTime / 100).toFixed(2) + " h" : "0 h") : siteData.BtnStatus ? "0 h" : null}</span>}
                                             </td>
                                             <td className="m-0 p-1 align-middle" style={{ width: "36%" }}>
-                                                {siteData.Title == "EI" && (currentListName?.toLowerCase() == "ei" || currentListName?.toLowerCase() == "shareweb") ?
+                                                {siteData.Title == "EI" ?
                                                     <>
                                                         <div className="input-group block justify-content-between">
                                                             {EIClientCategory != undefined && EIClientCategory.length > 0 ?
@@ -712,7 +784,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                                 <ul className="list-group">
                                                                     {SearchedClientCategoryDataForInput.map((item: any) => {
                                                                         return (
-                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item)} >
+                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Main")} >
                                                                                 <a>{item.newLabel}</a>
                                                                             </li>
                                                                         )
@@ -722,7 +794,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                             </div>) : null}
                                                     </>
                                                     : null}
-                                                {siteData.Title == "EPS" && (currentListName?.toLowerCase() == "eps" || currentListName?.toLowerCase() == "shareweb") ?
+                                                {siteData.Title == "EPS" ?
                                                     <>
                                                         <div className="input-group block justify-content-between">
                                                             {EPSClientCategory != undefined && EPSClientCategory.length > 0 ?
@@ -759,7 +831,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                                 <ul className="list-group">
                                                                     {SearchedClientCategoryDataForInput.map((item: any) => {
                                                                         return (
-                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item)} >
+                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Main")} >
                                                                                 <a>{item.newLabel}</a>
                                                                             </li>
                                                                         )
@@ -769,7 +841,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                             </div>) : null}
                                                     </>
                                                     : null}
-                                                {siteData.Title == "Education" && (currentListName?.toLowerCase() == "education" || currentListName?.toLowerCase() == "shareweb") ?
+                                                {siteData.Title == "Education" ?
                                                     <>
                                                         <div className="input-group block justify-content-between">
                                                             {EducationClientCategory != undefined && EducationClientCategory.length > 0 ?
@@ -807,7 +879,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                                 <ul className="list-group">
                                                                     {SearchedClientCategoryDataForInput.map((item: any) => {
                                                                         return (
-                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item)} >
+                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Main")} >
                                                                                 <a>{item.newLabel}</a>
                                                                             </li>
                                                                         )
@@ -817,7 +889,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                             </div>) : null}
                                                     </>
                                                     : null}
-                                                {siteData.Title == "Migration" && (currentListName?.toLowerCase() == "migration" || currentListName?.toLowerCase() == "shareweb") ?
+                                                {siteData.Title == "Migration" ?
                                                     <>
                                                         <div className="input-group block justify-content-between">
                                                             {MigrationClientCategory != undefined && MigrationClientCategory.length > 0 ?
@@ -855,7 +927,7 @@ const SiteCompositionComponent = (Props: any) => {
                                                                 <ul className="list-group">
                                                                     {SearchedClientCategoryDataForInput.map((item: any) => {
                                                                         return (
-                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item)} >
+                                                                            <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Main")} >
                                                                                 <a>{item.newLabel}</a>
                                                                             </li>
                                                                         )
@@ -889,9 +961,11 @@ const SiteCompositionComponent = (Props: any) => {
                 isOpen={ClientCategoryPopupStatus}
                 onDismiss={closeClientCategoryPopup}
                 isBlocking={ClientCategoryPopupStatus}
-                type={PanelType.medium}
+                type={PanelType.custom}
+                customWidth="850px"
+                onRenderFooter={onRenderFooter}
             >
-                <div className={ServicesTaskCheck ? "serviepannelgreena" : ""} >
+                <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
                     <div className="">
                         <div className="row">
                             <div className="d-flex text-muted pt-3 showCateg">
@@ -916,15 +990,15 @@ const SiteCompositionComponent = (Props: any) => {
                                 </div>
                             </div>
                         </div>
-                        <div className='col-sm-12 categScroll' style={{ height: "auto" }}>
-                            <input type="checkbox" className="form-check-input me-1 rounded-0" defaultChecked={SearchWithDescriptionStatus} onChange={() => setSearchWithDescriptionStatus(SearchWithDescriptionStatus ? false : true)} /> <label> Search With Description (Info Icons)</label>
-                            <input className="form-control my-2" type='text' placeholder="Search Name Here!" value={searchedKey} onChange={(e) => AutoSuggestionForClientCategory(e, "Popup")} />
+                        <div className='col-sm-12'>
+                            <input type="checkbox" className="form-check-input me-1 rounded-0" defaultChecked={SearchWithDescriptionStatus} onChange={() => setSearchWithDescriptionStatus(SearchWithDescriptionStatus ? false : true)} /> <label>Include description (info-icons) in search</label>
+                            <input className="form-control my-2" type='text' placeholder={`Search ${ClientCategoryPopupSiteName} Client Category`} value={searchedKey} onChange={(e) => AutoSuggestionForClientCategory(e, "Popup")} />
                             {SearchedClientCategoryData?.length > 0 ? (
                                 <div className="SearchTableCategoryComponent">
                                     <ul className="list-group">
                                         {SearchedClientCategoryData.map((item: any) => {
                                             return (
-                                                <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item)} >
+                                                <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Popup")} >
                                                     <a>{item.newLabel}</a>
                                                 </li>
                                             )
@@ -999,7 +1073,7 @@ const SiteCompositionComponent = (Props: any) => {
                                         return (
                                             <>
                                                 <li>
-                                                    <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(item)} >
+                                                    <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(item, "Popup")} >
                                                         <a>
                                                             {item.Title}
                                                             {item.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
@@ -1016,11 +1090,13 @@ const SiteCompositionComponent = (Props: any) => {
                                                                 <>
                                                                     {child1.Title != null ?
                                                                         <li>
-                                                                            <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child1)}>
+                                                                            <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child1, "Popup")}>
                                                                                 <a>
-                                                                                    {child1.Item_x0020_Cover ? <img className="flag_icon"
-                                                                                        style={{ height: "20px", borderRadius: "10px", border: "1px solid #000069" }}
-                                                                                        src={child1.Item_x0020_Cover ? child1.Item_x0020_Cover.Url : ''} /> :
+                                                                                    {child1.Item_x0020_Cover ?
+                                                                                        <img className="flag_icon"
+                                                                                            style={{ height: "20px", borderRadius: "10px", border: "1px solid #000069" }}
+                                                                                            src={child1.Item_x0020_Cover ? child1.Item_x0020_Cover.Url : ''}
+                                                                                        /> :
                                                                                         null}
                                                                                     {child1.Title}
                                                                                     {child1.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
@@ -1031,6 +1107,35 @@ const SiteCompositionComponent = (Props: any) => {
                                                                                     </div> : null}
                                                                                 </a>
                                                                             </p>
+                                                                            <ul className="sub-menu clr">
+                                                                                {child1.Child?.map(function (child2: any) {
+                                                                                    return (
+                                                                                        <>
+                                                                                            {child2.Title != null ?
+                                                                                                <li>
+                                                                                                    <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child2, "Popup")}>
+                                                                                                        <a>
+                                                                                                            {child2.Item_x0020_Cover ?
+                                                                                                                <img className="flag_icon"
+                                                                                                                    style={{ height: "20px", borderRadius: "10px", border: "1px solid #000069" }}
+                                                                                                                    src={child2.Item_x0020_Cover ? child2.Item_x0020_Cover.Url : ''}
+                                                                                                                /> :
+                                                                                                                null}
+                                                                                                            {child2.Title}
+                                                                                                            {child2.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
+                                                                                                                <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                                                                <div className="popover__content">
+                                                                                                                    <span>{child2.Description1}</span>
+                                                                                                                </div>
+                                                                                                            </div> : null}
+                                                                                                        </a>
+                                                                                                    </p>
+                                                                                                </li> : null
+                                                                                            }
+                                                                                        </>
+                                                                                    )
+                                                                                })}
+                                                                            </ul>
                                                                         </li> : null
                                                                     }
                                                                 </>
@@ -1045,14 +1150,7 @@ const SiteCompositionComponent = (Props: any) => {
                                 : null}
                         </div>
                     </div>
-                    <footer className="float-end mt-1">
-                        <span>
-                            <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >Manage Smart Taxonomy</a>
-                        </span>
-                        <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveSelectedClientCategoryData} >
-                            Save
-                        </button>
-                    </footer>
+
                 </div>
             </Panel>
         </div >
