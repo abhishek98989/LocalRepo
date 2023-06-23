@@ -47,10 +47,9 @@
     }
   },
   "localizedResources": {
-    "ServicePortfolioWebPartStrings": "lib/webparts/servicePortfolio/loc/{locale}.js",
     "TaskprofileWebPartStrings": "lib/webparts/taskprofile/loc/{locale}.js",
+    "ServicePortfolioWebPartStrings": "lib/webparts/servicePortfolio/loc/{locale}.js",
     "ComponentCommentsWebPartStrings": "lib/webparts/componentComments/loc/{locale}.js",
-   
     "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
   }
 }

@@ -10,6 +10,9 @@ function TimeEntry(props: any) {
     props.CallBackTimesheet();
 
   };
+  const ComponentCallBack=(dt:any)=>{
+console.log(dt)
+  }
   const onRenderCustomHeaderTimeEntry = () => {
     return (
       <>
@@ -31,7 +34,7 @@ function TimeEntry(props: any) {
         type={PanelType.large}
       >
         <div className="modal-body">
-          <TimeEntryPopup props={props.data} Context={props.context}context={props.context} />
+          <TimeEntryPopup props={props.data} Context={props.context} context={props.context} parentCallback={ComponentCallBack} />
         </div>
         <footer className="mt-3 text-end">
           <Button variant="primary" onClick={handleClose}>
