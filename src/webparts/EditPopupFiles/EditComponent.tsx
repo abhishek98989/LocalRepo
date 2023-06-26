@@ -24,7 +24,8 @@ import DatePicker from "react-datepicker";
 import { ClickAwayListener } from "@material-ui/core";
 import "react-datepicker/dist/react-datepicker.css";
 import Picker from "../../globalComponents/EditTaskPopup/SmartMetaDataPicker";
-import LinkedComponent from "../../globalComponents/EditTaskPopup/LinkedComponent";
+// import LinkedComponent from "../../globalComponents/EditTaskPopup/LinkedComponent";
+import ServiceComponentPortfolioPopup from "../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup";
 import { EditorState } from "draft-js";
 import HtmlEditorCard from "../../globalComponents/HtmlEditor/HtmlEditor";
 import TeamConfigurationCard from "./TeamConfigurationPortfolio";
@@ -32,7 +33,7 @@ import Tooltip from "../../globalComponents/Tooltip";
 import ImagesC from "./Image";
 import { AllOut } from "@material-ui/icons";
 import VersionHistoryPopup from "../../globalComponents/VersionHistroy/VersionHistory";
-
+import SiteCompositionComponent from "./PortfolioSiteCompsition";
 var PostTechnicalExplanations = "";
 var PostDeliverables = "";
 var PostShort_x0020_Description_x0020_On = "";
@@ -41,21 +42,25 @@ var AllUsers: any = [];
 var Assin: any = [];
 var AssignedToIds: any = [];
 var ResponsibleTeamIds: any = [];
+var SiteTypeBackupArray: any = [];
 var TeamMemberIds: any = [];
 var Backupdata: any = [];
 var BackupCat: any = "";
-let web:any='';
-let RequireData:any={};
-function EditInstitution({item,SelectD,Calls}: any) {
-  // Id:any
-   
- 
+let web: any = '';
+let RequireData: any = {};
+var selectedClientCategoryData: any = [];
+var AllClientCategoryDataBackup: any = [];
 
-  if(SelectD != undefined && SelectD?.siteUrl !=  undefined){
+function EditInstitution({ item, SelectD, Calls }: any) {
+  // Id:any
+
+
+
+  if (SelectD != undefined && SelectD?.siteUrl != undefined) {
     web = new Web(SelectD?.siteUrl);
     RequireData = SelectD
-  }else{
-    if(item?.siteUrl != undefined){
+  } else {
+    if (item?.siteUrl != undefined) {
       web = new Web(item?.siteUrl);
     }
 
@@ -88,10 +93,13 @@ function EditInstitution({item,SelectD,Calls}: any) {
   const [Completiondate, setCompletiondate] = React.useState(undefined);
   const [AssignUser, setAssignUser] = React.useState(undefined);
   const [IsComponentPicker, setIsComponentPicker] = React.useState(false);
+  const [IsService, setIsService] = React.useState(false);
   const [editorState, setEditorState] = React.useState(
     EditorState.createEmpty()
   );
+  const [selectedClientCategory, setSelectedClientCategory] = React.useState([]);
   const [ParentData, SetParentData] = React.useState([]);
+  const [SiteTypes, setSiteTypes] = React.useState([]);
   // $('.ms-Dialog-main .main-153').hide();
   const setModalIsOpenToTrue = (e: any) => {
     // e.preventDefault()
@@ -107,8 +115,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
     EditComponentCallback();
     setModalIsOpen(false);
   };
-  
-  const Call = React.useCallback((item1: any, type: any) => {
+
+  const Call = React.useCallback((item1: any, type: any, functionType: any) => {
     if (type == "SmartComponent") {
       if (EditData != undefined && item1 != undefined) {
         item.smartComponent = item1.smartComponent;
@@ -135,21 +143,29 @@ function EditInstitution({item,SelectD,Calls}: any) {
         //  item.smartCategories.push(title);
       }
     }
-    if (type == "LinkedComponent") {
-      if (item1?.linkedComponent?.length > 0) {
-        // item.linkedComponent = item1.linkedComponent;
-        // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
-        setLinkedComponentData(item1.linkedComponent);
-        console.log("Popup component linkedComponent", item1.linkedComponent);
+    if (functionType == "Close") {
+      if (type == "Service") {
+        setIsService(false);
+      } else {
+        setIsComponent(false)
       }
-    }
+    } else {
+      if (type == "Component") {
+        if (item1 != undefined && item1.length > 0) {
+          // item.linkedComponent = item1.linkedComponent;
+          // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
+          setLinkedComponentData(item1);
+          console.log("Popup component linkedComponent", item1.linkedComponent);
+        }
+      }
 
-    if (type == "LinkedServices") {
-      if (item1?.linkedComponent?.length > 0) {
-        // item.linkedComponent = item1.linkedComponent;
-        // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
-        setLinkedComponentData(item1.linkedComponent);
-        console.log("Popup component linkedComponent", item1.linkedComponent);
+      if (type == "Service") {
+        if (item1 != undefined && item1.length > 0) {
+          // item.linkedComponent = item1.linkedComponent;
+          // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
+          setLinkedComponentData(item1);
+          console.log("Popup component linkedComponent", item1.linkedComponent);
+        }
       }
     }
     if (CategoriesData != undefined) {
@@ -178,7 +194,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
     return isExists;
   };
   const GetTaskUsers = async () => {
-   
+
     let taskUsers = [];
     taskUsers = await web.lists.getById(RequireData.TaskUsertListID).items.top(4999).get();
     AllUsers = taskUsers;
@@ -196,7 +212,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
     });
   };
   // var ConvertLocalTOServerDate = function (LocalDateTime: any, dtformat: any) {
-  //     if (dtformat == undefined || dtformat == '') dtformat = "DD/MM/YYYY";
+  //     if (dtformat == undefined || dtformat == '') dtformat = "MM-DD-YYYY";
 
   //     // below logic works fine in all condition
   //     if (LocalDateTime != '') {
@@ -283,7 +299,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
 
   var getMasterTaskListTasks = async function () {
     //  var query = "ComponentCategory/Id,ComponentCategory/Title,ComponentPortfolio/Id,ComponentPortfolio/Title,ServicePortfolio/Id,ServicePortfolio/Title,SiteCompositionSettings,PortfolioStructureID,ItemRank,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,Deliverable_x002d_Synonyms,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,Admin_x0020_Notes,AdminStatus,Background,Help_x0020_Information,SharewebComponent/Id,SharewebCategories/Id,SharewebCategories/Title,Priority_x0020_Rank,Reference_x0020_Item_x0020_Json,Team_x0020_Members/Title,Team_x0020_Members/Name,Component/Id,Component/Title,Component/ItemType,Team_x0020_Members/Id,Item_x002d_Image,component_x0020_link,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ClientCategory/Id,ClientCategory/Title";
-   
+
     let componentDetails = [];
     componentDetails = await web.lists
       .getById(RequireData.MasterTaskListID)
@@ -367,11 +383,12 @@ function EditInstitution({item,SelectD,Calls}: any) {
         "Editor/Title",
         "ClientCategory/Id",
         "ClientCategory/Title",
+        "Sitestagging",
+        "SiteCompositionSettings",
         "Responsible_x0020_Team/Id",
         "Responsible_x0020_Team/Title",
-        "Parent/Id","Parent/Title","Parent/ItemType"
+        "Parent/Id", "Parent/Title", "Parent/ItemType"
       )
-
       .expand(
         "ClientCategory",
         "AssignedTo",
@@ -403,18 +420,18 @@ function EditInstitution({item,SelectD,Calls}: any) {
     $.each(Tasks, function (index: any, item: any) {
       item.DateTaskDueDate = new Date(item.DueDate);
       if (item.DueDate != null)
-        item.TaskDueDate = moment(item.DueDate).format("DD/MM/YYYY");
-      // item.TaskDueDate = ConvertLocalTOServerDate(item.DueDate, 'DD/MM/YYYY');
+        item.TaskDueDate = moment(item.DueDate).format("MM-DD-YYYY");
+      // item.TaskDueDate = ConvertLocalTOServerDate(item.DueDate, 'MM-DD-YYYY');
       item.FilteredModifiedDate = item.Modified;
       item.DateModified = new Date(item.Modified);
       item.DateCreatedNew = new Date(item.Created);
 
       item.DateCreated = item.CreatedDate = moment(item.Created).format(
-        "DD/MM/YYYY"
-      ); // ConvertLocalTOServerDate(item.Created, 'DD/MM/YYYY');
-      item.Creatednewdate = moment(item.Created).format("DD/MM/YYYY"); //ConvertLocalTOServerDate(item.Created, 'DD/MM/YYYY HH:mm');
-      // item.Modified = moment(item.Modified).format('DD/MM/YYYY');
-      //ConvertLocalTOServerDate(item.Modified, 'DD/MM/YYYY HH:mm');
+        "MM-DD-YYYY"
+      ); // ConvertLocalTOServerDate(item.Created, 'MM-DD-YYYY');
+      item.Creatednewdate = moment(item.Created).format("MM-DD-YYYY"); //ConvertLocalTOServerDate(item.Created, 'MM-DD-YYYY HH:mm');
+      // item.Modified = moment(item.Modified).format('MM-DD-YYYY');
+      //ConvertLocalTOServerDate(item.Modified, 'MM-DD-YYYY HH:mm');
       if (item.Priority_x0020_Rank == undefined && item.Priority != undefined) {
         switch (item.Priority) {
           case "(1) High":
@@ -452,19 +469,104 @@ function EditInstitution({item,SelectD,Calls}: any) {
             });
         }
       }
-      if (item.Sitestagging != undefined && item.Sitestagging != null) {
-        item.Sitestagging = JSON.parse(item.Sitestagging);
-        item.Sitestagging.forEach(function (site: any) {
-          siteDetail.forEach(function (siteDetail: any) {
-            siteDetail.isEditableSiteDate = false;
-            if (siteDetail.Title == site.Title) {
-              siteDetail.Date = site.Date;
-              siteDetail.ClienTimeDescription = site.ClienTimeDescription;
-              siteDetail.Selected = true;
-              siteDetail.flag = true;
+      let ClientCategory: any;
+      ClientCategory = item.ClientCategory
+      if (ClientCategory != undefined && ClientCategory.length > 0) {
+        let TempArray: any = [];
+        ClientCategory.map((ClientData: any) => {
+          if (AllClientCategoryDataBackup != undefined && AllClientCategoryDataBackup.length > 0) {
+            AllClientCategoryDataBackup.map((clientCategoryData: any) => {
+              if (ClientData.Id == clientCategoryData.ID) {
+                ClientData.siteName = clientCategoryData.siteName;
+                ClientData.ParentID = clientCategoryData.ParentID;
+                TempArray.push(ClientData)
+              }
+            })
+
+          }
+        })
+        setSelectedClientCategory(TempArray);
+        selectedClientCategoryData = TempArray;
+        console.log("selected client category form backend ==========", TempArray)
+      }
+      // if (item.Sitestagging != undefined && item.Sitestagging != null) {
+      //   item.Sitestagging = JSON.parse(item.Sitestagging);
+      //   item.Sitestagging.forEach(function (site: any) {
+      //     siteDetail.forEach(function (siteDetail: any) {
+      //       siteDetail.isEditableSiteDate = false;
+      //       if (siteDetail.Title == site.Title) {
+      //         siteDetail.Date = site.Date;
+      //         siteDetail.ClienTimeDescription = site.ClienTimeDescription;
+      //         siteDetail.Selected = true;
+      //         siteDetail.flag = true;
+      //       }
+      //     });
+      //   });
+      // }
+      if (item.Sitestagging != null && item.Sitestagging != undefined) {
+        let tempData: any = JSON.parse(item.Sitestagging);
+        let tempData2: any = [];
+        if (tempData != undefined && tempData.length > 0) {
+          tempData.map((siteData: any) => {
+            let siteName: any;
+            if (siteData != undefined) {
+              if (siteData.SiteName != undefined) {
+                siteName = siteData?.SiteName?.toLowerCase();
+              } else {
+                siteName = siteData?.Title?.toLowerCase();
+              }
             }
-          });
-        });
+            if (siteName == "migration" || siteName == "health" || siteName == "eps" || siteName == "qa" || siteName == "ei" || siteName == "gender" || siteName == "education" || siteName == "cep" || siteName == "shareweb" || siteName == "small projects" || siteName == 'offshore tasks') {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_${siteName}.png`
+            }
+            if (siteName == 'alakdigital' || siteName == 'da e+e') {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_da.png`
+            }
+            if (siteName == 'development-effectiveness' || siteName == 'de') {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_de.png`
+            }
+            if (siteName == "kathabeck") {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/Icon_Kathabeck.png`
+            }
+            if (siteName == "gruene") {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/logo-gruene.png`
+            }
+            if (siteName == "hhhh") {
+              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/icon_hhhh.png`
+            }
+            tempData2.push(siteData);
+          })
+        }
+
+        let tempArray3: any = [];
+        if (tempData2 != undefined && tempData2.length > 0) {
+          tempData2.map((siteData: any) => {
+            siteData.ClientCategory = [];
+            if (selectedClientCategoryData != undefined && selectedClientCategoryData.length > 0) {
+              selectedClientCategoryData.map((ClientCategoryData: any) => {
+                if (ClientCategoryData.siteName == siteData.SiteName) {
+                  siteData.ClientCategory.push(ClientCategoryData)
+                }
+              })
+              tempArray3.push(siteData);
+            } else {
+              tempArray3.push(siteData);
+            }
+
+          })
+        }
+        // setClientTimeData(tempArray3)
+        item.siteCompositionData = tempArray3;
+      }
+       else {
+        const object: any = {
+          SiteName: "HHHH",
+          ClienTimeDescription: 100,
+          localSiteComposition: true,
+          siteIcons: "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png"
+        }
+        item.siteCompositionData = [object];
+        // setClientTimeData([object]);
       }
 
       item.AssignedUsers = [];
@@ -494,7 +596,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
       if (item.Task_x0020_Type == undefined)
         item.Task_x0020_Type = "Activity Tasks";
       if (item.DueDate != undefined) {
-        item.DueDate = moment(item.DueDate).format("DD/MM/YYYY");
+        item.DueDate = moment(item.DueDate).format("MM-DD-YYYY");
         // setDate(item.DueDate);
       }
       if (item.SharewebCategories != null) {
@@ -519,7 +621,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
         setLinkedComponentData(Rr);
       }
       // if (item.StartDate != undefined) {
-      //   item.StartDate = moment(item.StartDate).format("DD/MM/YYYY");
+      //   item.StartDate = moment(item.StartDate).format("MM-DD-YYYY");
       //   //setStartdate(item.StartDate);
       // }
       if (item.component_x0020_link != null) {
@@ -527,7 +629,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
         //setStartdate(item.StartDate);
       }
       if (item.CompletedDate != undefined) {
-        item.CompletedDate = moment(item.CompletedDate).format("DD/MM/YYYY");
+        item.CompletedDate = moment(item.CompletedDate).format("MM-DD-YYYY");
         // item.CompletedDate = item.CompletedDate.toString();
         // setCompletiondatenew(item.CompletedDate);
       }
@@ -536,15 +638,15 @@ function EditInstitution({item,SelectD,Calls}: any) {
       item["SiteIcon"] =
         item.siteType == "Master Tasks"
           ? GetIconImageUrl(
-              item.siteType,
-              "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
-              undefined
-            )
+            item.siteType,
+            "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
+            undefined
+          )
           : GetIconImageUrl(
-              item.siteType,
-              "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
-              undefined
-            );
+            item.siteType,
+            "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
+            undefined
+          );
       if (item.Synonyms != undefined && item.Synonyms.length > 0) {
         item.Synonyms = JSON.parse(item.Synonyms);
       }
@@ -578,6 +680,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
     });
     //  deferred.resolve(Tasks);
     setComponent(Tasks);
+    console.log("All Portfolio Data From Backend =====", Tasks);
     setEditData(Tasks[0]);
     setModalIsOpenToTrue(true);
 
@@ -604,7 +707,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
   const site: any = [];
   const siteDetail: any = [];
   const GetSmartmetadata = async () => {
-   
+
     let smartmetaDetails = [];
     smartmetaDetails = await web.lists
       //.getById('ec34b38f-0669-480a-910c-f84e92e58adf')
@@ -642,10 +745,11 @@ function EditInstitution({item,SelectD,Calls}: any) {
     setsiteDetails(siteDetail);
     getMasterTaskListTasks();
   };
- 
+
 
   React.useEffect(() => {
     GetTaskUsers();
+    getAllSitesData();
     var initLoading = function () {
       if (item != undefined) {
         var Item = item;
@@ -668,6 +772,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
           { rankTitle: "(0) No Show", rank: 0 },
         ]);
         setSharewebItemRank(TaskItemRank[0]);
+        loadAllClientCategoryData("Client Category");
         // if (useeffectdata == false)
         //     setuseeffectdata(true);
         // else setuseeffectdata(false);
@@ -676,14 +781,20 @@ function EditInstitution({item,SelectD,Calls}: any) {
     };
     initLoading();
   }, []);
+
   const EditComponent = (items: any, title: any) => {
-    // <ComponentPortPolioPopup ></ComponentPortPolioPopup>
-    setIsComponent(true);
-    setSharewebComponent(items);
+    if (title == "Service") {
+      setIsComponent(true);
+      setSharewebComponent(items);
+    } else {
+      setIsService(true);
+      setSharewebComponent(items);
+    }
+
     // <ComponentPortPolioPopup props={item}></ComponentPortPolioPopup>
   };
   const GetComponents = async () => {
-   
+
     let componentDetails = [];
     componentDetails = await web.lists
       //.getById('ec34b38f-0669-480a-910c-f84e92e58adf')
@@ -900,22 +1011,22 @@ function EditInstitution({item,SelectD,Calls}: any) {
   };
   const setPriorityNew = function (e: any, item: any) {
     item.Priority_x0020_Rank = e.target.value;
-    if (item.Priority_x0020_Rank<=10) {
-      
-      if(item.Priority_x0020_Rank == 8||item.Priority_x0020_Rank == 9||item.Priority_x0020_Rank == 10) {
+    if (item.Priority_x0020_Rank <= 10) {
+
+      if (item.Priority_x0020_Rank == 8 || item.Priority_x0020_Rank == 9 || item.Priority_x0020_Rank == 10) {
         item.Priority = "(1) High";
       }
-      if(item.Priority_x0020_Rank == 4||item.Priority_x0020_Rank == 5||item.Priority_x0020_Rank == 6 || item.Priority_x0020_Rank == 7) {
+      if (item.Priority_x0020_Rank == 4 || item.Priority_x0020_Rank == 5 || item.Priority_x0020_Rank == 6 || item.Priority_x0020_Rank == 7) {
         item.Priority = "(2) Normal";
       }
-      if(item.Priority_x0020_Rank == 1||item.Priority_x0020_Rank == 2||item.Priority_x0020_Rank == 3 || item.Priority_x0020_Rank == 0) {
+      if (item.Priority_x0020_Rank == 1 || item.Priority_x0020_Rank == 2 || item.Priority_x0020_Rank == 3 || item.Priority_x0020_Rank == 0) {
         item.Priority = "(3) Low";
       }
-  
-    }else{
+
+    } else {
       item.Priority_x0020_Rank = ""
       alert("Please Enter priority between 0 to 10");
-      
+
     }
     // getpriority(item);
     setComponent((EditData) => [...EditData]);
@@ -957,10 +1068,10 @@ function EditInstitution({item,SelectD,Calls}: any) {
       } else item["Synonyms"] = [];
       flag
         ? item["Synonyms"].push({
-            status: true,
-            Title: item.SynonymsTitle,
-            Id: "",
-          })
+          status: true,
+          Title: item.SynonymsTitle,
+          Id: "",
+        })
         : null;
       item.SynonymsTitle = "";
     }
@@ -992,7 +1103,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
       });
     }
     if (NewArray != undefined && NewArray.length > 0) {
-      CategoriesData=[]
+      CategoriesData = []
       NewArray.map((NeitemA: any) => {
         CategoriesData.push(NeitemA);
       });
@@ -1091,10 +1202,10 @@ function EditInstitution({item,SelectD,Calls}: any) {
       var ItemRank = SharewebItemRank.filter(
         (option: { rankTitle: any }) => option.rankTitle == Items.ItemRankTitle
       )[0].rank;
-   
+
     await web.lists
       .getById(RequireData.MasterTaskListID)
-      .items.getById(Items.ID)
+      .items.getById(Items.Id)
       .update({
         Title: Items.Title,
 
@@ -1105,7 +1216,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
         StartDate: EditData?.StartDate ? moment(EditData?.StartDate).format("MM-DD-YYYY") : null,
         DueDate: EditData?.DueDate ? moment(EditData?.DueDate).format("MM-DD-YYYY") : null,
         CompletedDate: EditData?.CompletedDate ? moment(EditData?.CompletedDate).format("MM-DD-YYYY") : null,
-        
+
         // Categories:EditData?.smartCategories != undefined && EditData?.smartCategories != ''?EditData?.smartCategories[0].Title:EditData?.Categories,
         Categories: categoriesItem ? categoriesItem : null,
         SharewebCategoriesId: { results: CategoryID },
@@ -1133,7 +1244,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
         },
         TechnicalExplanations:
           PostTechnicalExplanations != undefined &&
-          PostTechnicalExplanations != ""
+            PostTechnicalExplanations != ""
             ? PostTechnicalExplanations
             : EditData?.TechnicalExplanations,
         Deliverables:
@@ -1142,7 +1253,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
             : EditData?.Deliverables,
         Short_x0020_Description_x0020_On:
           PostShort_x0020_Description_x0020_On != undefined &&
-          PostShort_x0020_Description_x0020_On != ""
+            PostShort_x0020_Description_x0020_On != ""
             ? PostShort_x0020_Description_x0020_On
             : EditData?.Short_x0020_Description_x0020_On,
         Body:
@@ -1263,7 +1374,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
       });
       setTaskAssignedTo(tempArray);
       console.log("Team Config  assigadf=====", tempArray);
-    }else {
+    } else {
       setTaskAssignedTo([]);
     }
     if (dt?.TeamMemberUsers?.length > 0) {
@@ -1277,7 +1388,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
       });
       setTaskTeamMembers(tempArray);
       console.log("Team Config member=====", tempArray);
-    }else {
+    } else {
       setTaskTeamMembers([]);
     }
     if (dt.ResponsibleTeam != undefined && dt.ResponsibleTeam.length > 0) {
@@ -1325,79 +1436,79 @@ function EditInstitution({item,SelectD,Calls}: any) {
   const onRenderCustomHeader = () => {
     return (
       <>
-      <div className="align-items-center d-flex full-width justify-content-between">
-        <div className="ps-4">  <ul className=" m-0 p-0 spfxbreadcrumb"
-        >
-           <li>
-                        {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-                        {EditData?.Portfolio_x0020_Type != undefined && (
-                          <a
-                            target="_blank"
-                            data-interception="off"
-                            href={`${RequireData.siteUrl}/SitePages/${EditData?.Portfolio_x0020_Type}-Portfolio.aspx`}
-                          >
-                            {EditData?.Portfolio_x0020_Type}-Portfolio
-                          </a>
-                        )}
-                      </li>
-                      {(EditData?.Item_x0020_Type == "SubComponent" ||
-                        EditData?.Item_x0020_Type == "Feature") && (
-                         <> <li>
-                          {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-                          {(EditData?.Parent != undefined && ParentData != undefined && ParentData.length != 0 )&& (
-                           
-                            <a
-                              target="_blank"
-                              data-interception="off"
-                              href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${ParentData[0].Parent.Id}`}
-                            >
-                              {ParentData[0].Parent.Title}
-                            </a>
-                           
-                          )}
-                        </li>
-                        <li>
-                          {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-                          {EditData?.Parent != undefined && (
-                            <a
-                              target="_blank"
-                              data-interception="off"
-                              href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${EditData?.Parent.Id}`}
-                            >
-                              {EditData?.Parent.Title}
-                            </a>
-                          )}
-                        </li>
-                        </>
-                      )}
+        <div className="align-items-center d-flex full-width justify-content-between">
+          <div className="ps-4">  <ul className=" m-0 p-0 spfxbreadcrumb"
+          >
+            <li>
+              {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+              {EditData?.Portfolio_x0020_Type != undefined && (
+                <a
+                  target="_blank"
+                  data-interception="off"
+                  href={`${RequireData.siteUrl}/SitePages/${EditData?.Portfolio_x0020_Type}-Portfolio.aspx`}
+                >
+                  {EditData?.Portfolio_x0020_Type}-Portfolio
+                </a>
+              )}
+            </li>
+            {(EditData?.Item_x0020_Type == "SubComponent" ||
+              EditData?.Item_x0020_Type == "Feature") && (
+                <> <li>
+                  {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+                  {(EditData?.Parent != undefined && ParentData != undefined && ParentData.length != 0) && (
 
-                      <li>
-                      {EditData?.Item_x0020_Type == "Feature"&&<a>
-                        <><img  style={{    width: "20px", marginRight: "2px"}} src={EditData?.Portfolio_x0020_Type == "Service"?"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/feature_icon.png":"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"}/>{EditData?.Title}</>
-                        </a>}
-                        {EditData?.Item_x0020_Type == "SubComponent"&&<a>
-                        <><img  style={{    width: "20px", marginRight: "2px"}} src={EditData?.Portfolio_x0020_Type == "Service"?"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/SubComponent_icon.png":"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/SubComponent_icon.png"}/>{EditData?.Title}</>
-                        </a>}
-                         {EditData?.Item_x0020_Type == "Component"&&<a>
-                        <><img style={{    width: "20px", marginRight: "2px"}}src={EditData?.Portfolio_x0020_Type == "Service"?"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png":"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"}/>{EditData?.Title}</>
-                        </a>}
-                      </li>
-        </ul></div>
-      
-       <div className="feedbkicon"> <Tooltip /> </div>
-       </div>
+                    <a
+                      target="_blank"
+                      data-interception="off"
+                      href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${ParentData[0].Parent.Id}`}
+                    >
+                      {ParentData[0].Parent.Title}
+                    </a>
+
+                  )}
+                </li>
+                  <li>
+                    {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+                    {EditData?.Parent != undefined && (
+                      <a
+                        target="_blank"
+                        data-interception="off"
+                        href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${EditData?.Parent.Id}`}
+                      >
+                        {EditData?.Parent.Title}
+                      </a>
+                    )}
+                  </li>
+                </>
+              )}
+
+            <li>
+              {EditData?.Item_x0020_Type == "Feature" && <a>
+                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/feature_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"} />{EditData?.Title}</>
+              </a>}
+              {EditData?.Item_x0020_Type == "SubComponent" && <a>
+                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/SubComponent_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/SubComponent_icon.png"} />{EditData?.Title}</>
+              </a>}
+              {EditData?.Item_x0020_Type == "Component" && <a>
+                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"} />{EditData?.Title}</>
+              </a>}
+            </li>
+          </ul></div>
+
+          <div className="feedbkicon"> <Tooltip /> </div>
+        </div>
       </>
     );
   };
   const deleteTask = async () => {
     var confirmDelete = confirm("Are you sure, you want to delete this?");
     if (confirmDelete) {
-     
+
       await web.lists
         .getById(RequireData.MasterTaskListID)
         .items.getById(item.Id)
         .recycle()
-        .then((i:any) => {
+        .then((i: any) => {
           console.log(i);
           setComponent((EditData) => [...EditData]);
           setModalIsOpenToFalse();
@@ -1414,10 +1525,218 @@ function EditInstitution({item,SelectD,Calls}: any) {
       }
     });
   };
+
+  // ******************** This is for the Site Compsition Component related All Functions And CallBack *******************
+
+
+  //  ******************  This is All Site Details Get Data Call From Backend **************
+
+  const getAllSitesData = async () => {
+    let web = new Web(RequireData.siteUrl);
+    let MetaData: any = [];
+    let siteConfig: any = [];
+    let tempArray: any = [];
+    MetaData = await web.lists
+      .getById(RequireData.SmartMetadataListID)
+      .items
+      .select("Id,Title,listId,siteUrl,siteName,Item_x005F_x0020_Cover,ParentID,EncodedAbsUrl,IsVisible,Created,Modified,Description1,SortOrder,Selectable,TaxType,Created,Modified,Author/Name,Author/Title,Editor/Name,Editor/Title")
+      .top(4999)
+      .expand('Author,Editor')
+      .get()
+
+    siteConfig = getSmartMetadataItemsByTaxType(MetaData, 'Sites');
+    siteConfig?.map((site: any) => {
+      if (site.Title !== undefined && site.Title !== 'Foundation' && site.Title !== 'Master Tasks' && site.Title !== 'DRR' && site.Title !== "SDC Sites") {
+        site.BtnStatus = false;
+        site.isSelected = false;
+        tempArray.push(site);
+      }
+    })
+    setSiteTypes(tempArray);
+    tempArray?.map((tempData: any) => {
+      SiteTypeBackupArray.push(tempData);
+    })
+  }
+  var getSmartMetadataItemsByTaxType = function (metadataItems: any, taxType: any) {
+    var Items: any = [];
+    metadataItems.map((taxItem: any) => {
+      if (taxItem.TaxType === taxType)
+        Items.push(taxItem);
+    });
+    Items.sort((a: any, b: any) => {
+      return a.SortOrder - b.SortOrder;
+    });
+    return Items;
+  }
+
+   //  ######################  This is  Client Category Get Data Call From Backend  #######################
+
+   const loadAllClientCategoryData = function (SmartTaxonomy: any) {
+    var AllTaskusers = []
+    var AllMetaData: any = []
+    var TaxonomyItems: any = []
+    var url = (`${RequireData.siteUrl}/_api/web/lists/getbyid('${RequireData?.SmartMetadataListID}')/items?$select=Id,Title,IsVisible,ParentID,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable,IsSendAttentionEmail/Id,IsSendAttentionEmail/Title,IsSendAttentionEmail/EMail&$expand=IsSendAttentionEmail&$orderby=SortOrder&$top=4999&$filter=TaxType eq '` + SmartTaxonomy + "'")
+    $.ajax({
+        url: url,
+        method: "GET",
+        headers: {
+            "Accept": "application/json; odata=verbose"
+        },
+        success: function (data) {
+            AllTaskusers = data.d.results;
+            $.each(AllTaskusers, function (index: any, item: any) {
+                if (item.Title.toLowerCase() == 'pse' && item.TaxType == 'Client Category') {
+                    item.newTitle = 'EPS';
+                }
+                else if (item.Title.toLowerCase() == 'e+i' && item.TaxType == 'Client Category') {
+                    item.newTitle = 'EI';
+                }
+                else if (item.Title.toLowerCase() == 'education' && item.TaxType == 'Client Category') {
+                    item.newTitle = 'Education';
+                }
+                else if (item.Title.toLowerCase() == 'migration' && item.TaxType == 'Client Category') {
+                    item.newTitle = 'Migration';
+                }
+                else {
+                    item.newTitle = item.Title;
+                }
+                AllMetaData.push(item);
+            })
+            if (SmartTaxonomy == "Client Category") {
+                // setAllClientCategoryData(AllMetaData);
+                // AllClientCategoryDataBackup = AllMetaData;
+                BuildClieantCategoryAllDataArray(AllMetaData);
+            }
+        },
+        error: function (error: any) {
+            console.log('Error:', error)
+        }
+    })
+};
+
+const BuildClieantCategoryAllDataArray = (DataItem: any) => {
+    let MainParentArray: any = [];
+    let FinalArray: any = [];
+    if (DataItem != undefined && DataItem.length > 0) {
+        DataItem.map((Item: any) => {
+            if (Item.ParentID == 0) {
+                Item.Child = [];
+                MainParentArray.push(Item);
+            }
+        })
+    }
+    if (MainParentArray?.length > 0) {
+        MainParentArray.map((ParentArray: any) => {
+            if (DataItem?.length > 0) {
+                DataItem.map((ChildArray: any) => {
+                    if (ParentArray.Id == ChildArray.ParentID) {
+                        ChildArray.siteName = ParentArray.newTitle;
+                        ChildArray.Child = [];
+                        ParentArray.Child.push(ChildArray);
+                    }
+                })
+            }
+
+        })
+    }
+    if (MainParentArray?.length > 0) {
+        MainParentArray.map((ParentArray: any) => {
+            if (ParentArray?.Child?.length > 0) {
+                ParentArray?.Child.map((ChildLevelFirst: any) => {
+                    if (DataItem?.length > 0) {
+                        DataItem.map((ChildArray: any) => {
+                            if (ChildLevelFirst.Id == ChildArray.ParentID) {
+                                ChildArray.siteName = ParentArray.newTitle;
+                                ChildArray.Child = [];
+                                ChildLevelFirst.Child.push(ChildArray);
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
+    if (MainParentArray?.length > 0) {
+        MainParentArray.map((ParentArray: any) => {
+            if (ParentArray?.Child?.length > 0) {
+                ParentArray?.Child.map((ChildLevelFirst: any) => {
+                    if (ChildLevelFirst.Child?.length > 0) {
+                        ChildLevelFirst.Child.map((lastChild: any) => {
+                            if (DataItem?.length > 0) {
+                                DataItem.map((ChildArray: any) => {
+                                    if (lastChild.Id == ChildArray.ParentID) {
+                                        ChildArray.siteName = ParentArray.newTitle;
+                                        ChildArray.Child = [];
+                                        lastChild.Child.push(ChildArray);
+                                    }
+                                })
+                            }
+                        })
+
+                    }
+
+                })
+            }
+        })
+    }
+    if (MainParentArray?.length > 0) {
+        MainParentArray.map((ParentArray: any) => {
+            if (ParentArray?.Child?.length > 0) {
+                ParentArray?.Child.map((ChildLevelFirst: any) => {
+                    if (ChildLevelFirst.Child?.length > 0) {
+                        ChildLevelFirst.Child.map((lastChild: any) => {
+                            if (lastChild.Child?.length > 0) {
+                                lastChild.Child?.map((endChild: any) => {
+                                    if (DataItem?.length > 0) {
+                                        DataItem.map((ChildArray: any) => {
+                                            if (endChild.Id == ChildArray.ParentID) {
+                                                ChildArray.siteName = ParentArray.newTitle;
+                                                ChildArray.Child = [];
+                                                endChild.Child.push(ChildArray);
+                                            }
+                                        })
+                                    }
+
+                                })
+                            }
+
+                        })
+
+                    }
+
+                })
+            }
+        })
+    }
+    if (MainParentArray?.length > 0) {
+        MainParentArray.map((finalItem: any) => {
+            FinalArray.push(finalItem);
+            if (finalItem.Child?.length > 0) {
+                finalItem.Child.map((FinalChild: any) => {
+                    FinalArray.push(FinalChild);
+                    if (FinalChild.Child?.length > 0) {
+                        FinalChild.Child.map((LastChild: any) => {
+                            FinalArray.push(LastChild)
+                            if (LastChild.Child?.length > 0) {
+                                LastChild.Child?.map((endChild: any) => {
+                                    FinalArray.push(endChild);
+                                })
+                            }
+                        })
+
+                    }
+                })
+
+            }
+        })
+    }
+    AllClientCategoryDataBackup = FinalArray;
+}
+
   return (
     <>
-      {console.log("Done")}
-      <Panel className={`${EditData?.Portfolio_x0020_Type == "Service" ? " serviepannelgreena":""}`}
+      {console.log("All Done")}
+      <Panel className={`${EditData?.Portfolio_x0020_Type == "Service" ? " serviepannelgreena" : ""}`}
         headerText={`${EditData?.Portfolio_x0020_Type}-Portfolio > ${EditData?.Title}`}
         isOpen={modalIsOpen}
         onDismiss={setModalIsOpenToFalse}
@@ -1454,7 +1773,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                     aria-controls="concept"
                     aria-selected="false"
                   >
-                    Concept
+                    CONCEPT
                   </button>
                 </li>
                 <li className="nav-item" role="presentation">
@@ -1468,7 +1787,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                     aria-controls="profile"
                     aria-selected="false"
                   >
-                    Architecture & Technologies
+                    ARCHITECTURE & TECHNOLOGIES
                   </button>
                 </li>
                 <li className="nav-item" role="presentation">
@@ -1487,7 +1806,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                 </li>
               </ul>
               <div
-                className="tab-content border border-top-0 clearfix "
+                className="tab-content clearfix "
                 id="myTabContent"
               >
                 <div
@@ -1563,8 +1882,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                   : ""
                               }
                               onChange={(e) =>
-                                (EditData.Deliverable_x002d_Synonyms =
-                                  e.target.value)
+                              (EditData.Deliverable_x002d_Synonyms =
+                                e.target.value)
                               }
                             />
                           </div>
@@ -1604,7 +1923,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                               <span className="input-group-text">
                                 <svg
                                   onClick={(e) =>
-                                    EditComponent(EditData, 'Services')
+                                    EditComponent(EditData, 'Service')
                                   }
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 48 48"
@@ -1621,29 +1940,29 @@ function EditInstitution({item,SelectD,Calls}: any) {
                             </div>
                           )}
                           {EditData?.Portfolio_x0020_Type == "Component" && (
-                            <div className="input-group">
+                            <div className="col-sm-12  inner-tabb">
                               {linkedComponentData?.length > 0 ? (
-                                <div>
+                                <div className="serviepannelgreena">
+                                  
                                   {linkedComponentData?.map((com: any) => {
                                     return (
                                       <>
-                                        <div className="d-flex Component-container-edit-task  block">
-                                          <div className="">
+                                        <div className="block d-flex justify-content-between mb-1">
+                                       
                                             <a
-                                              className="hreflink service"
+                                              className="hreflink service ps-2"
                                               target="_blank"
                                               data-interception="off"
                                               href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}
                                             >
                                               {com.Title}
                                             </a>
-                                            <img
-                                              src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif"
-                                              onClick={() =>
-                                                setLinkedComponentData([])
-                                              }
-                                            />
-                                          </div>
+                                            <a className='text-end'>  <span className="bg-light svg__icon--cross svg__iconbox"onClick={() =>
+                                                   setLinkedComponentData([])
+                                              }></span></a>
+                                          
+                                           
+                                       
                                         </div>
                                       </>
                                     );
@@ -1656,30 +1975,31 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                                         </span> */}
                             </div>
                           )}
-                           {EditData?.Portfolio_x0020_Type == "Service" && (
-                            <div className="input-group">
+                          {EditData?.Portfolio_x0020_Type == "Service" && (
+                            <div className="col-sm-12  inner-tabb">
                               {linkedComponentData?.length > 0 ? (
                                 <div>
                                   {linkedComponentData?.map((com: any) => {
                                     return (
                                       <>
-                                        <div className="d-flex Component-container-edit-task  block ">
-                                          <div className="serviepannelgreena">
+                                        <div className="block d-flex justify-content-between mb-1">
+                                     
                                             <a
-                                              className="hreflink service "
+                                              className="hreflink service ps-2"
                                               target="_blank"
                                               data-interception="off"
                                               href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}
                                             >
                                               {com.Title}
                                             </a>
-                                            <img
-                                              src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif"
-                                              onClick={() =>
-                                                setLinkedComponentData([])
-                                              }
-                                            />
-                                          </div>
+                                            <a className='text-end'>
+                                            <span className="bg-light svg__icon--cross svg__iconbox"onClick={() =>
+                                                  setLinkedComponentData([])
+                                              }></span>
+                                            </a>
+                                          
+                                           
+                                         
                                         </div>
                                       </>
                                     );
@@ -1738,9 +2058,9 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                                     } */}
                               {smartComponentData
                                 ? smartComponentData?.map((com: any) => {
-                                    return (
-                                      <>
-                                       <div className="">
+                                  return (
+                                    <>
+                                      <div className="">
                                         <div
                                           className="d-flex Component-container-edit-task block "
                                           style={{ width: "81%" }}
@@ -1753,19 +2073,16 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                             {com.Title}
                                           </a>
                                           <a>
-                                            <img
-                                              className="mx-2"
-                                              src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif"
-                                              onClick={() =>
+                                          <span className="bg-light svg__icon--cross svg__iconbox" onClick={() =>
                                                 setSmartComponentData([])
-                                              }
-                                            />
+                                              }></span>
+                                           
                                           </a>
                                         </div>
-                                        </div>
-                                      </>
-                                    );
-                                  })
+                                      </div>
+                                    </>
+                                  );
+                                })
                                 : null}
                             </div>
                           </div>
@@ -1778,12 +2095,12 @@ function EditInstitution({item,SelectD,Calls}: any) {
                               Start Date
                             </label>
                             <input type="date" className="form-control" max="9999-12-31"
-                                                        defaultValue={moment(EditData?.StartDate).format("YYYY-DD-MM")}
-                                                        onChange={(e) => setEditData({
-                                                            ...EditData, StartDate: e.target.value
-                                                        })}
-                                                    />
-                          
+                              defaultValue={moment(EditData?.StartDate).format("YYYY-MM-DD")}
+                              onChange={(e) => setEditData({
+                                ...EditData, StartDate: e.target.value
+                              })}
+                            />
+
                           </div>
                         </div>
                         <div className="col-sm-4 ">
@@ -1792,11 +2109,11 @@ function EditInstitution({item,SelectD,Calls}: any) {
                               Due Date
                             </label>
                             <input type="date" className="form-control" max="9999-12-31"
-                                                        defaultValue={EditData?.DueDate ? moment(EditData?.DueDate).format("YYYY-DD-MM") : ''}
-                                                        onChange={(e) => setEditData({
-                                                            ...EditData, DueDate: e.target.value
-                                                        })}
-                                                    />
+                              defaultValue={EditData?.DueDate ? moment(EditData?.DueDate).format("YYYY-MM-DD") : ''}
+                              onChange={(e) => setEditData({
+                                ...EditData, DueDate: e.target.value
+                              })}
+                            />
                           </div>
                         </div>
                         <div className="col-sm-4 pe-0">
@@ -1806,11 +2123,11 @@ function EditInstitution({item,SelectD,Calls}: any) {
                               Completion Date{" "}
                             </label>
                             <input type="date" className="form-control" max="9999-12-31"
-                                                        defaultValue={EditData?.CompletedDate ? moment(EditData?.CompletedDate).format("YYYY-MM-DD") : ''}
-                                                        onChange={(e) => setEditData({
-                                                            ...EditData, CompletedDate: e.target.value
-                                                        })}
-                                                    />
+                              defaultValue={EditData?.CompletedDate ? moment(EditData?.CompletedDate).format("YYYY-MM-DD") : ''}
+                              onChange={(e) => setEditData({
+                                ...EditData, CompletedDate: e.target.value
+                              })}
+                            />
                           </div>
                         </div>
                       </div>
@@ -2115,19 +2432,19 @@ function EditInstitution({item,SelectD,Calls}: any) {
                         </div>
                         <div className="col mt-2">
                           <div className="input-group">
-                          
-                                  <div className="TaskUsers">
-                                    <label className="form-label full-width  mx-2">
-                                      Task Users
-                                    </label>
-                                    {EditData?.AssignedUsers?.map(
-                              (userDtl: any, index: any) => {
-                                return (
+
+                            <div className="TaskUsers">
+                              <label className="form-label full-width  mx-2">
+                                Working Member
+                              </label>
+                              {EditData?.AssignedUsers?.map(
+                                (userDtl: any, index: any) => {
+                                  return (
                                     <a
                                       target="_blank"
                                       href={
                                         userDtl.Item_x0020_Cover
-                                          ? userDtl.Item_x0020_Cover.Url
+                                          ? userDtl.Item_x0020_Cover?.Url
                                           : "https://hhhhteams.sharepoint.com/sites/HHHH/GmBH/SiteCollectionImages/ICONS/32/icon_user.jpg"
                                       }
                                     >
@@ -2148,17 +2465,17 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                           borderRadius: "50px",
                                         }}
                                         src={
-                                          userDtl.Item_x0020_Cover.Url
-                                            ? userDtl.Item_x0020_Cover.Url
+                                          userDtl.Item_x0020_Cover?.Url
+                                            ? userDtl.Item_x0020_Cover?.Url
                                             : "https://hhhhteams.sharepoint.com/sites/HHHH/GmBH/SiteCollectionImages/ICONS/32/icon_user.jpg"
                                         }
                                       />
                                     </a>
-                                      );
-                                    }
-                                  )}
-                                  </div>
-                              
+                                  );
+                                }
+                              )}
+                            </div>
+
                           </div>
                         </div>
                       </div>
@@ -2271,7 +2588,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                         <>
                                           {type.Title != "Phone" &&
                                             type.Title !=
-                                              "Email Notification" &&
+                                            "Email Notification" &&
                                             type.Title != "Approval" &&
                                             type.Title != "Immediate" && (
                                               <div className="block d-flex justify-content-between my-1 p-1">
@@ -2285,13 +2602,10 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                                 >
                                                   {type.Title}
                                                 </a>
-                                                <img
-                                                  src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif"
-                                                  onClick={() =>
-                                                    deleteCategories(type.Id)
-                                                  }
-                                                  className="p-1"
-                                                />
+                                                <span className="bg-light svg__icon--cross svg__iconbox" onClick={() =>
+                                                    deleteCategories(type.Id)}></span>
+                                              
+                                               
                                               </div>
                                             )}
                                         </>
@@ -2316,7 +2630,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                     </div>
                     <div className="col-sm-8">
                       <div className="input-group mb-2">
-                      <label className="form-label  full-width"></label>
+                        <label className="form-label  full-width"></label>
                         <input
                           type="text"
                           className="form-control"
@@ -2330,7 +2644,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                           }
                           placeholder="Url"
                         ></input>
-                        <span><a target="_blank" href={EditData.component_x0020_link}>Open</a></span>
+                        <span><a target="_blank" data-interception="off" href={EditData.component_x0020_link}>Open</a></span>
                       </div>
                     </div>
                   </div>
@@ -2343,7 +2657,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                   aria-labelledby="profile-tab"
                 >
                   <div className="row">
-                    <div className="col-sm-7">
+                    <div className="col-sm-7 pe-0">
                       <div className="row">
                         <TeamConfigurationCard
                           ItemInfo={item}
@@ -2397,8 +2711,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                           EditData?.Admin_x0020_Notes
                                         }
                                         onChange={(e) =>
-                                          (EditData.Admin_x0020_Notes =
-                                            e.target.value)
+                                        (EditData.Admin_x0020_Notes =
+                                          e.target.value)
                                         }
                                       ></textarea>
                                     </div>
@@ -2512,7 +2826,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                       <HtmlEditorCard
                                         editorValue={
                                           EditData?.Short_x0020_Description_x0020_On !=
-                                          undefined
+                                            undefined
                                             ? EditData?.Short_x0020_Description_x0020_On
                                             : ""
                                         }
@@ -2567,8 +2881,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                             EditData?.BackgroundVerified === true
                                           }
                                           onChange={(e) =>
-                                            (EditData.BackgroundVerified =
-                                              e.target.value)
+                                          (EditData.BackgroundVerified =
+                                            e.target.value)
                                           }
                                         ></input>
                                         <span className="ps-1">Verified</span>
@@ -2627,8 +2941,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                             EditData?.IdeaVerified === true
                                           }
                                           onChange={(e) =>
-                                            (EditData.BackgroundVerified =
-                                              e.target.value)
+                                          (EditData.BackgroundVerified =
+                                            e.target.value)
                                           }
                                         ></input>
                                         <span className="ps-1">Verified</span>
@@ -2687,8 +3001,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                                             EditData?.ValueAddedVerified === true
                                           }
                                           onChange={(e) =>
-                                            (EditData.ValueAddedVerified =
-                                              e.target.value)
+                                          (EditData.ValueAddedVerified =
+                                            e.target.value)
                                           }
                                         ></input>
                                         <span className="ps-1">Verified</span>
@@ -2768,6 +3082,31 @@ function EditInstitution({item,SelectD,Calls}: any) {
                           </div>
                         </section>
                       </div>
+                    </div>
+                    <div className="col-sm-5 ps-0">
+                      {EditData.Id != null ?
+                        <>
+                          {SiteTypes != undefined && SiteTypes.length > 0 ?
+                            <SiteCompositionComponent
+                              AllListId={RequireData}
+                              ItemId={item.Id}
+                              siteUrls={RequireData.siteUrl}
+                              SiteTypes={SiteTypes}
+                              ClientTime={EditData.siteCompositionData != undefined ? EditData.siteCompositionData : []}
+                              SiteCompositionSettings={EditData.SiteCompositionSettings}
+                              // SmartTotalTimeData={SmartTotalTimeData}
+                              currentListName={EditData.siteType}
+                              // callBack={SiteCompositionCallBack}
+                              isServiceTask={EditData?.Portfolio_x0020_Type == "Service" ? true : false}
+                              SelectedClientCategory={selectedClientCategory}
+                            // isPortfolioConncted={ComponentTaskCheck || ServicesTaskCheck ? true : false}
+                            // SitesTaggingData={SitesTaggingData}
+                            /> : null
+                          }
+                        </>
+                        : null
+                      }
+
                     </div>
                   </div>
                 </div>
@@ -2858,10 +3197,10 @@ function EditInstitution({item,SelectD,Calls}: any) {
                 <div>
                   <div className="text-left">
                     Created{" "}
-                    <span ng-bind="EditData?.Created | date:'dd/MM/yyyy'">
+                    <span ng-bind="EditData?.Created | date:'MM-DD-YYYY'">
                       {" "}
                       {EditData?.Created != null
-                        ? moment(EditData?.Created).format("DD/MM/YYYY MM:SS")
+                        ? moment(EditData?.Created).format("MM-DD-YYYY MM:SS")
                         : ""}
                     </span>{" "}
                     by
@@ -2875,7 +3214,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                     Last modified{" "}
                     <span>
                       {EditData?.Modified != null
-                        ? moment(EditData?.Modified).format("DD/MM/YYYY MM:SS")
+                        ? moment(EditData?.Modified).format("MM-DD-YYYY MM:SS")
                         : ""}
                     </span>{" "}
                     by{" "}
@@ -2907,7 +3246,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
                       {EditData?.ID ? (
                         <VersionHistoryPopup
                           taskId={EditData?.ID}
-                          listId={RequireData.MasterTask}
+                          listId={RequireData.MasterTaskListID}
                           siteUrls={RequireData?.siteUrl}
                         />
                       ) : (
@@ -2932,9 +3271,8 @@ function EditInstitution({item,SelectD,Calls}: any) {
                         src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/32/icon_maill.png"
                       />
                       <a
-                        href={`mailto:?subject=${"Test"}&body=${
-                          EditData?.component_x0020_link
-                        }`}
+                        href={`mailto:?subject=${"Test"}&body=${EditData?.component_x0020_link
+                          }`}
                       >
                         {" "}
                         Share this task ||
@@ -2968,7 +3306,7 @@ function EditInstitution({item,SelectD,Calls}: any) {
               </div>
             </footer>
 
-            {IsComponent && item.Portfolio_x0020_Type == "Component" && (
+            {/* {IsComponent && item.Portfolio_x0020_Type == "Component" && (
               <LinkedComponent
                 props={SharewebComponent}
                 Dynamic={RequireData}
@@ -2981,9 +3319,25 @@ function EditInstitution({item,SelectD,Calls}: any) {
                 Dynamic={RequireData}
                 Call={Call}
               ></ComponentPortPolioPopup>
-            )}
+            )} */}
+            {IsComponent ?
+              <ServiceComponentPortfolioPopup
+                props={SharewebComponent}
+                Dynamic={RequireData}
+                Call={Call}
+                ComponentType={"Service"}
+              ></ServiceComponentPortfolioPopup> : null
+            }
+            {IsService ?
+              <ServiceComponentPortfolioPopup
+                props={SharewebComponent}
+                Dynamic={RequireData}
+                Call={Call}
+                ComponentType={"Component"}
+              ></ServiceComponentPortfolioPopup> : null
+            }
             {IsComponentPicker && (
-              <Picker props={SharewebCategory} Call={Call}  AllListId={RequireData}></Picker>
+              <Picker props={SharewebCategory} Call={Call} AllListId={RequireData}></Picker>
             )}
           </div>
         )}

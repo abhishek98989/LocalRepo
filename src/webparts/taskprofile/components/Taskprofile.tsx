@@ -480,7 +480,7 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
   private async GetSmartMetaData(ClientCategory: any, ClientTime: any) {
     let array2: any = [];
     ClientTimeArray=[]
-    if ((ClientTime == null && ClientTimeArray?.length == 0)) {
+    if (((ClientTime == null ||ClientTime=="false") && ClientTimeArray?.length == 0)) {
       var siteComp: any = {};
       siteComp.SiteName = this.state?.listName,
         siteComp.ClienTimeDescription = 100,
@@ -488,7 +488,7 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
       ClientTimeArray.push(siteComp);
     }
 
-    else if (ClientTime != null) {
+    else if (ClientTime != null &&ClientTime!="false" ) {
       ClientTimeArray = JSON.parse(ClientTime);
       //  console.log(ClientTimeArray);
     }
@@ -502,15 +502,18 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
       .expand('Parent').filter("TaxType eq 'Client Category'").top(4000)
       .get();
     // console.log(smartMetaData);
-    ClientCategory?.map((item: any, index: any) => {
-      smartMetaData?.map((items: any, index: any) => {
-        if (item?.Id == items?.Id) {
-          item.SiteName = items?.siteName;
-          array2.push(item)
-        }
+    if(ClientCategory.length>0){
+      ClientCategory?.map((item: any, index: any) => {
+        smartMetaData?.map((items: any, index: any) => {
+          if (item?.Id == items?.Id) {
+            item.SiteName = items?.siteName;
+            array2.push(item)
+          }
+        })
       })
-    })
-    console.log(ClientCategory);
+      console.log(ClientCategory);
+    }
+ 
     if (ClientTimeArray != undefined && ClientTimeArray != null) {
       ClientTimeArray?.map((item: any) => {
         array2?.map((items: any) => {
@@ -1140,12 +1143,12 @@ export default class Taskprofile extends React.Component<ITaskprofileProps, ITas
                         <a target="_blank" data-interception="off"  href={`${this.state.Result["siteUrl"]}/SitePages/Task-Profile.aspx?taskId=${breadcrumbitem.ParentTask.Id}&Site=${breadcrumbitem?.ParentTask?.siteType}`}>{breadcrumbitem?.ParentTask?.Title}</a>
                       </li>
                     }
-                    {breadcrumbitem.ChildTask != undefined &&
+                    {/* {breadcrumbitem.ChildTask != undefined &&
                       <li >
 
                         <a target="_blank" data-interception="off"  href={`${this.state.Result["siteUrl"]}/SitePages/Task-Profile.aspx?taskId=${breadcrumbitem.ChildTask.Id}&Site=${breadcrumbitem?.ChildTask?.siteType}`}>{breadcrumbitem?.ChildTask?.Title}</a>
                       </li>
-                    }
+                    } */}
 
                     {breadcrumbitem.ParentTask != undefined  && 
                       <li>
