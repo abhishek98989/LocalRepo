@@ -58,7 +58,7 @@ const EmailComponent = (props: any) => {
     }).then((data: any) => {
       console.log("Email Sent!");
       console.log(data);
-      props.callBack();
+      props.callBack(true);
     }).catch((err) => {
       console.log(err.message);
     });
@@ -95,11 +95,11 @@ const EmailComponent = (props: any) => {
 
         <div style={{ marginTop: "11.25pt" }}>
           <a href={`${props.Context._pageContext._web.absoluteUrl}/SitePages/Task-Profile.aspx?taskId=${props.items.Id}&Site=${props.items.siteType}`} target="_blank" data-interception="off">{props.items["Title"]}</a><u></u><u></u></div>
-        <table cellPadding="0" width="100%" style={{ width: "100.0%" }}>
+        <table cellPadding={0} cellSpacing={0}width="100%" style={{ width: "100.0%" }}>
           <tbody>
             <tr>
               <td width="70%" valign="top" style={{ width: '70.0%', padding: '.75pt .75pt .75pt .75pt' }}>
-                <table cellPadding="0" width="99%" style={{ width: "99.0%" }}>
+                <table cellPadding={0} cellSpacing={0} width="99%" style={{ width: "99.0%" }}>
                   <tbody>
                     <tr>
                       <td style={{ padding: ".75pt .75pt .75pt .75pt" }}></td>
@@ -210,72 +210,51 @@ const EmailComponent = (props: any) => {
                         <p><span style={{ fontSize: '10.0pt', color: 'black' }}>
                           {props.items["component_x0020_link"] != null &&
                             <a href={props.items["component_x0020_link"].Url} target="_blank">{props.items["component_x0020_link"].Url}</a>
-                          }</span><span style={{ color: "black" }}> </span><u></u><u></u></p>
+                          }</span></p>
                       </td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
+                      <td style={{ padding: '4pt' }}></td>
                     </tr>
-                    <tr>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
-                    </tr>
-                    <tr>
-                      <td width="91" style={{ border: "none" }}></td>
-                      <td width="46" style={{ border: "none" }}></td>
-                      <td width="46" style={{ border: "none" }}></td>
-                      <td width="100" style={{ border: "none" }}></td>
-                      <td width="53" style={{ border: "none" }}></td>
-                      <td width="51" style={{ border: "none" }}></td>
-                      <td width="74" style={{ border: "none" }}></td>
-                      <td width="32" style={{ border: "none" }}></td>
-                      <td width="33" style={{ border: "none" }}></td>
-                    </tr>
+                   
                   </tbody>
                 </table>
-                <table cellPadding="0" width="99%" style={{ width: "99.0%", border: "1px solid #ccc" }}>
+                <table cellPadding={0} cellSpacing={0} width="99%" style={{ width: "99.0%" }}>
                   <tbody>
                     <tr>
-                      <td style={{ padding: '.75pt .75pt .75pt .75pt' }}></td>
+                      <td style={{ padding: '2pt' }}></td>
                     </tr>
                     {props.items["FeedBack"] != null &&
                       props.items["FeedBack"][0]?.FeedBackDescriptions.length > 0 &&
                       props.items["FeedBack"][0]?.FeedBackDescriptions[0].Title != '' &&
                       props.items["FeedBack"][0]?.FeedBackDescriptions.map((fbData: any, i: any) => {
                         return <>
-                          <tr style={{ background: "#ccc" }}>
-                            <td>
-                              <p><span style={{ fontSize: '10.0pt', color: '#6f6f6f' }}>{i + 1}.<u></u><u></u></span></p>
+                          <tr >
+                            <td  width={"30px"} align='center' style={{border: "1px solid #ccc", }}>
+                              <p><span style={{ fontSize: '10.0pt', color: '#6f6f6f' }}>{i + 1}.</span></p>
                             </td>
-                            <td><span dangerouslySetInnerHTML={{ __html: fbData['Title'] }}></span>
+                            <td style={{ background: "#fbfbfb",border: "1px solid #ccc", padding: "0px 2px 0px 10px"}} ><span dangerouslySetInnerHTML={{ __html: fbData['Title'] }}></span>
                               {fbData['Comments'] != null && fbData['Comments'].length > 0 && fbData['Comments'].map((fbComment: any) => {
-                                return <div style={{ border: 'solid #cccccc 1.0pt', padding: '7.0pt 7.0pt 7.0pt 7.0pt', marginTop: '3.75pt' }}>
+                                return <div style={{ border: 'solid #cccccc 1.0pt', padding: '7.0pt 7.0pt 7.0pt 7.0pt', marginTop: '3.75pt', marginBottom:'5pt'}}>
                                   <div style={{ marginBottom: '3.75pt' }}>
-                                    <p style={{ marginLeft: '15px', background: '#fbfbfb' }}><span>{fbComment.AuthorName} - {fbComment.Created}<u></u><u></u></span></p>
+                                    <p style={{ marginLeft: '15px'}}>Comment by<span>{fbComment.AuthorName} - {fbComment.Created}<u></u><u></u></span></p>
                                   </div>
-                                  <p style={{ marginLeft: '15px', background: '#fbfbfb' }}><span><span dangerouslySetInnerHTML={{ __html: fbComment['Title'] }}></span><u></u><u></u></span></p>
+                                  <p style={{ marginLeft: '15px' }}><span><span dangerouslySetInnerHTML={{ __html: fbComment['Title'] }}></span><u></u><u></u></span></p>
                                 </div>
                               })}
                             </td>
                           </tr>
                           {fbData['Subtext'] != null && fbData['Subtext'].length > 0 && fbData['Subtext'].map((fbSubData: any, j: any) => {
                             return <>
-                              <tr style={{ background: "#ccc" }} >
-                                <td>
-                                  <p><span style={{ fontSize: '10.0pt', color: '#6f6f6f' }}>{i + 1}.{j + 1}.<u></u><u></u></span></p>
+                              <tr  >
+                                <td width={"30px"} style={{border: "1px solid #ccc"}} align='center'>
+                                  <p><span style={{ fontSize: '10.0pt', color: '#6f6f6f' }}>{i + 1}.{j + 1}.</span></p>
                                 </td>
-                                <td><span dangerouslySetInnerHTML={{ __html: fbSubData['Title'] }}></span>
+                                <td style={{ background: "#fbfbfb",border: "1px solid #ccc", padding: "0px 2px 0px 10px"}}><span dangerouslySetInnerHTML={{ __html: fbSubData['Title'] }}></span>
                                   {fbSubData['Comments'] != null && fbSubData['Comments']?.length > 0 && fbSubData['Comments']?.map((fbSubComment: any) => {
-                                    return <div style={{ border: 'solid #cccccc 1.0pt', padding: '7.0pt 7.0pt 7.0pt 7.0pt', marginTop: '3.75pt' }}>
+                                    return <div style={{ border: 'solid #cccccc 1.0pt', padding: '7.0pt 7.0pt 7.0pt 7.0pt', marginTop: '3.75pt', marginBottom:'5pt' }}>
                                       <div style={{ marginBottom: '3.75pt' }}>
-                                        <p style={{ marginLeft: '15px', background: '#fbfbfb' }}><span style={{ fontSize: '10.0pt', color: 'black' }}>{fbSubComment.AuthorName} - {fbSubComment.Created}<u></u><u></u></span></p>
+                                        <p style={{ marginLeft: '15px'}}>Comment by<span style={{ fontSize: '10.0pt', color: 'black' }}>{fbSubComment.AuthorName} - {fbSubComment.Created}<u></u><u></u></span></p>
                                       </div>
-                                      <p style={{ marginLeft: '15px', background: '#fbfbfb' }}><span style={{ fontSize: '10.0pt', color: 'black' }}><span dangerouslySetInnerHTML={{ __html: fbSubComment['Title'] }}></span><u></u><u></u></span></p>
+                                      <p style={{ marginLeft: '15px'}}><span style={{ fontSize: '10.0pt', color: 'black' }}><span dangerouslySetInnerHTML={{ __html: fbSubComment['Title'] }}></span><u></u><u></u></span></p>
                                     </div>
                                   })}
                                 </td>
@@ -288,7 +267,7 @@ const EmailComponent = (props: any) => {
                 </table>
               </td>
               <td width="22%" style={{ width: '22.0%', padding: '.75pt .75pt .75pt .75pt' }}>
-                <table className='table table-striped ' cellPadding={0} width="100%" style={{ width: '100.0%', border: 'solid #dddddd 1.0pt', borderRadius: '4px' }}>
+                <table className='table table-striped ' cellPadding={0} cellSpacing={0} width="100%" style={{ width: '100.0%', border: 'solid #dddddd 1.0pt', borderRadius: '4px' }}>
                   <tbody>
                     <tr>
                       <td style={{ border: 'none', borderBottom: 'solid #dddddd 1.0pt', background: 'whitesmoke', padding: '.75pt .75pt .75pt .75pt' }}>
