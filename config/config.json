@@ -34,6 +34,14 @@
         }
       ]
     },
+    "create-task-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/createTask/CreateTaskWebPart.js",
+          "manifest": "./src/webparts/createTask/CreateTaskWebPart.manifest.json"
+        }
+      ]
+    },
     "component-comments-web-part": {
       "components": [
         {
@@ -69,6 +77,7 @@
     "ComponentCommentsWebPartStrings": "lib/webparts/componentComments/loc/{locale}.js",
     "ComponentEditPopupWebPartStrings": "lib/webparts/componentEditPopup/loc/{locale}.js",
     "ServicePortfolioWebPartStrings": "lib/webparts/servicePortfolio/loc/{locale}.js",
-    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
+    "CreateTaskWebPartStrings": "lib/webparts/createTask/loc/{locale}.js"
   }
 }

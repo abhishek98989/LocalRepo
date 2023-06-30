@@ -21,12 +21,12 @@ import { GlobalConstants } from "../../../globalComponents/LocalCommon";
 import pnp, { Web, SearchQuery, SearchResults, UrlException } from "sp-pnp-js";
 import PortfolioStructureCreationCard from "../../../globalComponents/tableControls/PortfolioStructureCreation";
 import ShowTaskTeamMembers from "../../../globalComponents/ShowTaskTeamMembers";
-//import HighlightableCell from "../../componentPortfolio/components/highlight";
+import HighlightableCell from "./highlight";
 import ExpndTable from "../../../globalComponents/ExpandTable/Expandtable";
 import { Panel, PanelType } from "office-ui-fabric-react";
 import CreateActivity from "../../servicePortfolio/components/CreateActivity";
 import CreateWS from "../../servicePortfolio/components/CreateWS";
-
+import SelectedClientCategoryPupup1 from "../../../globalComponents/SelectedClientCategorypopup";
 
 import {
   Column,
@@ -47,7 +47,7 @@ import {
 } from "@tanstack/react-table";
 // import HighlightableCell from '../../componentPortfolio/components/highlight'
 import Loader from "react-loader";
-//import ShowTeamMembers from "../../../globalComponents/ShowTeamMember";
+import ShowTeamMembers from "../../../globalComponents/ShowTeamMember";
 import ShowClintCatogory from "../../../globalComponents/ShowClintCatogory";
 import { RankingInfo, rankItem } from "@tanstack/match-sorter-utils";
 
@@ -170,6 +170,7 @@ var siteConfig: any = [];
 var IsUpdated: any = "";
 let serachTitle: any = "";
 var MeetingItems: any = [];
+var MeetingItemsParentcat: any = [];
 var childsData: any = [];
 var selectedCategory: any = [];
 var AllItems: any = [];
@@ -181,6 +182,7 @@ let countaa = 0;
 let Itemtypes: any;
 let globalFilterHighlited: any;
 let SmartMetaData:any=[];
+let selectedClientCategoryPopup:any=false;
 export default function ComponentTable({ props, NextProp, Iconssc }: any) {
   if (countaa == 0) {
     ParentDs = props?.Id
@@ -200,8 +202,8 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
   const [checkCounter, setCheckCounter] = React.useState(true)
   const [checkData, setcheckData] = React.useState([])
   const [ShowTeamPopup, setShowTeamPopup] = React.useState(false);
-
-
+  const[selectedClientCategory,setSelectedClientCategory]=React.useState([]);
+  // const[selectedClientCategoryPopup,setSelectedClientCategoryPopup]=React.useState(false);
 
 
 
@@ -2008,9 +2010,9 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
   function AddItem() { }
 
   const Call = React.useCallback((childItem: any) => {
-    if (MeetingItems.length > 0) {
-      MeetingItems = [];
-    }
+    // if (MeetingItems.length > 0) {
+    //   MeetingItems = [];
+    // }
     setRowSelection({})
     // MeetingItems?.forEach((val: any): any => {
     //     val.chekBox = false;
@@ -2513,6 +2515,14 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
       );
     } else {
       if (MeetingItems[0] != undefined) {
+        let parentcat:any=[];
+          if(MeetingItems[0]?.ClientCategory!=undefined && MeetingItems[0]?.ClientCategory?.results?.length>0){
+            MeetingItems[0]?.ClientCategory?.results?.map((items:any)=>{
+              parentcat.push(items)
+            })
+            setSelectedClientCategory(parentcat)
+            selectedClientCategoryPopup=true
+          }
         if (items != undefined && items.length > 0) {
           MeetingItems[0].ClientCategory = [];
           items.forEach((val: any) => {
@@ -2520,6 +2530,7 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
           });
         }
         if (MeetingItems[0].SharewebTaskType != undefined) {
+          
           if (MeetingItems[0].SharewebTaskType.Title == "Activities") {
             setWSPopup(true);
           }
@@ -2534,7 +2545,7 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
 
         if (
           MeetingItems[0].SharewebTaskType == undefined &&
-          childsData[0] == undefined
+          childsData[0] == undefined&& selectedClientCategoryPopup==false
         ) {
           setActivityPopup(true);
         }
@@ -3500,13 +3511,13 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
             {row?.original?.siteType == "Master Tasks" && row?.original?.Title !== 'Others' && <a data-interception="off" target="_blank" className="hreflink serviceColor_Active"
               href={NextProp.siteUrl + "/SitePages/Portfolio-Profile.aspx?taskId=" + row?.original?.ID}
             >
-              {/* <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : globalFilterHighlited} /> */}
+              <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : globalFilterHighlited} />
             </a>}
             {row?.original?.siteType != "Master Tasks" && row?.original?.Title !== 'Others' &&
               <a className="hreflink serviceColor_Active" target="_blank" data-interception="off"
                 href={NextProp.siteUrl + "/SitePages/Task-Profile.aspx?taskId=" + row?.original?.ID + "&Site=" + row?.original?.siteType}
               >
-                {/* <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : globalFilterHighlited} /> */}
+                <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : globalFilterHighlited} />
               </a>}
             {row?.original.TitleNew === "Tasks" ? (
               <span>{row?.original.TitleNew}</span>
@@ -3877,7 +3888,22 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
 
   }, [Iconssc]);
 
+ 
+   const parentClientCat = React.useCallback((items:any) => {
+  console.log(items)
+  if(items!=undefined ){
+    // setSelectedClientCategory(items)
+    console.log(selectedClientCategory)
+    // MeetingItemsParentcat[0]= {...MeetingItemsParentcat[0],...MeetingItems[0]}
+    MeetingItemsParentcat[0]=items
+  }
+    selectedClientCategoryPopup=false;
 
+    setActivityPopup(true);
+   
+    // setSelectedClientCategory(items)
+   
+}, [])
 
   return (
     <div
@@ -4067,7 +4093,7 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
           </div>
         </div>
       </div>
-      {/* {ShowTeamPopup === true ? <ShowTeamMembers props={checkData} callBack={showTaskTeamCAllBack} TaskUsers={AllUsers} /> : ''} */}
+      {ShowTeamPopup === true ? <ShowTeamMembers props={checkData} callBack={showTaskTeamCAllBack} TaskUsers={AllUsers} /> : ''}
 
       {IsTask && (
         <EditTaskPopup Items={SharewebTask} AllListId={NextProp} Call={Call} context={NextProp.Context}></EditTaskPopup>
@@ -4083,7 +4109,7 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
         ></TimeEntryPopup>
       )}
       {/* {popupStatus ? <EditInstitution props={itemData} /> : null} */}
-      {MeetingPopup && (
+      {MeetingPopup &&(
         <CreateActivity
           props={MeetingItems[0]}
           Call={Call}
@@ -4094,6 +4120,7 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
       {WSPopup && (
         <CreateWS props={MeetingItems[0]} SelectedProp={NextProp} Call={Call} data={data}></CreateWS>
       )}
+      {selectedClientCategoryPopup&&selectedClientCategory.length>0? <SelectedClientCategoryPupup1 items={MeetingItems[0]} callback={parentClientCat} />:""}
 
       <Panel
 
@@ -4109,8 +4136,8 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
           PortfolioType={IsUpdated}
           PropsValue={NextProp}
           SelectedItem={
-            checkedList != null && checkedList.length > 0
-              ? checkedList[0]
+            MeetingItems != null && MeetingItems.length > 0
+              ? MeetingItems[0]
               : props
           }
         />
@@ -4589,6 +4616,8 @@ export default function ComponentTable({ props, NextProp, Iconssc }: any) {
           </button>
         </footer>
       </Panel>
+      
     </div>
+  
   );
 }
