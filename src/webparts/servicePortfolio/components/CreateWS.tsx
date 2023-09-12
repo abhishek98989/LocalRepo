@@ -22,7 +22,7 @@ var AssignedToIds: any = [];
 var ResponsibleTeamIds: any = [];
 var dynamicList: any = {}
 var TeamMemberIds: any = [];
-
+let InheritClientCategory:any=[];
 //var checkedWS:boolean=true;
 const CreateWS = (props: any) => {
     if (props.SelectedProp != undefined && props.SelectedProp.SelectedProp != undefined) {
@@ -33,6 +33,7 @@ const CreateWS = (props: any) => {
     SelectedTasks = []
     if (props != undefined) {
         var AllItems = props.props
+       
         SelectedTasks.push(AllItems)
         console.log(props)
     }
@@ -356,8 +357,23 @@ const CreateWS = (props: any) => {
                 })
             }
         }
+        if(props?.props!=undefined && props?.props?.ClientCategory?.length>0){
+          if(props?.props?.ClientCategory2!=undefined && props?.props?.ClientCategory2?.results?.length>0){
+            props?.props?.ClientCategory2?.results?.map((items:any)=>{
+                InheritClientCategory.push(items.Id)  
+            })
+          }else{
+            props.props.ClientCategory?.map((items:any)=>{
+                InheritClientCategory.push(items.Id) 
+            }) 
+          }
 
+           
+        }
         let web = new Web(dynamicList.siteUrl);
+        if(props?.props?.ClientTime?.length>0){
+            props.props.ClientTime=JSON.stringify(props?.props?.ClientTime) 
+        }
         await web.lists.getById(AllItems.listId).items.add({
             Title: AllItems.Title,
             ComponentId: { "results": Component },
@@ -374,6 +390,9 @@ const CreateWS = (props: any) => {
             Shareweb_x0020_ID: SharewebID,
             SharewebTaskLevel2No: WorstreamLatestId,
             SharewebTaskLevel1No: AllItems.SharewebTaskLevel1No,
+            ClientCategoryId: { "results": InheritClientCategory },
+            SiteCompositionSettings:props?.props?.SiteCompositionSettings!=undefined?props?.props?.SiteCompositionSettings:"",
+            ClientTime:props?.props?.ClientTime.length>0 ?props?.props?.ClientTime:"",
             AssignedToId: { "results": (AssignedToIds != undefined && AssignedToIds?.length > 0) ? AssignedToIds : [] },
             Responsible_x0020_TeamId: { "results": (ResponsibleTeamIds != undefined && ResponsibleTeamIds?.length > 0) ? ResponsibleTeamIds : [] },
             Team_x0020_MembersId: { "results": (TeamMemberIds != undefined && TeamMemberIds?.length > 0) ? TeamMemberIds : [] }
@@ -387,6 +406,7 @@ const CreateWS = (props: any) => {
                 res.data.DueDate = res?.data?.DueDate ?  Moment(res?.data?.DueDate).format("DD-MM-YYYY"):'',
                     res.data['siteType'] = AllItems.siteType
                 res.data['Shareweb_x0020_ID'] = SharewebID,
+                res.data.ClientCategory=InheritClientCategory,
                 res.data.Created=new Date();
                 res.data.Author={
                     Id: res?.data?.AuthorId
@@ -403,6 +423,7 @@ const CreateWS = (props: any) => {
                 res.data.DueDate = res?.data?.DueDate ?  Moment(res?.data?.DueDate).format("MM-DD-YYYY"):'',
                     res.data['siteType'] = AllItems.siteType
                 res.data['Shareweb_x0020_ID'] = SharewebID
+                res.data.ClientCategory= InheritClientCategory!=undefined? InheritClientCategory: props.props.ClientCategory,
                 res.data.Created=new Date();
                 res.data.Author={
                     Id: res?.data?.AuthorId

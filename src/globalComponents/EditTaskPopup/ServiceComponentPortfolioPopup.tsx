@@ -23,6 +23,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
     const [AllUsers, setTaskUser] = React.useState([]);
     const [ShowingAllData, setShowingData] = React.useState([])
     const PopupType: any = props?.PopupType;
+    let selectedDataArray: any = [];
     let GlobalArray: any = [];
     React.useEffect(() => {
         if (props.smartComponent != undefined && props.smartComponent.length > 0)
@@ -57,16 +58,16 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
         setData(data => ([...data]));
     };
     const GetComponents = async () => {
-        let selectedDataArray:any=[];
-        if(props?.smartComponent!=undefined&&props?.smartComponent?.length>0){
-            selectedDataArray=props?.smartComponent;
+
+        if (props?.smartComponent != undefined && props?.smartComponent?.length > 0) {
+            selectedDataArray = props?.smartComponent;
         }
         let PropsObject: any = {
             MasterTaskListID: Dynamic.MasterTaskListID,
             siteUrl: Dynamic.siteUrl,
             ComponentType: ComponentType,
             TaskUserListId: Dynamic.TaskUsertListID,
-            selectedItems:selectedDataArray
+            selectedItems: selectedDataArray
         }
         GlobalArray = await globalCommon.GetServiceAndComponentAllData(PropsObject);
         if (GlobalArray?.GroupByData != undefined && GlobalArray?.GroupByData?.length > 0) {
@@ -77,20 +78,11 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
     }
 
 
-    const callBackData = React.useCallback((elem: any, ShowingData: any,selectedArray:any) => {
-        if (selectionType == "Multi") {
-            // if (elem != undefined) {
-            //     const foundObject = MultiSelectedData.find((obj:any) => obj.Id === elem.Id);
-            //     if(foundObject){
-            //         MultiSelectedData.filter((obj:any) => obj.Id !== elem.Id);
-            //     }else{
-            //         MultiSelectedData.push(elem);
-            //     }
-               
-            // } else {
-            //     console.log("elem", elem);
-            // }
-            MultiSelectedData=selectedArray;
+    const callBackData = React.useCallback((elem: any, ShowingData: any, selectedArray: any) => {
+        MultiSelectedData=[];
+        if (selectionType == "Multi" && elem?.length>0) {
+            elem.map((item:any)=> MultiSelectedData?.push(item?.original))
+            // MultiSelectedData = elem;
         } else {
             if (elem != undefined) {
                 setCheckBoxData([elem])
@@ -102,18 +94,15 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 setShowingData([ShowingData])
             }
         }
-
     }, []);
 
 
     const onRenderCustomHeader = (
     ) => {
         return (
-            <div className="d-flex full-width pb-1" >
-                <div style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
-                    <span>
-                        {`Select ${ComponentType}`}
-                    </span>
+            <div className={ComponentType == "Service" ? "serviepannelgreena d-flex full-width pb-1" : "d-flex full-width pb-1"} >
+                <div className='subheading'>
+                    {`Select ${ComponentType}`}
                 </div>
                 <Tooltip ComponentId="1667" />
             </div>
@@ -122,73 +111,35 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
 
     const CustomFooter = () => {
         return (
-            <div className={ComponentType == "Service" ? "me-3 p-2 serviepannelgreena text-end" : "me-3 p-2 text-end"}>
-                <button type="button" className="btn btn-primary">
-                    <a target="_blank" data-interception="off"
-                        href={ComponentType == "Service" ? `${Dynamic.siteUrl}/SitePages/Service-Portfolio.aspx` : `${Dynamic.siteUrl}/SitePages/Component-Portfolio.aspx`}>
-                        <span className="text-light"> Create New One</span>
-                    </a>
-                </button>
-                <button type="button" className="btn btn-primary mx-1" onClick={setModalIsOpenToOK}>OK</button>
+            <footer className={ComponentType == "Service" ? "me-3 p-2 serviepannelgreena text-end" : "me-3 p-2 text-end"}>  
+                
+                <button type="button" className="btn btn-primary me-1" onClick={setModalIsOpenToOK}>OK</button>
                 <button type="button" className="btn btn-default" onClick={setModalIsOpenToFalse}>Cancel</button>
-            </div>
+            </footer>
         )
     }
     const columns = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
             {
+                accessorKey: "",
+                placeholder: "",
+                hasCheckbox: true,
+                hasCustomExpanded: true,
+                hasExpanded: true,
+                size: 55,
+                id: 'Id',
+            },{
                 accessorKey: "PortfolioStructureID",
                 placeholder: "ID",
-                size: 15,
-                header: ({ table }: any) => (
-                    <>
-                        <button className='border-0 bg-Ff'
-                            {...{
-                                onClick: table.getToggleAllRowsExpandedHandler(),
-                            }}
-                        >
-                            {table.getIsAllRowsExpanded() ? <FaChevronDown /> : <FaChevronRight />}
-                        </button>{" "}
-                        <IndeterminateCheckbox {...{
-                            checked: table.getIsAllRowsSelected(),
-                            indeterminate: table.getIsSomeRowsSelected(),
-                            onChange: table.getToggleAllRowsSelectedHandler(),
-                        }} />{" "}
-                    </>
-                ),
+                size: 100,
+              
                 cell: ({ row, getValue }) => (
-                    <div
-                        style={row.getCanExpand() ? {
-                            paddingLeft: `${row.depth * 5}px`,
-                        } : {
-                            paddingLeft: "18px",
-                        }}
-                    >
+                    <div>
                         <>
-                            {row.getCanExpand() ? (
-                                <span className=' border-0'
-                                    {...{
-                                        onClick: row.getToggleExpandedHandler(),
-                                        style: { cursor: "pointer" },
-                                    }}
-                                >
-                                    {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronRight />}
-                                </span>
-                            ) : (
-                                ""
-                            )}{" "}
-                            {row?.original.Title != 'Others' ? <IndeterminateCheckbox
-                                {...{
-                                    checked: row.getIsSelected(),
-                                    indeterminate: row.getIsSomeSelected(),
-                                    onChange: row.getToggleSelectedHandler(),
-
-                                }}
-                            /> : ""}{" "}
                             {row?.original?.SiteIcon != undefined ?
                                 <a className="hreflink" title="Show All Child" data-toggle="modal">
                                     <img className="icon-sites-img ml20 me-1" src={row?.original?.SiteIcon}></img>
-                                </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons'>{row?.original?.SiteIconTitle}</div> : ""}</>
+                                </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons me-1'>{row?.original?.SiteIconTitle}</div> : ""}</>
                             }
                             {getValue()}
                         </>
@@ -217,7 +168,6 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 id: "Title",
                 placeholder: "Title",
                 header: "",
-                size: 27,
             },
             {
                 accessorFn: (row) => row?.ClientCategory?.map((elem: any) => elem.Title).join("-"),
@@ -233,7 +183,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 id: 'ClientCategory',
                 placeholder: "Client Category",
                 header: "",
-                size: 15,
+                size: 100,
             },
             {
                 accessorFn: (row) => row?.TeamLeaderUser?.map((val: any) => val.Title).join("-"),
@@ -245,25 +195,25 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 id: 'TeamLeaderUser',
                 placeholder: "Team",
                 header: "",
-                size: 15,
+                size: 100,
             },
             {
                 accessorKey: "PercentComplete",
                 placeholder: "Status",
                 header: "",
-                size: 7,
+                size: 42,
             },
             {
                 accessorKey: "ItemRank",
                 placeholder: "Item Rank",
                 header: "",
-                size: 7,
+                size: 42,
             },
             {
                 accessorKey: "DueDate",
                 placeholder: "Due Date",
                 header: "",
-                size: 9,
+                size: 100,
             },
         ],
         [data]
@@ -339,7 +289,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                         </div>
                         <div className="col-sm-12 p-0 smart">
                             <div className="wrapper">
-                                <GlobalCommanTable columns={columns} data={data} callBackData={callBackData} />
+                                <GlobalCommanTable columns={columns} data={data} selectedData={selectedDataArray} callBackData={callBackData} multiSelect={selectionType == 'Multi' ? true : false} />
                             </div>
                         </div>
                     </div>

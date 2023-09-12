@@ -541,15 +541,19 @@ const EditTaskPopup = (Items: any) => {
                 if (item.BasicImageInfo != null && item.Attachments) {
                     saveImage.push(JSON.parse(item.BasicImageInfo))
                 }
-                // if (item.Priority_x0020_Rank != undefined) {
-                //     if (ItemRankArray != undefined) {
-                //         ItemRankArray?.map((rank: any) => {
-                //             if (rank.rank == item.Priority_x0020_Rank) {
-                //                 item.Priority_x0020_Rank = rank.rank;
-                //             }
-                //         })
-                //     }
-                // }
+                if (item.Priority_x0020_Rank == undefined || item.Priority_x0020_Rank == null) {
+                    if(item.Priority != undefined){
+                        if(item.Priority == "(3) Low"){
+                            item.Priority_x0020_Rank = 1
+                        }
+                        if(item.Priority == "(2) Normal"){
+                            item.Priority_x0020_Rank = 4
+                        }
+                        if(item.Priority == "(1) High"){
+                            item.Priority_x0020_Rank = 8
+                        }
+                    }
+                }
                 item.TaskId = globalCommon.getTaskId(item);
                 item.siteUrl = siteUrls;
                 item.siteType = Items.Items.siteType;
@@ -3396,17 +3400,22 @@ const EditTaskPopup = (Items: any) => {
                                     src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/32/icon_maill.png" />
                                 Share This Task
                             </span> ||
-                            <a target="_blank" className="mx-2" data-interception="off"
+                          
+                            { Items.Items.siteType=="Offshore Tasks" ?<a target="_blank" className="mx-2" data-interception="off"
+                                href={`${siteUrls}/Lists/SharewebQA/EditForm.aspx?ID=${EditData.ID}`}>
+                                Open Out-Of-The-Box Form
+                            </a>:<a target="_blank" className="mx-2" data-interception="off"
                                 href={`${siteUrls}/Lists/${Items.Items.siteType}/EditForm.aspx?ID=${EditData.ID}`}>
                                 Open Out-Of-The-Box Form
-                            </a>
-                            <span >
+                            </a>}
+                            <span>
+                               
+                                <button type="button" className="btn btn-default me-1 px-3" onClick={setModalIsOpenToFalse}>
+                                    Cancel
+                                </button>
                                 <button className="btn btn-primary px-3"
                                     onClick={UpdateTaskInfoFunction}>
                                     Save
-                                </button>
-                                <button type="button" className="btn btn-default ms-1 px-3" onClick={setModalIsOpenToFalse}>
-                                    Cancel
                                 </button>
                             </span>
                         </div>
