@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ITaskDashboardHhhhProps } from './ITaskDashboardHhhhProps';
+import { escape } from '@microsoft/sp-lodash-subset';
 import TaskDashboard from './TaskDashboard';
 
 export default class TaskDashboardHhhh extends React.Component<ITaskDashboardHhhhProps, {}> {
@@ -20,8 +21,7 @@ export default class TaskDashboardHhhh extends React.Component<ITaskDashboardHhh
       TaskTimeSheetListID,
       Context,
       TimeEntry,
-      SiteCompostion,
-      SmalsusLeaveCalendar
+      SiteCompostion
     } = this.props;
 
     return (

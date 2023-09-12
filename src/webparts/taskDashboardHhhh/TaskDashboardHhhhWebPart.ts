@@ -20,7 +20,6 @@ export interface ITaskDashboardHhhhWebPartProps {
   SmartInformationListID: 'edf0a6fb-f80e-4772-ab1e-666af03f7ccd';
   DocumentsListID: 'd0f88b8f-d96d-4e12-b612-2706ba40fb08';
   TaskTimeSheetListID: '464fb776-e4b3-404c-8261-7d3c50ff343f';
-  SmalsusLeaveCalendar:'72aba576-5272-4e30-b332-25d7e594aaa4';
   TimeEntry: any;
   SiteCompostion: any;
 }
@@ -49,8 +48,7 @@ export default class TaskDashboardHhhhWebPart extends BaseClientSideWebPart<ITas
         DocumentsListID: this.properties.DocumentsListID,
         TaskTimeSheetListID: this.properties.TaskTimeSheetListID,
         TimeEntry: this.properties.TimeEntry,
-        SiteCompostion: this.properties.SiteCompostion,
-        SmalsusLeaveCalendar:this.properties.SmalsusLeaveCalendar,
+        SiteCompostion: this.properties.SiteCompostion
       }
     );
 
@@ -148,9 +146,6 @@ export default class TaskDashboardHhhhWebPart extends BaseClientSideWebPart<ITas
                 }),
                 PropertyPaneTextField('TaskTimeSheetListID', {
                   label: "TaskTimeSheetListID"
-                }),
-                PropertyPaneTextField('SmalsusLeaveCalendar', {
-                  label: "SmalsusLeaveCalendar"
                 }),
                 PropertyPaneTextField('TimeEntry', {
                   label: "TimeEntry"
