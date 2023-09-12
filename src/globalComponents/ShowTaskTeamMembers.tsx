@@ -15,13 +15,7 @@ function ShowTaskTeamMembers(item: any) {
     setDisplay("block");
     //  setTeamMember((TeamMember: any) => (...TeamMember: any));
   };
-
-  const handleuffixLeave = (item: any) => {
-    setDisplay("none");
-
-    //  setTeamMember((TeamMember: any) => (...TeamMember: any));
-  };
-  const getTaskUsersNew = async () => {
+  React.useEffect(() => {
     let emailarray: any = [];
     TaskUsers = item.TaskUsers;
     console.log(Response);
@@ -52,11 +46,11 @@ function ShowTaskTeamMembers(item: any) {
       });
     }
     if (
-      Item.Team_x0020_Members != undefined &&
-      Item.Team_x0020_Members != undefined &&
-      Item.Team_x0020_Members.length > 0
+      Item.TeamMembers != undefined &&
+      Item.TeamMembers != undefined &&
+      Item.TeamMembers.length > 0
     ) {
-      Item.Team_x0020_Members.forEach((Assig: any) => {
+      Item.TeamMembers.forEach((Assig: any) => {
         if (Assig.Id != undefined) {
           TaskUsers.forEach((users: any) => {
             if (
@@ -76,11 +70,11 @@ function ShowTaskTeamMembers(item: any) {
       });
     }
     if (
-      Item.Responsible_x0020_Team != undefined &&
-      Item.Responsible_x0020_Team != undefined &&
-      Item.Responsible_x0020_Team.length > 0
+      Item.ResponsibleTeam != undefined &&
+      Item.ResponsibleTeam != undefined &&
+      Item.ResponsibleTeam.length > 0
     ) {
-      Item.Responsible_x0020_Team.forEach((Assig: any) => {
+      Item.ResponsibleTeam.forEach((Assig: any) => {
         if (Assig.Id != undefined) {
           TaskUsers.forEach((users: any) => {
             if (
@@ -99,10 +93,15 @@ function ShowTaskTeamMembers(item: any) {
     }
     Item.allMembersEmail = emailarray.join();
     setItemMember(Item);
-  };
-  React.useEffect(() => {
-    getTaskUsersNew();
   }, []);
+
+
+  const handleuffixLeave = (item: any) => {
+    setDisplay("none");
+
+    //  setTeamMember((TeamMember: any) => (...TeamMember: any));
+  };
+
 
   return (
     <>
@@ -114,41 +113,40 @@ function ShowTaskTeamMembers(item: any) {
               ? ItemNew["TeamLeader"].map((rcData: any, i: any) => {
                 return (
                   <>
-                    <span className="user_Member_img">
-                      <a
-                        href={`${siteUrl}/SitePages/TeamLeader-Dashboard.aspx?UserId=${rcData.Id}&Name=${rcData.Title}`}
+                    <span className="user_Member_img alignCenter">
+                      <a className="alignCenter"
+                        href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.AssingedToUserId}&Name=${rcData.Title}`}
                         target="_blank"
                         data-interception="off"
                         title={rcData.Title}
                       >
-                        <img className="imgAuthor" src={rcData.ItemCover}></img>
+                        <img className="workmember" src={rcData.ItemCover}></img>
                       </a>
                     </span>
                   </>
                 );
               })
-              : ""}
+              : <span>&nbsp;</span>}
             {/* {Item["TeamLeader"] != null && Item["TeamLeader"].length > 0 &&
                                                                                                                      <div></div>
                                                                                                                  } */}
 
             {ItemNew["AllTeamMembers"] != null &&
               ItemNew["AllTeamMembers"].length > 0 ? (
-              <div className="  ">
-                <a
-                  href={`${siteUrl}/SitePages/TeamLeader-Dashboard.aspx?UserId=${ItemNew["AllTeamMembers"][0].Id}&Name=${ItemNew["AllTeamMembers"][0].Title}`}
-                  target="_blank"
-                  data-interception="off"
-                  title={ItemNew["AllTeamMembers"][0].Title}
-                >
-                  <img
-                    className="imgAuthor activeimg"
-                    src={ItemNew["AllTeamMembers"][0].ItemCover}
-                  ></img>
-                </a>
-              </div>
+              <a className="alignCenter"
+                href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${ItemNew["AllTeamMembers"][0].AssingedToUserId}&Name=${ItemNew["AllTeamMembers"][0].Title}`}
+                target="_blank"
+                data-interception="off"
+                title={ItemNew["AllTeamMembers"][0].Title}
+              >
+                <img
+                  className="workmember activeimg"
+                  src={ItemNew["AllTeamMembers"][0].ItemCover}
+                ></img>
+              </a>
+
             ) : (
-              ""
+              " "
             )}
             {ItemNew["AllTeamMembers"] != null &&
               ItemNew["AllTeamMembers"].length > 1 ? (
@@ -157,7 +155,7 @@ function ShowTaskTeamMembers(item: any) {
                 onMouseOver={(e) => handleSuffixHover(ItemNew)}
                 onMouseLeave={(e) => handleuffixLeave(ItemNew)}
               >
-                +{ItemNew["AllTeamMembers"].length - 1}
+                +{ItemNew?.AllTeamMembers?.slice(1)?.length}
                 <span
                   className="tooltiptext"
                   style={{ display: Display, padding: "10px" }}
@@ -174,12 +172,12 @@ function ShowTaskTeamMembers(item: any) {
                             >
                               <span>
                                 <a
-                                  href={`${siteUrl}/SitePages/TeamLeader-Dashboard.aspx?UserId=${rcData.Id}&Name=${rcData.Title}`}
+                                  href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.AssingedToUserId}&Name=${rcData.Title}`}
                                   target="_blank"
                                   data-interception="off"
                                 >
                                   <img
-                                    className={` imgAuthor ${rcData.activeimg2}`}
+                                    className={`workmember ${rcData.activeimg2}`}
                                     src={rcData.ItemCover}
                                   ></img>
                                 </a>
@@ -195,24 +193,20 @@ function ShowTaskTeamMembers(item: any) {
             ) : (
               ""
             )}
-            {item?.Context?.dropdownvalue != 'Service Portfolio' && item?.Context?.dropdownvalue != 'Component Portfolio' && item?.Context?.dropdownvalue != 'Events Portfolio' ?<div>
+            {/* {item?.ShowTeamsIcon != false ? <div>
               {ItemNew?.allMembersEmail != null ? (
                 <span style={{ marginLeft: '5px' }} >
                   <a
                     href={`https://teams.microsoft.com/l/chat/0/0?users=${ItemNew?.allMembersEmail}`}
                     target="_blank"
                   >
-                    <img alt="m-teams"
-                      width="25px"
-                      height="25px"
-                      src={require('../Assets/ICON/Teams-Logo.png')}
-                    />
+                   <span className="svg__iconbox svg__icon--team"></span>
                   </a>
                 </span>
               ) : (
                 ""
               )}
-            </div>:''}
+            </div>:''} */}
           </div>
         ) : (
           ""
