@@ -1,15 +1,11 @@
 import * as React from "react";
 import { Panel, PanelType } from 'office-ui-fabric-react';
-import pnp, { Web } from "sp-pnp-js";
 import Tooltip from "../Tooltip";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaAngleDown, FaAngleUp } from 'react-icons/fa';
-import * as moment from "moment";
 import * as globalCommon from "../globalCommon";
 import {
     ColumnDef,
 } from "@tanstack/react-table";
-import { FaPrint, FaFileExcel, FaPaintBrush, FaEdit, FaSearch, FaSort, FaSortDown, FaSortUp, FaInfoCircle, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import GlobalCommanTable, { IndeterminateCheckbox } from "../GroupByReactTableComponents/GlobalCommanTable";
 import HighlightableCell from "../GroupByReactTableComponents/highlight";
 import ShowTaskTeamMembers from "../ShowTaskTeamMembers";
@@ -47,9 +43,9 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
         }
         setModalIsOpen(false);
         if (selectionType == "Multi") {
-            Example(MultiSelectedData, ComponentType, "Save");
+            Example(MultiSelectedData, selectionType, "Save");
         } else {
-            Example(CheckBoxData, ComponentType, "Save");
+            Example(CheckBoxData, selectionType, "Save");
         }
         MultiSelectedData = [];
     }
@@ -79,9 +75,9 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
 
 
     const callBackData = React.useCallback((elem: any, ShowingData: any, selectedArray: any) => {
-        MultiSelectedData=[];
-        if (selectionType == "Multi" && elem?.length>0) {
-            elem.map((item:any)=> MultiSelectedData?.push(item?.original))
+        MultiSelectedData = [];
+        if (selectionType == "Multi" && elem?.length > 0) {
+            elem.map((item: any) => MultiSelectedData?.push(item?.original))
             // MultiSelectedData = elem;
         } else {
             if (elem != undefined) {
@@ -100,9 +96,11 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
     const onRenderCustomHeader = (
     ) => {
         return (
-            <div className={ComponentType == "Service" ? "serviepannelgreena d-flex full-width pb-1" : "d-flex full-width pb-1"} >
-                <div className='subheading'>
-                    {`Select ${ComponentType}`}
+            <div className="d-flex full-width pb-1" >
+                <div style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
+                    <span className="siteColor">
+                        {`Select Portfolio`}
+                    </span>
                 </div>
                 <Tooltip ComponentId="1667" />
             </div>
@@ -111,8 +109,8 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
 
     const CustomFooter = () => {
         return (
-            <footer className={ComponentType == "Service" ? "me-3 p-2 serviepannelgreena text-end" : "me-3 p-2 text-end"}>  
-                
+            <footer className={ComponentType == "Service" ? "me-3 p-2 serviepannelgreena text-end" : "me-3 p-2 text-end"}>
+
                 <button type="button" className="btn btn-primary me-1" onClick={setModalIsOpenToOK}>OK</button>
                 <button type="button" className="btn btn-default" onClick={setModalIsOpenToFalse}>Cancel</button>
             </footer>
@@ -128,21 +126,35 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 hasExpanded: true,
                 size: 55,
                 id: 'Id',
-            },{
+            }, {
                 accessorKey: "PortfolioStructureID",
                 placeholder: "ID",
                 size: 100,
-              
+
                 cell: ({ row, getValue }) => (
-                    <div>
-                        <>
-                            {row?.original?.SiteIcon != undefined ?
-                                <a className="hreflink" title="Show All Child" data-toggle="modal">
-                                    <img className="icon-sites-img ml20 me-1" src={row?.original?.SiteIcon}></img>
-                                </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons me-1'>{row?.original?.SiteIconTitle}</div> : ""}</>
-                            }
-                            {getValue()}
-                        </>
+                    <div className="alignCenter">
+                        {row?.original?.SiteIcon != undefined ? (
+                            <div className="alignCenter" title="Show All Child">
+                                <img title={row?.original?.TaskType?.Title} className={row?.original?.Item_x0020_Type == "SubComponent" ? "ml-12 workmember ml20 me-1" : row?.original?.Item_x0020_Type == "Feature" ? "ml-24 workmember ml20 me-1" : row?.original?.TaskType?.Title == "Activities" ? "ml-36 workmember ml20 me-1" :
+                                    row?.original?.TaskType?.Title == "Workstream" ? "ml-48 workmember ml20 me-1" : row?.original?.TaskType?.Title == "Task" || row?.original?.Item_x0020_Type === "Task" && row?.original?.TaskType == undefined ? "ml-60 workmember ml20 me-1" : "workmember ml20 me-1"
+                                }
+                                    src={row?.original?.SiteIcon}>
+                                </img>
+                            </div>
+                        ) : (
+                            <>
+                                {row?.original?.Title != "Others" ? (
+                                    <div title={row?.original?.Item_x0020_Type} style={{ backgroundColor: `${row?.original?.PortfolioType?.Color}` }} className={row?.original?.Item_x0020_Type == "SubComponent" ? "ml-12 Dyicons" : row?.original?.Item_x0020_Type == "Feature" ? "ml-24 Dyicons" : row?.original?.TaskType?.Title == "Activities" ? "ml-36 Dyicons" :
+                                        row?.original?.TaskType?.Title == "Workstream" ? "ml-48 Dyicons" : row?.original?.TaskType?.Title == "Task" ? "ml-60 Dyicons" : "Dyicons"
+                                    }>
+                                        {row?.original?.SiteIconTitle}
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                            </>
+                        )}
+                        {getValue()}
                     </div>
                 ),
             },
@@ -150,7 +162,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, column, getValue }) => (
                     <>
-                        <a className="hreflink serviceColor_Active" target="_blank"
+                        <a className="hreflink serviceColor_Active" target="_blank" style={row?.original?.fontColorTask != undefined ? { color: `${row?.original?.fontColorTask}` } : { color: `${row?.original?.PortfolioType?.Color}` }}
                             href={Dynamic.siteUrl + "/SitePages/Portfolio-Profile.aspx?taskId=" + row?.original?.Id}
                         >
                             <HighlightableCell value={getValue()} searchTerm={column.getFilterValue()} />
@@ -255,7 +267,12 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
     })
 
     return (
-        <Panel type={PanelType.custom} customWidth="1100px" isOpen={modalIsOpen} onDismiss={setModalIsOpenToFalse} onRenderHeader={onRenderCustomHeader}
+        <Panel
+            type={PanelType.custom}
+            customWidth="1100px"
+            isOpen={modalIsOpen}
+            onDismiss={setModalIsOpenToFalse}
+            onRenderHeader={onRenderCustomHeader}
             isBlocking={modalIsOpen}
             onRenderFooter={CustomFooter}
         >
@@ -289,7 +306,7 @@ const ServiceComponentPortfolioPopup = ({ props, Dynamic, Call, ComponentType, s
                         </div>
                         <div className="col-sm-12 p-0 smart">
                             <div className="wrapper">
-                                <GlobalCommanTable columns={columns} data={data} selectedData={selectedDataArray} callBackData={callBackData} multiSelect={selectionType == 'Multi' ? true : false} />
+                                <GlobalCommanTable columns={columns} showHeader={true} data={data} selectedData={selectedDataArray} callBackData={callBackData} multiSelect={selectionType == 'Multi' ? true : false} />
                             </div>
                         </div>
                     </div>

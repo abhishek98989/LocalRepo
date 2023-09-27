@@ -80,11 +80,6 @@ const inlineEditingcolumns = (props: any) => {
         }
 
         loadTaskUsers();
-        // if (props?.item?.Services?.length > 0 && props?.pageName != 'ProjectOverView') {
-        //     setServicesTaskCheck(true)
-        // } else {
-        //     setServicesTaskCheck(false)
-        // }
         if (props?.item?.DueDate != undefined) {
             setEditDate(props?.item?.DueDate);
         }
@@ -371,15 +366,15 @@ const inlineEditingcolumns = (props: any) => {
             "Priority": priority,
             "Categories": CategoryTitle,
             "PriorityRank": priorityRank,
-            SharewebCategoriesId: { "results": selectedCatId },
+            TaskCategoriesId: { "results": selectedCatId },
             DueDate: newDueDate,
             Remark: feedback,
             EstimatedTime: TimeInHours
         })
             .then((res: any) => {
 
-                web.lists.getById(props?.item?.listId).items.select("ID", "Title", "EstimatedTime", "Comments", "Remark", "DueDate", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Component/Id", "Component/Title", "Services/Id", "Services/Title", "Services/ItemType", "Editor/Title", "Modified")
-                    .expand("TeamMembers", "Approver", "ParentTask", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "TaskType", "Component", "Services", "Editor")
+                web.lists.getById(props?.item?.listId).items.select("ID", "Title", "EstimatedTime", "Comments", "Remark", "DueDate", "Approver/Id", "Approver/Title", "Portfolio/PortfolioStructureID","ParentTask/Id", "ParentTask/Title", "ParentTask/TaskID", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Editor/Title", "Modified")
+                    .expand("TeamMembers", "Approver", "ParentTask", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "TaskType", "Portfolio", "Editor")
                     .getById(props?.item?.Id).get().then((task) => {
                         task.AllTeamMember = [];
                         task.siteType = props?.item?.siteType;
@@ -409,7 +404,7 @@ const inlineEditingcolumns = (props: any) => {
                             });
                         });
                         task.TeamMembersId = [];
-                        task.TaskID = globalCommon.getTaskId(task);
+                        task.TaskID = globalCommon.GetTaskId(task);
                         task?.TeamMembersId?.map((taskUser: any) => {
                             task.TeamMembersId.push(taskUser);
                             var newuserdata: any = {};
@@ -870,7 +865,7 @@ const inlineEditingcolumns = (props: any) => {
                                                                 title={user.Title}
                                                             >
                                                                 {user?.Item_x0020_Cover?.Url != undefined ?
-                                                                    <img className="workmember ms-1" title={user?.Title} src={user?.Item_x0020_Cover?.Url}></img> :
+                                                                    <img className="workmember ms-1" style={{marginBottom:"1px"}} title={user?.Title} src={user?.Item_x0020_Cover?.Url}></img> :
                                                                     <span title={user?.Title} className="svg__iconbox svg__icon--defaultUser grey ms-1 "></span>}
 
                                                             </a>

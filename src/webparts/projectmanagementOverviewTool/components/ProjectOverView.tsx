@@ -25,6 +25,7 @@ var AllTaskUsers: any = [];
 let MyAllData: any = []
 var Idd: number;
 var allSitesTasks: any = [];
+let timeSheetConfig: any = {};
 var AllListId: any = {};
 var currentUserId: '';
 var currentUser: any = [];
@@ -153,8 +154,8 @@ export default function ProjectOverview(props: any) {
         let web = new Web(AllListId?.siteUrl);
         MyAllData = await web.lists
             .getById(AllListId?.MasterTaskListID)
-            .items.select("ComponentCategory/Id", "ComponentCategory/Title", "DueDate", "SiteCompositionSettings", "PortfolioStructureID", "ItemRank", "ShortDescriptionVerified", "Portfolio_x0020_Type", "BackgroundVerified", "descriptionVerified", "Synonyms", "BasicImageInfo", "DeliverableSynonyms", "OffshoreComments", "OffshoreImageUrl", "HelpInformationVerified", "IdeaVerified", "TechnicalExplanationsVerified", "Deliverables", "DeliverablesVerified", "ValueAddedVerified", "CompletedDate", "Idea", "ValueAdded", "TechnicalExplanations", "Item_x0020_Type", "Sitestagging", "Package", "Parent/Id", "Parent/Title", "Short_x0020_Description_x0020_On", "Short_x0020_Description_x0020__x", "Short_x0020_description_x0020__x0", "AdminNotes", "AdminStatus", "Background", "Help_x0020_Information", "SharewebComponent/Id", "TaskCategories/Id", "TaskCategories/Title", "PriorityRank", "Reference_x0020_Item_x0020_Json", "TeamMembers/Title", "TeamMembers/Name", "TeamMembers/Id", "Item_x002d_Image", "ComponentLink", "IsTodaysTask", "AssignedTo/Title", "AssignedTo/Name", "AssignedTo/Id", "AttachmentFiles/FileName", "FileLeafRef", "FeedBack", "Title", "Id", "PercentComplete", "Company", "StartDate", "DueDate", "Comments", "Categories", "Status", "WebpartId", "Body", "Mileage", "PercentComplete", "Attachments", "Priority", "Created", "Modified", "Author/Id", "Author/Title", "Editor/Id", "Editor/Title", "ClientCategory/Id", "ClientCategory/Title")
-            .expand("ClientCategory", "ComponentCategory", "AssignedTo",  "AttachmentFiles", "Author", "Editor", "TeamMembers", "SharewebComponent", "TaskCategories", "Parent")
+            .items.select("ComponentCategory/Id", "ComponentCategory/Title", "DueDate", "SiteCompositionSettings", "PortfolioStructureID", "ItemRank", "ShortDescriptionVerified", "Portfolio_x0020_Type", "BackgroundVerified", "descriptionVerified", "Synonyms", "BasicImageInfo", "DeliverableSynonyms", "OffshoreComments", "OffshoreImageUrl", "HelpInformationVerified", "IdeaVerified", "TechnicalExplanationsVerified", "Deliverables", "DeliverablesVerified", "ValueAddedVerified", "CompletedDate", "Idea", "ValueAdded", "TechnicalExplanations", "Item_x0020_Type", "Sitestagging", "Package", "Parent/Id", "Parent/Title", "Short_x0020_Description_x0020_On", "Short_x0020_Description_x0020__x", "Short_x0020_description_x0020__x0", "AdminNotes", "AdminStatus", "Background", "Help_x0020_Information", "TaskCategories/Id", "TaskCategories/Title", "PriorityRank", "Reference_x0020_Item_x0020_Json", "TeamMembers/Title", "TeamMembers/Name", "TeamMembers/Id", "Item_x002d_Image", "ComponentLink", "IsTodaysTask", "AssignedTo/Title", "AssignedTo/Name", "AssignedTo/Id", "AttachmentFiles/FileName", "FileLeafRef", "FeedBack", "Title", "Id", "PercentComplete", "Company", "StartDate", "DueDate", "Comments", "Categories", "Status", "WebpartId", "Body", "Mileage", "PercentComplete", "Attachments", "Priority", "Created", "Modified", "Author/Id", "Author/Title", "Editor/Id", "Editor/Title", "ClientCategory/Id", "ClientCategory/Title")
+            .expand("ClientCategory", "ComponentCategory", "AssignedTo", "AttachmentFiles", "Author", "Editor", "TeamMembers", "TaskCategories", "Parent")
             .top(4999)
             .get()
 
@@ -175,8 +176,8 @@ export default function ProjectOverview(props: any) {
                         let smartmeta = [];
                         await web.lists
                             .getById(config.listId)
-                            .items.select("ID", "Title", "ClientCategory/Id", "ClientCategory/Title", 'ClientCategory', "Comments", "DueDate", "ClientActivityJson", "EstimatedTime", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Body", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Component/Id", "Component/Title", "Services/Id", "Services/Title", "Services/ItemType", "Modified")
-                            .expand("TeamMembers", "Approver", "ParentTask", "ClientCategory", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "TaskType", "Component", "Services")
+                            .items.select("ID", "Title", "ClientCategory/Id", "ClientCategory/Title", 'ClientCategory', "Comments", "DueDate", "ClientActivityJson", "EstimatedTime", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Body", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Modified")
+                            .expand("TeamMembers", "Approver", "ParentTask", "ClientCategory", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "TaskType", "Portfolio")
                             .getAll().then((data: any) => {
                                 smartmeta = data;
                                 smartmeta.map((task: any) => {
@@ -192,24 +193,14 @@ export default function ProjectOverview(props: any) {
                                             ? Moment(task.DueDate).format("DD/MM/YYYY")
                                             : "";
                                     task.portfolio = {};
-                                    if (task?.Component?.length > 0) {
-                                        task.portfolio = task?.Component[0];
-                                        task.PortfolioTitle = task?.Component[0]?.Title;
-                                        task["Portfoliotype"] = "Component";
+                                    if (task?.Portfolio?.Id != undefined) {
+                                        task.portfolio = task?.Portfolio;
+                                        task.PortfolioTitle = task?.Portfolio?.Title;
+                                        //task["Portfoliotype"] = "Component";
                                     }
-                                    if (task?.Services?.length > 0) {
-                                        task.portfolio = task?.Services[0];
-                                        task.PortfolioTitle = task?.Services[0]?.Title;
-                                        task["Portfoliotype"] = "Service";
-                                    }
+
                                     task["SiteIcon"] = config?.Item_x005F_x0020_Cover?.Url;
                                     task.TeamMembersSearch = "";
-                                    task.componentString =
-                                        task.Component != undefined &&
-                                            task.Component != undefined &&
-                                            task.Component.length > 0
-                                            ? getComponentasString(task.Component)
-                                            : "";
                                     task.TaskID = globalCommon.getTaskId(task);
 
 
@@ -239,15 +230,17 @@ export default function ProjectOverview(props: any) {
                 let TaxonomyItems = [];
                 smartmeta = await web.lists
                     .getById(AllListId?.SmartMetadataListID)
-                    .items.select("Id", "IsVisible", "ParentID", "Title", "SmartSuggestions", "Configurations", "TaxType", "Description1", "Item_x005F_x0020_Cover", "listId", "siteName", "siteUrl", "SortOrder", "SmartFilters", "Selectable", "Parent/Id", "Parent/Title")
+                    .items.select("Id", "IsVisible", "ParentID", "Title", "SmartSuggestions", "Configurations", "Description", "TaxType", "Description1", "Item_x005F_x0020_Cover", "listId", "siteName", "siteUrl", "SortOrder", "SmartFilters", "Selectable", "Parent/Id", "Parent/Title")
                     .top(5000)
-                    .filter("TaxType eq 'Sites'")
                     .expand("Parent")
                     .get();
                 if (smartmeta.length > 0) {
                     smartmeta?.map((site: any) => {
-                        if (site?.Title != "Master Tasks" && site?.Title != "SDC Sites") {
+                        if (site?.Title != "Master Tasks" && site?.Title != "SDC Sites" && site?.TaxType == 'Sites') {
                             siteConfig.push(site)
+                        }
+                        if (site?.TaxType == 'timesheetListConfigrations') {
+                            timeSheetConfig = site;
                         }
                     })
                 } else {
@@ -310,12 +303,12 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <>
+                    <div className='alignCenter'>
                         {row?.original?.siteType === "Project" ? <>
                             <a className='hreflink' href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${row?.original?.Id}`} data-interception="off" target="_blank">{row?.original?.Title}</a>
-                            {row?.original?.Body !== null && <InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} />}
+                            {row?.original?.Body !== null &&  <span className='alignIcon '><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
                         </> : ''}
-                        {row?.original?.Item_x0020_Type === "tasks" ? <span>
+                        {row?.original?.Item_x0020_Type === "tasks" ? <>
                             <a className='hreflink'
                                 href={`${AllListId?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
                                 data-interception="off"
@@ -323,12 +316,12 @@ export default function ProjectOverview(props: any) {
                             >
                                 {row?.original?.Title}
                             </a>
-                            {row?.original?.Body !== null && <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} />}
+                            {row?.original?.Body !== null && <span className='alignIcon '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span> }
 
 
-                        </span> : ''}
+                        </> : ''}
 
-                    </>
+                    </div>
 
                 ),
                 id: "Title",
@@ -442,12 +435,12 @@ export default function ProjectOverview(props: any) {
 
                 cell: ({ row }) => (
                     <>
-                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span> : ''}
+                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span> : ''}
                         {row?.original?.Item_x0020_Type === "tasks" ? <>
                             <span onClick={(e) => EditDataTimeEntry(e, row.original)}
                                 className="svg__iconbox svg__icon--clock"
                                 title="Click To Edit Timesheet"  ></span>
-                            <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span>
+                            <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span>
                         </> : ''}
                     </>
                 ),
@@ -510,7 +503,7 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <>
+                    <div  className='alignCenter'>
                         {row?.original?.type == 'Category' && row?.original?.Title != undefined ? row?.original?.Title : ''}
                         {row?.original?.Item_x0020_Type == "tasks" ?
                             <span>
@@ -521,9 +514,9 @@ export default function ProjectOverview(props: any) {
                                 >
                                     {row?.original?.Title}
                                 </a>
-                                {row?.original?.Body !== null && <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} />}
+                                {row?.original?.Body !== null && <span className='alignIcon '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
                             </span> : ''}
-                    </>
+                    </div>
 
                 ),
                 id: "Title",
@@ -673,12 +666,12 @@ export default function ProjectOverview(props: any) {
 
                 cell: ({ row }) => (
                     <>
-                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span> : ''}
+                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span> : ''}
                         {row?.original?.Item_x0020_Type === "tasks" ? <>
                             <span onClick={(e) => EditDataTimeEntry(e, row.original)}
                                 className="svg__iconbox svg__icon--clock"
                                 title="Click To Edit Timesheet"  ></span>
-                            <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span>
+                            <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span>
                         </> : ''}
                     </>
                 ),
@@ -742,10 +735,10 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <>
+                    <div  className='alignCenter'>
                         <a className='hreflink' href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${row?.original?.Id}`} data-interception="off" target="_blank">{row?.original?.Title}</a>
-                        {row?.original?.Body !== null && <InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} />}
-                    </>
+                        {row?.original?.Body !== null && <span className='alignIcon '><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
+                    </div>
 
                 ),
                 id: "Title",
@@ -846,7 +839,7 @@ export default function ProjectOverview(props: any) {
 
                 cell: ({ row }) => (
                     <>
-                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span> : ''}
+                        {row?.original?.siteType === "Project" ? <span title="Edit Project" onClick={(e) => EditComponentPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span> : ''}
 
                     </>
                 ),
@@ -906,7 +899,7 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <>
+                    <div className='alignCenter'>
                         <span>
                             <a className='hreflink'
                                 href={`${AllListId?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
@@ -915,10 +908,10 @@ export default function ProjectOverview(props: any) {
                             >
                                 {row?.original?.Title}
                             </a>
-                            {row?.original?.Body !== null && <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} />}
+                            {row?.original?.Body !== null && <span className='alignIcon '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
 
                         </span>
-                    </>
+                    </div>
 
                 ),
                 id: "Title",
@@ -1072,7 +1065,7 @@ export default function ProjectOverview(props: any) {
                         <span onClick={(e) => EditDataTimeEntry(e, row.original)}
                             className="svg__iconbox svg__icon--clock"
                             title="Click To Edit Timesheet"  ></span>
-                        <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="svg__iconbox svg__icon--edit hreflink" ></span>
+                        <span title="Edit Task" onClick={(e) => EditPopup(row?.original)} className="alignIcon svg__iconbox svg__icon--edit hreflink" ></span>
                     </>
                 ),
                 id: 'Id',
@@ -1087,161 +1080,182 @@ export default function ProjectOverview(props: any) {
         [data]
     );
 
-
-
-
-
     const sendAllWorkingTodayTasks = async () => {
         setPageLoader(true);
-        let text = '';
+        let AllTimeEntries: any = [];
+        if (timeSheetConfig?.Id != undefined) {
+            AllTimeEntries = await globalCommon.loadAllTimeEntry(timeSheetConfig);
+        }
+
+
         let to: any = ["ranu.trivedi@hochhuth-consulting.de", "prashant.kumar@hochhuth-consulting.de", "abhishek.tiwari@hochhuth-consulting.de", "deepak@hochhuth-consulting.de"];
-        // let to: any = ["abhishek.tiwari@hochhuth-consulting.de", "deepak@hochhuth-consulting.de"];
+        //let to: any = ["abhishek.tiwari@hochhuth-consulting.de", "ranu.trivedi@hochhuth-consulting.de"];
         let finalBody: any = [];
         let userApprover = '';
         let groupedData = data;
+        let body: any = '';
         let confirmation = confirm("Are you sure you want to share the working today task of all team members?")
         if (confirmation) {
             var subject = "Today's Working Tasks Under Projects";
-            groupedData?.map(async (group: any) => {
-                let teamsTaskBody: any = [];
+            const GroupedPromises = await groupedData?.map(async (group: any) => {
+
                 let projectLeaderTitle = '';
                 let projectLeaderId: any = '';
-                let body: any = '';
+
                 if (group?.ResponsibleTeam?.lemgth > 0) {
                     projectLeaderTitle = group?.ResponsibleTeam[0]?.Title
                     projectLeaderId = group?.ResponsibleTeam[0]?.Id
                 }
-                let body1: any = [];
                 let tasksCopy: any = [];
-
+                let text = '';
                 tasksCopy = group?.subRows
                 if (tasksCopy?.length > 0) {
                     let taskCount = 0;
 
                     tasksCopy?.map(async (item: any) => {
-                        let EstimatedDesc = JSON.parse(item?.EstimatedTimeDescription)
-                        let parser = new DOMParser();
-                        let shortDesc = parser.parseFromString(item?.bodys, "text/html");
-                        item.showDesc = '';
+                        try {
 
-                        item?.bodys?.split(' ').map((des: any, index: any) => {
-                            if (index <= 10) {
-                                item.showDesc += ' ' + des;
-                            }
-                        })
-                        let memberOnLeave = false;
-                        item?.AssignedTo?.map((user: any) => {
-                            memberOnLeave = AllLeaves.some((emp: any) => emp == user?.Id)
-                        });
-                        if (!memberOnLeave) {
-                            taskCount++;
-                            let teamUsers: any = [];
-                            if (item?.AssignedTo?.length > 0) {
-                                item.AssignedTitle = item?.AssignedTo?.map((elem: any) => elem?.Title).join(" ")
-                            } else {
-                                item.AssignedTitle = ''
-                            }
-                            if (item.DueDate != undefined) {
-                                item.TaskDueDatenew = Moment(item.DueDate).format("DD/MM/YYYY");
-                            }
-                            if (item.TaskDueDatenew == undefined || item.TaskDueDatenew == '')
-                                item.TaskDueDatenew = '';
-                            if (item.Categories == undefined || item.Categories == '')
-                                item.Categories = '';
+                            item.smartTime = 0;
 
-                            if (item.EstimatedTime == undefined || item.EstimatedTime == '' || item.EstimatedTime == null) {
-                                item.EstimatedTime = ''
-                            }
-                            let estimatedDescription = ''
-                            if (EstimatedDesc?.length > 0) {
-                                EstimatedDesc?.map((time: any, index: any) => {
-                                    if (index == 0) {
-                                        estimatedDescription += time?.EstimatedTimeDescription
-                                    } else {
-                                        estimatedDescription += ', ' + time?.EstimatedTimeDescription
+                            let EstimatedDesc: any = []
+
+                            item.showDesc = '';
+                            try {
+                                AllTimeEntries?.map((entry: any) => {
+                                    if (entry[`Task${item?.siteType}`] != undefined && entry[`Task${item?.siteType}`].Id == item.Id) {
+                                        let AdditionalTimeEntry = JSON.parse(entry?.AdditionalTimeEntry)
+                                        AdditionalTimeEntry?.map((time: any) => {
+                                            item.smartTime += parseFloat(time?.TaskTime);
+                                        })
                                     }
-
                                 })
+                                let parser = new DOMParser();
+                                let shortDesc = parser.parseFromString(item?.bodys, "text/html");
+                                EstimatedDesc = JSON.parse(item?.EstimatedTimeDescription)
+                                item?.bodys?.split(' ').map((des: any, index: any) => {
+                                    if (index <= 10) {
+                                        item.showDesc += ' ' + des;
+                                    }
+                                })
+                            } catch (error) {
+                                console.log(error)
                             }
-                            text =
-                                '<tr>' +
-                                '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.siteType + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.TaskID + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + '<p style="margin:0px; color:#333;">' + '<a style="text-decoration: none;" href =' + item.siteUrl + '/SitePages/Task-Profile.aspx?taskId=' + item.Id + '&Site=' + item.siteType + '>' + item.Title + '</a>' + '</p>' + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item?.showDesc + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.Categories + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.PercentComplete + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.PriorityRank + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + (item?.AssignedTo?.length > 0 ? item?.AssignedTo?.map((AssignedUser: any) => {
-                                    return (
-                                        '<p style="margin:0px;">' + '<a style="text-decoration: none;" href =' + AllListId.siteUrl + '/SitePages/UserTimeEntry.aspx?userId=' + AssignedUser?.Id + '><span>' + AssignedUser?.Title + '</span></a>' + '</p>'
-                                    )
-                                }) : '') + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">' + item.TaskDueDatenew + '</td>'
-                                + '<td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px; border-right:0px">' + item.EstimatedTime + '</td>'
-                            body1.push(text);
+
+                            let memberOnLeave = false;
+                            item?.AssignedTo?.map((user: any) => {
+                                memberOnLeave = AllLeaves.some((emp: any) => emp == user?.Id)
+                            });
+                            if (!memberOnLeave) {
+                                taskCount++;
+                                let teamUsers: any = [];
+                                if (item?.AssignedTo?.length > 0) {
+                                    item.AssignedTitle = item?.AssignedTo?.map((elem: any) => elem?.Title).join(" ")
+                                } else {
+                                    item.AssignedTitle = ''
+                                }
+                                if (item.DueDate != undefined) {
+                                    item.TaskDueDatenew = Moment(item.DueDate).format("DD/MM/YYYY");
+                                }
+                                if (item.TaskDueDatenew == undefined || item.TaskDueDatenew == '')
+                                    item.TaskDueDatenew = '';
+                                if (item.Categories == undefined || item.Categories == '')
+                                    item.Categories = '';
+
+                                if (item.EstimatedTime == undefined || item.EstimatedTime == '' || item.EstimatedTime == null) {
+                                    item.EstimatedTime = ''
+                                }
+                                let estimatedDescription = ''
+                                if (EstimatedDesc?.length > 0) {
+                                    EstimatedDesc?.map((time: any, index: any) => {
+                                        if (index == 0) {
+                                            estimatedDescription += time?.EstimatedTimeDescription
+                                        } else {
+                                            estimatedDescription += ', ' + time?.EstimatedTimeDescription
+                                        }
+
+                                    })
+                                }
+                                text +=
+                                    `<tr>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">${item?.siteType} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${item.TaskID} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"><p style="margin:0px; color:#333;"><a style="text-decoration: none;" href =${item?.siteUrl}/SitePages/Task-Profile.aspx?taskId= ${item?.Id}&Site=${item?.siteType}> ${item?.Title} </a></p></td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${item?.showDesc} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${item.Categories} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${item.PercentComplete} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${item.PriorityRank} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px"> ${(item?.AssignedTo?.length > 0 ? item?.AssignedTo?.map((AssignedUser: any) => {
+                                        return (
+                                            '<p style="margin:0px;">' + '<a style="text-decoration: none;" href =' + AllListId.siteUrl + '/SitePages/UserTimeEntry.aspx?userId=' + AssignedUser?.Id + '><span>' + AssignedUser?.Title + '</span></a>' + '</p>'
+                                        )
+                                    }) : '')} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">${item.TaskDueDatenew} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px">${item.smartTime} </td>
+                                    <td height="10" align="left" valign="middle" style="border-left: 0px; border-top: 0px; padding: 5px 0px; padding-left:5px; border-right:0px"> ${item.EstimatedTime} </td>
+                                    </tr>`
+                                    ;
+                            }
+
+                        } catch (error) {
+                            setPageLoader(false);
+                            console.log(error)
                         }
                     })
                     if (taskCount > 0) {
-                        body =
-                            '<table cellpadding="0" cellspacing="0" align="center" width="100%" border="0">'
-                            + '<tr>'
-                            + '<td width="20%" height="30" align="left" valign="middle"bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Title</strong></td>'
-                            + '<td height="30" colspan="6" bgcolor="#eee" style="padding-left: 10px; color: #eee;border: 1px solid #a19f9f;"><strong><a style="text-decoration: none;" href =' + AllListId.siteUrl + '/SitePages/Project-Management.aspx?ProjectId=' + group?.Id + '>' + group?.Title + '</a></strong></td>'
-                            + '</tr>'
-                            + '<tr>'
-                            + '<td width="10%" height="30" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Project Priority</strong></td>'
-                            + '<td  width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;">' + group?.PriorityRank + ' </td>'
-                            + '<td width="10%" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Due Date</strong></td>'
-                            + '<td width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;">' + group?.DisplayDueDate + '</td>'
-                            + '<td width="10%" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Team Leader</strong></td>'
-                            + '<td width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;"><a style="text-decoration: none;" href =' + AllListId.siteUrl + '/SitePages/TaskDashboard.aspx?UserId=' + projectLeaderId + '>' + projectLeaderTitle + '</a></td>'
-                            + '</tr>'
-                            + '<tr><td colspan="4" height="10"></td></tr>'
-                            + '</table >'
-                            + '<table cellpadding="0" cellspacing="0" align="left" width="100%" border="1" style=" border-color: #444;">'
-                            + '<thead>'
-                            + '<tr>'
-                            + '<th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Site</th>'
-                            + '<th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;x">Task ID</th>'
-                            + '<th width="500" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Title</th>'
-                            + '<th width="140" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;" >Desc.</th>'
-                            + '<th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Category</th>'
-                            + '<th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">% </th>'
-                            + '<th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Priority</th>'
-                            + '<th width="130" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Team</th>'
-                            + '<th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Duedate</th>'
-                            + '<th width="70" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px; border-right:0px" >Est</th>'
-                            + '</tr>'
-                            + '</thead>'
-                            + '<tbody>'
-                            + body1
-                            + '</tbody>'
-                            + '</table>'
-                        body = body.replaceAll('>,<', '><').replaceAll(',', '')
+                        body +=
+                            `<table cellpadding="0" cellspacing="0" align="center" style="margin-top:10px" width="100%" border="0">
+                            <tr>
+                            <td width="20%" height="30" align="left" valign="middle"bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Title</strong></td>
+                            <td height="30" colspan="6" bgcolor="#eee" style="padding-left: 10px; color: #eee;border: 1px solid #a19f9f;"><strong><a style="text-decoration: none;" href =${AllListId.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${group?.Id}> ${group?.Title}</a></strong></td>
+                            </tr>
+                            <tr>
+                            <td width="10%" height="30" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Project Priority</strong></td>
+                            <td  width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;">${group?.PriorityRank}</td>
+                            <td width="10%" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Due Date</strong></td>
+                            <td width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;"> ${group?.DisplayDueDate} </td>
+                            <td width="10%" align="left" valign="middle" bgcolor="#a2d1ff" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;color:#000;"><strong>Team Leader</strong></td>
+                            <td width="20%" height="30" bgcolor="#eee" style="padding-left:10px;border-bottom: 1px solid #a19f9f;border-right: 1px solid #a19f9f;border-left: 1px solid #a19f9f;"><a style="text-decoration: none;" href = ${AllListId?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${projectLeaderId} >${projectLeaderTitle} </a></td>
+                            </tr>
+                            <tr><td colspan="4" height="10"></td></tr>
+                            </table >
+                            <table cellpadding="0" cellspacing="0" align="left" width="100%" border="1" style=" border-color: #444;margin-bottom:10px">
+                            <thead>
+                            <tr>
+                            <th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Site</th>
+                            <th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;x">Task ID</th>
+                            <th width="500" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Title</th>
+                            <th width="140" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;" >Desc.</th>
+                            <th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Category</th>
+                            <th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">% </th>
+                            <th width="40" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Priority</th>
+                            <th width="130" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Team</th>
+                            <th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Duedate</th>
+                            <th width="80" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px;">Smart Time</th>
+                            <th width="70" height="12" align="center" valign="middle" bgcolor="#eeeeee" style="padding:10px 5px;border-top: 0px;border-left: 0px; border-right:0px" >Est</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            ${text}
+                            </tbody>
+                            </table>`
                     }
                 }
 
 
 
-                teamsTaskBody.push(body);
-
-
-                finalBody.push(teamsTaskBody)
 
             })
             let sendAllTasks =
-                '<span style="font-size: 18px;margin-bottom: 10px;">'
-                + 'Hi there, <br><br>'
-                + 'Below is the working today task of all the team members <strong>(Project Wise):</strong>'
-                + '</span>'
-                + finalBody
-                + '<h3>'
-                + 'Thanks.'
-                + '</h3>'
-                + '<h3>'
-                // + currentUserData?.Title
-                + '</h3>'
+                `<span style="font-size: 18px;margin-bottom: 10px;">
+                Hi there, <br><br>
+                Below is the working today task of all the team members <strong>(Project Wise):</strong>
+                <p><a href =${AllListId?.siteUrl}/SitePages/Project-Management-Overview.aspx>Click here for flat overview of the today's tasks</a></p>
+                </span>
+                ${body}
+                <h3>
+                Thanks.
+                </h3>`
+            setPageLoader(false);
             SendEmailFinal(to, subject, sendAllTasks);
 
         }
@@ -1264,8 +1278,10 @@ export default function ProjectOverview(props: any) {
             },
         }).then(() => {
             console.log("Email Sent!");
+            setPageLoader(false);
 
         }).catch((err) => {
+            setPageLoader(false);
             console.log(err.message);
         });
 
@@ -1306,8 +1322,8 @@ export default function ProjectOverview(props: any) {
             let Alltask: any = [];
             // var AllUsers: any = []
             Alltask = await web.lists.getById(AllListId?.MasterTaskListID).items
-                .select("Deliverables,TechnicalExplanations,PortfolioLevel,PortfolioStructureID,ValueAdded,Categories,Idea,Short_x0020_Description_x0020_On,Background,Help_x0020_Information,Short_x0020_Description_x0020__x,ComponentCategory/Id,ComponentCategory/Title,Comments,HelpDescription,FeedBack,Body,Services/Title,Services/Id,Events/Id,Events/Title,SiteCompositionSettings,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,Component/Id,Component/Title,Component/ItemType,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title")
-                .expand("ComponentCategory,AssignedTo,Component,Events,Services,AttachmentFiles,Author,Editor,TeamMembers,TaskCategories,Parent")
+                .select("Deliverables,TechnicalExplanations,PortfolioLevel,PortfolioStructureID,ValueAdded,Categories,Idea,Short_x0020_Description_x0020_On,Background,Help_x0020_Information,Short_x0020_Description_x0020__x,ComponentCategory/Id,ComponentCategory/Title,Comments,HelpDescription,FeedBack,Body,SiteCompositionSettings,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title")
+                .expand("ComponentCategory,AssignedTo,AttachmentFiles,Author,Editor,TeamMembers,TaskCategories,Parent")
                 .top(4999).filter("Item_x0020_Type eq 'Project'")
                 .getAll();
 
@@ -1412,13 +1428,7 @@ export default function ProjectOverview(props: any) {
     const CallBack = React.useCallback(() => {
         GetMasterData()
     }, [])
-    const getComponentasString = function (results: any) {
-        var component = "";
-        $.each(results, function (cmp: any) {
-            component += cmp.Title + "; ";
-        });
-        return component;
-    };
+
 
     const LoadAllSiteTasks = function () {
         if (siteConfig?.length > 0) {
@@ -1432,8 +1442,8 @@ export default function ProjectOverview(props: any) {
                     smartmeta = await web.lists
                         .getById(config.listId)
                         .items
-                        .select("Id,Title,PriorityRank,EstimatedTime,EstimatedTimeDescription,Project/PriorityRank,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,IsTodaysTask,Body,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
-                        .expand('AssignedTo,Project,Author,Editor,Component,Services,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory')
+                        .select("Id,Title,PriorityRank,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,ParentTask/TaskID,ParentTask/Title,ParentTask/Id,EstimatedTime,EstimatedTimeDescription,Project/PriorityRank,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,IsTodaysTask,Body,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
+                        .expand('AssignedTo,Project,Author,Editor,Portfolio,TaskType,ParentTask,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory')
                         .filter("IsTodaysTask eq 1")
                         .top(4999)
                         .get();
@@ -1472,11 +1482,11 @@ export default function ProjectOverview(props: any) {
                                 : "";
                         items.portfolio = {};
                         if (items?.Portfolio?.Id != undefined) {
-                          items.portfolio = items?.Portfolio;
-                          items.PortfolioTitle = items?.Portfolio?.Title;
-                          // items["Portfoliotype"] = "Component";
+                            items.portfolio = items?.Portfolio;
+                            items.PortfolioTitle = items?.Portfolio?.Title;
+                            //  items["Portfoliotype"] = "Component";
                         }
-                        
+
                         items["SiteIcon"] = config?.Item_x005F_x0020_Cover?.Url;
                         if (items?.Project?.Title != undefined) {
                             items["ProjectTitle"] = items?.Project?.Title;
@@ -1503,12 +1513,7 @@ export default function ProjectOverview(props: any) {
                                 });
                             });
                         }
-                        items.componentString =
-                            items.Component != undefined &&
-                                items.Component != undefined &&
-                                items.Component.length > 0
-                                ? getComponentasString(items.Component)
-                                : "";
+
                         items.TaskID = globalCommon.getTaskId(items);
                         AllTaskUsers?.map((user: any) => {
                             if (user.AssingedToUserId == items.Author.Id) {
@@ -1621,29 +1626,26 @@ export default function ProjectOverview(props: any) {
                 <div className="col-sm-12 pad0 smart">
                     <div className="section-event project-overview-Table">
                         <div >
-                            <div className='header-section justify-content-between row'>
-                                <div className="col-sm-8">
-                                    <h2 style={{ color: "#000066", fontWeight: "600" }}>Project Management Overview</h2>
-                                </div>
-                                <div className="col-sm-4 text-end">
+                            <div className='align-items-center d-flex justify-content-between'>
+                                    <h2 className='heading'>Project Management Overview</h2>
                                     <AddProject CallBack={CallBack} AllListId={AllListId} />
                                     {/* {showTeamMemberOnCheck === true ? <span><a className="teamIcon" onClick={() => ShowTeamFunc()}><span title="Create Teams Group" className="svg__iconbox svg__icon--team teamIcon"></span></a></span> : ''} */}
-                                </div>
+                               
                             </div>
                             <>
-                                <div className='ProjectOverViewRadioFlat  d-flex justify-content-between'>
+                                <div className='ProjectOverViewRadioFlat  d-flex justify-content-between SpfxCheckRadio mb-2 mt-1'>
                                     <dl className='alignCenter gap-2 mb-0'>
-                                        <dt className='form-check l-radio'>
-                                            <input className='form-check-input' type="radio" value="Projects" name="date" checked={selectedView == 'Projects'} onClick={() => setSelectedView('Projects')} /> Projects
+                                        <dt>
+                                            <input className='radio' type="radio" value="Projects" name="date" checked={selectedView == 'Projects'} onClick={() => setSelectedView('Projects')} /> Projects
                                         </dt>
-                                        <dt className='form-check l-radio'>
-                                            <input className='form-check-input' type="radio" value="flat" name="date" checked={selectedView == 'flat'} onClick={() => setSelectedView('flat')} /> Today's Tasks
+                                        <dt>
+                                            <input className='radio' type="radio" value="flat" name="date" checked={selectedView == 'flat'} onClick={() => setSelectedView('flat')} /> Today's Tasks
                                         </dt>
-                                        <dt className='form-check l-radio'>
-                                            <input className='form-check-input' type="radio" value="grouped" name="date" checked={selectedView == 'grouped'} onClick={() => setSelectedView('grouped')} /> Grouped View
+                                        <dt>
+                                            <input className='radio' type="radio" value="grouped" name="date" checked={selectedView == 'grouped'} onClick={() => setSelectedView('grouped')} /> Grouped View
                                         </dt>
-                                        <dt className='form-check l-radio'>
-                                            <input className='form-check-input' type="radio" value="teamWise" name="date" checked={selectedView == 'teamWise'} onClick={() => setSelectedView('teamWise')} /> Team View
+                                        <dt>
+                                            <input className='radio' type="radio" value="teamWise" name="date" checked={selectedView == 'teamWise'} onClick={() => setSelectedView('teamWise')} /> Team View
                                         </dt>
 
                                     </dl>
@@ -1672,8 +1674,9 @@ export default function ProjectOverview(props: any) {
                 {IsComponent && <EditProjectPopup props={SharewebComponent} AllListId={AllListId} Call={Call} showProgressBar={showProgressBar}> </EditProjectPopup>}
                 {ShowTeamPopup === true ? <ShowTeamMembers props={checkData} callBack={showTaskTeamCAllBack} TaskUsers={AllTaskUser} /> : ''}
                 {openTimeEntryPopup && <TimeEntryPopup props={taskTimeDetails} CallBackTimeEntry={TimeEntryCallBack} Context={props?.props?.Context} />}
+               
             </div>
-
+            {pageLoaderActive ? <PageLoader /> : ''}
         </>
     )
 }

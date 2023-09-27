@@ -2,7 +2,7 @@ import * as React from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import ReactPopperTooltipSingleLevel from '../../../globalComponents/Hierarchy-Popper-tooltipSilgleLevel/Hierarchy-Popper-tooltipSingleLevel';
 import InfoIconsToolTip from "../../../globalComponents/InfoIconsToolTip/InfoIconsToolTip";
-import { Web } from "sp-pnp-js";
+import { Web, sp } from "sp-pnp-js";
 import pnp, { PermissionKind } from "sp-pnp-js";
 import "@pnp/sp/sputilities";
 import { IEmailProperties } from "@pnp/sp/sputilities";
@@ -28,7 +28,7 @@ let AllComponents: any = []
 let taskUsers: any = [];
 // let taskCreated = false;
 let createdTask: any = {}
-let QueryPortfolioId:any=null;
+let QueryPortfolioId: any = null;
 let loggedInUser: any;
 let oldTaskIrl = "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/CreateTask.aspx";
 let Isapproval;
@@ -36,7 +36,7 @@ var ContextValue: any = {};
 var isShowTimeEntry: any;
 var isShowSiteCompostion: any;
 var AllListId: any = {}
-let DirectTask=false;
+let DirectTask = false;
 function CreateTaskComponent(props: any) {
     let base_Url = props?.pageContext?._web?.absoluteUrl;
     const [editTaskPopupData, setEditTaskPopupData] = React.useState({
@@ -108,6 +108,7 @@ function CreateTaskComponent(props: any) {
             console.log(error)
         }
         base_Url = AllListId?.siteUrl
+        pageContext();
         setRefreshPage(!refreshPage);
     }, [relevantTasks])
 
@@ -158,37 +159,17 @@ function CreateTaskComponent(props: any) {
         if (functionType == "Close") {
             setIsOpenPortfolio(false)
         } else {
-            if (Type == "Service") {
-                if (DataItem != undefined && DataItem.length > 0) {
-                    // saveItem.linkedServices = DataItem;
-                    // saveItem.portfolioType = "Service";
-                    setSave(prevSave => ({
-                        ...prevSave,
-                        linkedServices: DataItem,
-                        portfolioType: "Service"
-                    }));
-                    // setSave({ ...save, linkedServices: DataItem, portfolioType : "Service" });
-                    setLinkedComponentData(DataItem);
-                    // selectPortfolioType('Service')
-                    console.log("Popup component services", DataItem);
-                    setSmartComponentData([])
-                }
-
-            }
-            if (Type == "Component") {
-                if (DataItem != undefined && DataItem.length > 0) {
-                    setSave(prevSave => ({
-                        ...prevSave,
-                        Component: DataItem,
-                        portfolioType: "Component"
-                    }));
-                    // setSave({ ...save, Component: DataItem });
-                    setSmartComponentData(DataItem);
-                    // selectPortfolioType('Component');
-                    setLinkedComponentData([]);
-                    console.log("Popup component component ", DataItem)
-                }
-
+            if (DataItem != undefined && DataItem.length > 0) {
+                setSave(prevSave => ({
+                    ...prevSave,
+                    Component: DataItem,
+                    portfolioType: "Component"
+                }));
+                // setSave({ ...save, Component: DataItem });
+                setSmartComponentData(DataItem);
+                // selectPortfolioType('Component');
+                setLinkedComponentData([]);
+                console.log("Popup component component ", DataItem)
             }
             setIsOpenPortfolio(false)
         }
@@ -268,7 +249,7 @@ function CreateTaskComponent(props: any) {
         let BurgerMenuData = burgerMenuTaskDetails;
         if (props?.projectId == undefined) {
             const params = new URLSearchParams(window.location.search);
-           
+
 
             let paramSiteUrl = params.get("Siteurl");
             let paramComponentId = params.get('ComponentID');
@@ -278,21 +259,21 @@ function CreateTaskComponent(props: any) {
             let previousTaggedTaskToComp: any[] = []
             if (paramComponentId == undefined && paramSiteUrl != undefined && paramType == undefined) {
                 paramComponentId = "756";
-                QueryPortfolioId='756';
+                QueryPortfolioId = '756';
             }
             else if (paramComponentId == undefined && paramServiceId == undefined && paramSiteUrl != undefined && paramType == 'Service') {
                 paramServiceId = "4497";
-                QueryPortfolioId='4497';
+                QueryPortfolioId = '4497';
             }
             BurgerMenuData.ComponentID = paramComponentId;
             BurgerMenuData.Siteurl = paramSiteUrl;
             BurgerMenuData.TaskType = paramTaskType;
-           
+
             let PageName = '';
 
             if (paramSiteUrl != undefined) {
                 let baseUrl = window.location.href;
-                
+
                 PageName = paramSiteUrl?.split('aspx')[0].split("").reverse().join("").split('/')[0].split("").reverse().join("");
                 PageName = PageName + 'aspx'
                 // await loadRelevantTask(PageName, "PageTask")
@@ -301,17 +282,17 @@ function CreateTaskComponent(props: any) {
 
 
             if (paramComponentId != undefined) {
-                QueryPortfolioId=paramComponentId;
+                QueryPortfolioId = paramComponentId;
                 AllComponents?.map((item: any) => {
                     if (item?.Id == paramComponentId) {
                         setComponent.push(item)
-                        setSave((prev:any)=>({ ...prev, Component: setComponent }));
+                        setSave((prev: any) => ({ ...prev, Component: setComponent }));
                         setSmartComponentData(setComponent);
                     }
                 })
 
                 if (paramTaskType == 'Bug') {
-                    DirectTask=true;
+                    DirectTask = true;
                     subCategories?.map((item: any) => {
                         if (item.Title == "Bug") {
                             selectSubTaskCategory(item.Title, item.Id, item)
@@ -332,7 +313,7 @@ function CreateTaskComponent(props: any) {
 
                     createTask();
                 } else if (paramTaskType == 'Design') {
-                    DirectTask=true;
+                    DirectTask = true;
                     subCategories?.map((item: any) => {
                         if (item.Title == "Design") {
                             selectSubTaskCategory(item.Title, item.Id, item)
@@ -354,11 +335,15 @@ function CreateTaskComponent(props: any) {
                     createTask();
                 } else if (paramSiteUrl != undefined) {
                     let saveValue = save;
-                    let setTaskTitle = 'Feedback - ' + setComponent[0]?.Title + ' ' + moment(new Date()).format('DD/MM/YYYY');
+                    let setTaskTitle = 'Feedback - ' + setComponent[0]?.Title + ' ' + moment(new Date()).format('DD-MM-YYYY');
                     saveValue.taskName = setTaskTitle;
+                    subCategories?.map((item: any) => {
+                        if (item.Title == "Feedback") {
+                            selectSubTaskCategory(item.Title, item.Id, item)
+                        }
+                    })
                     saveValue.taskUrl = paramSiteUrl;
                     BurgerMenuData.TaskType = 'Feedback'
-                    //  setTaskUrl(paramSiteUrl);
                     setSave(saveValue);
                     let e = {
                         target: {
@@ -366,143 +351,111 @@ function CreateTaskComponent(props: any) {
                         }
                     }
                     UrlPasteTitle(e);
-                    await loadRelevantTask(paramSiteUrl, "UrlTask")
-                    await loadRelevantTask(PageName, "PageTask")
                 }
-                let Condition = "&$filter=Component/Id eq  '" + paramComponentId + "'"
-                await loadRelevantTask(Condition, "ComponentId").then((response: any) => {
+                await loadRelevantTask(paramComponentId, paramSiteUrl, PageName).then((response: any) => {
                     setRefreshPage(!refreshPage);
                 })
             }
         } else if (props?.projectId != undefined && props?.projectItem != undefined) {
             AllComponents?.map((item: any) => {
-                // if (item?.Id == props?.projectItem?.ComponentId[0]) {
-                //     setComponent.push(item)
-                //     setSave({ ...save, Component: setComponent });
-                //     setSmartComponentData(setComponent);
-                // }
                 if (item?.Id == props?.createComponent?.portfolioData?.Id) {
                     if (props?.createComponent?.portfolioType === 'Component') {
-                        selectPortfolioType('Component');
                         setComponent.push(item)
-                        setSave((prev:any)=>({ ...prev, portfolioType: 'Component' }))
+                        setSave((prev: any) => ({ ...prev, portfolioType: 'Component' }))
                         setSmartComponentData(setComponent);
-                    }
-
-                    if (props?.createComponent?.portfolioType === 'Service') {
-                        selectPortfolioType('Service');
-                        setComponent.push(item);
-                        setSave((prev:any)=>({ ...prev, portfolioType: 'Service' }))
-                        setLinkedComponentData(setComponent);
                     }
                 }
             })
         }
         setBurgerMenuTaskDetails(BurgerMenuData)
     }
-    const loadRelevantTask = async (Condition: any, type: any) => {
+   
+    const loadRelevantTask = async (PortfolioId: any, UrlTask: any, PageTask: any) => {
+        let allData: any = [];
         let query = '';
-        if (type == 'ComponentId') {
-            query = "Categories,AssignedTo/Title,AssignedTo/Name,Component/Id,PriorityRank,TaskType/Id,TaskType/Title,Component/Title,Services/Id,Services/Title,AssignedTo/Id,AttachmentFiles/FileName,ComponentLink/Url,FileLeafRef,TaskLevel,TaskLevel,Title,Id,PriorityRank,PercentComplete,Company,WebpartId,StartDate,DueDate,Status,Body,WebpartId,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title&$expand=AssignedTo,AttachmentFiles,TaskType,Component,Services,Author,Editor&$orderby=Modified desc" + Condition
-        } else {
-            query = "Categories,AssignedTo/Title,AssignedTo/Name,Component/Id,PriorityRank,TaskType/Id,TaskType/Title,Component/Title,Services/Id,Services/Title,AssignedTo/Id,AttachmentFiles/FileName,ComponentLink/Url,FileLeafRef,TaskLevel,TaskLevel,Title,Id,PriorityRank,PercentComplete,Company,WebpartId,StartDate,DueDate,Status,Body,WebpartId,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title&$expand=AssignedTo,AttachmentFiles,TaskType,Component,Services,Author,Editor&$orderby=Modified desc"
-        }
+        query = "Categories,AssignedTo/Title,AssignedTo/Name,PriorityRank,TaskType/Id,TaskType/Title,AssignedTo/Id,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,AttachmentFiles/FileName,ComponentLink/Url,FileLeafRef,TaskLevel,TaskLevel,Title,Id,PriorityRank,PercentComplete,Company,WebpartId,StartDate,DueDate,Status,Body,WebpartId,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ParentTask/TaskID,ParentTask/Title,ParentTask/Id&$expand=AssignedTo,ParentTask,AttachmentFiles,TaskType,Portfolio,Author,Editor&$orderby=Modified desc"
         let setRelTask = relevantTasks;
-        try {
-            let SiteTaskTaggedToComp: any[] = []
-            let count = 0
-            SitesTypes?.map(async (site: any) => {
-                await globalCommon.getData(site?.siteUrl?.Url, site?.listId, query).then((data: any) => {
-                    data?.map((item: any) => {
-
-                        item.SiteIcon = site?.Item_x005F_x0020_Cover?.Url
-                        item.siteType = site?.siteName;
-                        item.TaskName = item.Title;
-                        item.siteUrl = site?.siteUrl?.Url
-                        item.listId = site?.listId
-                        taskUsers?.map((user: any) => {
-                            if (user?.AssingedToUser?.Id == item.Author.Id) {
-                                item.AuthorCover = user?.Item_x0020_Cover?.Url
-                            }
-                            if (user?.AssingedToUser?.Id == item.Editor.Id) {
-                                item.EditorCover = user?.Item_x0020_Cover?.Url
-                            }
-
-                        })
-                        item.PercentComplete = item?.PercentComplete * 100;
-                        item.Priority = item.PriorityRank * 1;
-                        if (item.Categories == null)
-                            item.Categories = '';
-                        //type.Priority = type.Priority.split('')[1];
-                        //type.Component = type.Component.results[0].Title,
-                        item.ComponentTitle = '';
-                        if (item?.Component?.length > 0) {
-                            item.portfolio = item.Component[0];
-                        }
-                        if (item?.Services?.length > 0) {
-                            item.portfolio = item.Services[0];
-                        }
-                        if (item?.Component?.results?.length > 0) {
-                            item['Portfoliotype'] = 'Component';
-                        }
-                        if (item?.Services?.results?.length > 0) {
-                            item['Portfoliotype'] = 'Service';
-                        }
-                        if (item?.Component?.results?.length > 0 && item?.Services?.results?.length > 0) {
-                            item['Portfoliotype'] = 'Component';
-                        }
-
-                        item.TaskID = globalCommon.getTaskId(item);
-
-                        item.DisplayDueDate = moment(item?.DueDate).format('DD/MM/YYYY');
-                        if (item.DisplayDueDate == "Invalid date" || item.DisplayDueDate == undefined) {
-                            item.DisplayDueDate = '';
-                        }
-                        item.CreateDate = moment(item?.Created).format('DD/MM/YYYY');
-                        item.CreatedSearch = item.CreateDate + '' + item.Author;
-                        item.bodys = item.Body != null && item.Body.split('<p><br></p>').join('');
-                        item.DateModified = item.Modified;
-                        item.ModifiedDate = moment(item?.Modified).format('DD/MM/YYYY');
-                        item.ModifiedSearch = item.ModifiedDate + '' + item.Editor;
-                        if (item.siteType != 'Offshore Tasks') {
-                            try {
-                                if (type == 'PageTask' || type == "UrlTask") {
-                                    if (item?.ComponentLink?.Url.indexOf(Condition) > -1) {
-                                        SiteTaskTaggedToComp.push(item);
+        const web = new Web(AllListId?.siteUrl);
+        const batch = sp.createBatch();
+        let count: any = 0;
+        SitesTypes?.map((site: any) => {
+       
+            try {
+                if(site?.listId!=undefined){
+                    const lists = web.lists.getById(site?.listId)
+                    lists.items.inBatch(batch).select(query)
+                        .getAll()
+                        .then((data: any) => {
+                           
+                            data.map((item: any) => {
+                                item.SiteIcon = site?.Item_x005F_x0020_Cover?.Url
+                                item.siteType = site?.siteName;
+                                item.TaskName = item.Title;
+                                item.siteUrl = site?.siteUrl?.Url
+                                item.listId = site?.listId
+                                taskUsers?.map((user: any) => {
+                                    if (user?.AssingedToUser?.Id == item.Author.Id) {
+                                        item.AuthorCover = user?.Item_x0020_Cover?.Url
                                     }
-                                } else {
-                                    SiteTaskTaggedToComp.push(item);
+                                    if (user?.AssingedToUser?.Id == item.Editor.Id) {
+                                        item.EditorCover = user?.Item_x0020_Cover?.Url
+                                    }
+    
+                                })
+                                item.PercentComplete = item?.PercentComplete * 100;
+                                item.Priority = item.PriorityRank * 1;
+                                if (item.Categories == null)
+                                    item.Categories = '';
+                                //type.Priority = type.Priority.split('')[1];
+                                //type.Component = type.Component.results[0].Title,
+                                item.ComponentTitle = '';
+                                item.portfolio = {};
+                                if (item?.Portfolio?.Id != undefined) {
+                                    item.portfolio = item.Portfolio;
                                 }
-
-                            } catch (error) {
-                                console.log(error.message)
-                            }
-                        }
-                    })
-                })
-                count++;
-                if (count == SitesTypes.length - 1) {
-                    console.log("inside Set Task")
-                    if (type == "ComponentId") {
-                        setRelTask.ComponentRelevantTask = SiteTaskTaggedToComp;
-                    }
-                    if (type == "UrlTask") {
-                        setRelTask.TaskUrlRelevantTask = SiteTaskTaggedToComp;
-                    }
-                    if (type == "PageTask") {
-                        setRelTask.PageRelevantTask = SiteTaskTaggedToComp;
-                    }
-                    setRelevantTasks(setRelTask)
-                    setSave({ ...save, recentClick: type })
+                                if (item?.Portfolio?.Id == PortfolioId) {
+                                    setRelTask.ComponentRelevantTask.push(item);
+                                }
+    
+                                item.TaskID = globalCommon.GetTaskId(item);
+    
+                                item.DisplayDueDate = moment(item?.DueDate).format('DD/MM/YYYY');
+                                if (item.DisplayDueDate == "Invalid date" || item.DisplayDueDate == undefined) {
+                                    item.DisplayDueDate = '';
+                                }
+                                item.CreateDate = moment(item?.Created).format('DD/MM/YYYY');
+                                item.CreatedSearch = item.CreateDate + '' + item.Author;
+                                item.bodys = item.Body != null && item.Body.split('<p><br></p>').join('');
+                                item.DateModified = item.Modified;
+                                item.ModifiedDate = moment(item?.Modified).format('DD/MM/YYYY');
+                                item.ModifiedSearch = item.ModifiedDate + '' + item.Editor;
+                                if (item.siteType != 'Offshore Tasks') {
+                                    try {
+                                        if (item?.ComponentLink?.Url.indexOf(UrlTask) > -1) {
+                                            setRelTask.TaskUrlRelevantTask.push(item);
+                                        }
+                                        if (item?.ComponentLink?.Url.indexOf(PageTask) > -1) {
+                                            setRelTask.PageRelevantTask.push(item);
+                                        }
+    
+                                    } catch (error) {
+                                        console.log(error.message)
+                                    }
+                                } 
+                            })
+                            count++;
+                                if (count == SitesTypes.length-1) {
+                                    console.log("inside Set Task")
+                                    setRelevantTasks(setRelTask)
+                                    setSave({ ...save, recentClick: 'PortfolioId' })
+                                }
+                        })
+    
                 }
-                // setRelevantTasks(setRelTask)
-
-            })
-        } catch (error) {
-            console.log(error.message)
-        }
-
-
+            } catch (error) {
+                console.log(error)
+            }
+        })
     }
     const GetSmartMetadata = async () => {
         SitesTypes = [];
@@ -523,7 +476,7 @@ function CreateTaskComponent(props: any) {
         AllMetadata = MetaData;
         siteConfig = getSmartMetadataItemsByTaxType(AllMetadata, 'Sites')
         siteConfig?.map((site: any) => {
-            if (site.Title !== undefined && site.Title !== 'Foundation' && site.Title !== 'Master Tasks' && site.Title !== 'DRR' && site.Title !== 'Health' && site.Title !== 'Gender') {
+            if (site.Title !== undefined && site.Title !== 'Foundation' && site.Title !== 'Master Tasks' && site.Title !== 'DRR' && site.Title !== 'Health' && site.Title !== 'Gender' && site.Title !== 'SP Online') {
                 SitesTypes.push(site);
             }
         })
@@ -541,8 +494,8 @@ function CreateTaskComponent(props: any) {
 
 
         TaskTypes?.map((task: any) => {
-            if (task.ParentID !== undefined && task.ParentID === 0 && task.Title !== 'Phone') {
-                Task.push(task);
+            if (task?.ParentID !== undefined && task.ParentID === 0 && task.Title !== 'Phone') {
+                Task?.push(task);
                 getChilds(task, TaskTypes);
             }
             if (task.ParentID !== undefined && task.ParentID !== 0 && task.IsVisible) {
@@ -633,18 +586,7 @@ function CreateTaskComponent(props: any) {
             }
         });
     }
-    const savaData = () => {
-        var data: any = {}
-        data['taskName'] = save.taskName;
-        data['taskUrl'] = save.taskUrl;
-        data['siteType'] = save.siteType;
-        data['taskCategory'] = save.taskCategory;
-        data['taskCategoryParent'] = save.taskCategoryParent;
-        data['priorityRank'] = save.rank;
-        data['Time'] = save.Time;
-        data['portfolioType'] = save.portfolioType;
-        console.log(data)
-    }
+
     let PageContent: any;
     const pageContext = async () => {
         try {
@@ -657,7 +599,7 @@ function CreateTaskComponent(props: any) {
         return PageContent;
 
     }
-    pageContext();
+
     const createTask = async () => {
         let currentUserId = loggedInUser?.AssingedToUserId
         var AssignedToIds: any[] = [];
@@ -690,6 +632,9 @@ function CreateTaskComponent(props: any) {
             if (CategoryTitle !== undefined) {
                 CategoryTitle.split(';')?.map((cat: any) => {
                     if (cat.toLowerCase() === 'design') {
+                        AssignedToIds.push(298)
+                        TeamMembersIds.push(298);
+                        TeamMembersIds.push(49);
                         taskUsers?.map((User: any) => {
                             if (User.Title === 'Design' && burgerMenuTaskDetails.TaskType != "Design" && TeamMembersIds.length === 0) {
                                 TeamMembersIds.push(User.AssingedToUserId);
@@ -735,7 +680,7 @@ function CreateTaskComponent(props: any) {
             try {
                 let selectedComponent: any[] = [];
                 let selectedService: any[] = [];
-                let portfolioId :any =null;
+                let portfolioId: any = null;
 
                 let CopyUrl;
                 if (save.taskUrl != undefined && save.taskUrl.length > 255) {
@@ -751,14 +696,14 @@ function CreateTaskComponent(props: any) {
                             selectedSite = site;
                         }
                     })
-                  
-                    try{
+
+                    try {
                         if (smartComponentData?.length > 0) {
                             smartComponentData?.map((com: any) => {
                                 if (smartComponentData !== undefined && smartComponentData.length >= 0) {
                                     $.each(smartComponentData, function (index: any, smart: any) {
                                         selectedComponent.push(smart.Id);
-                                        portfolioId=smart?.Id
+                                        portfolioId = smart?.Id
                                         if (selectedSite?.Parent?.Title == "SDC Sites") {
                                             postClientTime = JSON.parse(smart?.Sitestagging);
                                             siteCompositionDetails = smart?.SiteCompositionSettings;
@@ -772,13 +717,13 @@ function CreateTaskComponent(props: any) {
                                 }
                             })
                         }
-                       selectedService= [];
+                        selectedService = [];
                         if (linkedComponentData?.length > 0) {
                             linkedComponentData?.map((com: any) => {
                                 if (linkedComponentData !== undefined && linkedComponentData.length >= 0) {
                                     $.each(linkedComponentData, function (index: any, smart: any) {
                                         selectedService.push(smart.Id);
-                                        portfolioId=smart?.Id
+                                        portfolioId = smart?.Id
                                         if (selectedSite?.Parent?.Title == "SDC Sites") {
                                             postClientTime = JSON.parse(smart?.Sitestagging);
                                             siteCompositionDetails = smart?.SiteCompositionSettings;
@@ -792,15 +737,15 @@ function CreateTaskComponent(props: any) {
                                 }
                             })
                         }
-                        if(DirectTask==true){
-                            selectedComponent=[QueryPortfolioId];
-                            portfolioId =QueryPortfolioId;
+                        if (DirectTask == true) {
+                            selectedComponent = [QueryPortfolioId];
+                            portfolioId = QueryPortfolioId;
                         }
                         postClientTime?.map((items: any) => {
                             items.SiteName = items.Title
                         })
-                    }catch(error:any){
-                        console.log(error , 'Site Comp ')
+                    } catch (error: any) {
+                        console.log(error, 'Site Comp ')
                     }
                     let priorityRank = 4;
                     if (save.rank === undefined || parseInt(save.rank) <= 0) {
@@ -824,18 +769,14 @@ function CreateTaskComponent(props: any) {
 
                         //var query = "SiteCompositionSettings,Sitestagging&$top=1&$filter=Id eq " + smartComponentData[0]?.Id;
                         //const web = new Web(PageContent?.SiteFullUrl + '/sp');
-                        const web = new Web(PageContent?.WebFullUrl);
+                        const web = new Web(AllListId?.siteUrl);
                         await web.lists.getById(ContextValue.MasterTaskListID).items.select("SiteCompositionSettings,Sitestagging").filter(`Id eq ${smartComponentData[0]?.Id}`).top(1).get().then((data: any) => {
                             Tasks = data[0];
                         });
                     }
 
                     //Latest code for Creating Task
-                    if (burgerMenuTaskDetails.TaskType == "Design") {
-                        AssignedToIds.push(40);
-                        TeamMembersIds.push(40);
-                        TeamMembersIds.push(49);
-                    }
+
                     var newCopyUrl = CopyUrl != undefined ? CopyUrl : '';
 
 
@@ -846,8 +787,6 @@ function CreateTaskComponent(props: any) {
                         "DueDate": save.DueDate,
                         "Mileage": save.Mileage,
                         PercentComplete: 0,
-                        ComponentId: { "results": (selectedComponent !== undefined && selectedComponent?.length > 0) ? selectedComponent : [] },
-                        ServicesId: { "results": (selectedService !== undefined && selectedService?.length > 0) ? selectedService : [] },
                         ResponsibleTeamId: { "results": AssignedIds },
                         PortfolioId: portfolioId,
                         TeamMembersId: { "results": TeamMembersIds },
@@ -858,8 +797,7 @@ function CreateTaskComponent(props: any) {
                         "PriorityRank": priorityRank,
                         SiteCompositionSettings: siteCompositionDetails != undefined ? siteCompositionDetails : '',
                         AssignedToId: { "results": AssignedToIds },
-                        TaskTypeId:2,
-                        SharewebTaskTypeId: 2,
+                        TaskTypeId: 2,
                         ClientTime: postClientTime != undefined ? JSON.stringify(postClientTime) : '',
                         ComponentLink: {
                             __metadata: { 'type': 'SP.FieldUrlValue' },
@@ -1074,58 +1012,58 @@ function CreateTaskComponent(props: any) {
 
     const UrlPasteTitle = (e: any) => {
         let TestUrl = e.target.value;
-            let saveValue = save;
-            saveValue.taskUrl = TestUrl;
-            if (SitesTypes?.length > 1) {
-                let selectedSiteTitle = ''
-                var testarray = e.target.value.split('&');
-                // TestUrl = $scope.ComponentLink;
-                var item = '';
-                if (TestUrl !== undefined) {
-                    for (let index = 0; index < SitesTypes.length; index++) {
-                        let site = SitesTypes[index];
-                        if (TestUrl.toLowerCase().indexOf('.com') > -1)
-                            TestUrl = TestUrl.split('.com')[1];
-                        else if (TestUrl.toLowerCase().indexOf('.ch') > -1)
-                            TestUrl = TestUrl.split('.ch')[1];
-                        else if (TestUrl.toLowerCase().indexOf('.de') > -1)
-                            TestUrl = TestUrl.split('.de')[1];
+        let saveValue = save;
+        saveValue.taskUrl = TestUrl;
+        if (SitesTypes?.length > 1) {
+            let selectedSiteTitle = ''
+            var testarray = e.target.value.split('&');
+            // TestUrl = $scope.ComponentLink;
+            var item = '';
+            if (TestUrl !== undefined) {
+                for (let index = 0; index < SitesTypes.length; index++) {
+                    let site = SitesTypes[index];
+                    if (TestUrl.toLowerCase().indexOf('.com') > -1)
+                        TestUrl = TestUrl.split('.com')[1];
+                    else if (TestUrl.toLowerCase().indexOf('.ch') > -1)
+                        TestUrl = TestUrl.split('.ch')[1];
+                    else if (TestUrl.toLowerCase().indexOf('.de') > -1)
+                        TestUrl = TestUrl.split('.de')[1];
 
-                        let Isfound = false;
-                        if (TestUrl !== undefined && ((TestUrl.toLowerCase().indexOf('/' + site.Title.toLowerCase() + '/')) > -1 || (site.AlternativeTitle != null && (TestUrl.toLowerCase().indexOf(site.AlternativeTitle.toLowerCase())) > -1))) {
-                            item = site.Title;
-                            selectedSiteTitle = site.Title;
-                            Isfound = true;
-                        }
+                    let Isfound = false;
+                    if (TestUrl !== undefined && ((TestUrl.toLowerCase().indexOf('/' + site.Title.toLowerCase() + '/')) > -1 || (site.AlternativeTitle != null && (TestUrl.toLowerCase().indexOf(site.AlternativeTitle.toLowerCase())) > -1))) {
+                        item = site.Title;
+                        selectedSiteTitle = site.Title;
+                        Isfound = true;
+                    }
 
-                        if (!Isfound) {
-                            if (TestUrl !== undefined && site.AlternativeTitle != null) {
-                                let sitesAlterNatives = site.AlternativeTitle.toLowerCase().split(';');
-                                for (let j = 0; j < sitesAlterNatives.length; j++) {
-                                    let element = sitesAlterNatives[j];
-                                    if (TestUrl.toLowerCase().indexOf(element) > -1) {
-                                        item = site.Title;
-                                        selectedSiteTitle = site.Title;
-                                        Isfound = true;
-                                    }
-
+                    if (!Isfound) {
+                        if (TestUrl !== undefined && site.AlternativeTitle != null) {
+                            let sitesAlterNatives = site.AlternativeTitle.toLowerCase().split(';');
+                            for (let j = 0; j < sitesAlterNatives.length; j++) {
+                                let element = sitesAlterNatives[j];
+                                if (TestUrl.toLowerCase().indexOf(element) > -1) {
+                                    item = site.Title;
+                                    selectedSiteTitle = site.Title;
+                                    Isfound = true;
                                 }
+
                             }
                         }
                     }
-
                 }
 
-                saveValue.siteType = selectedSiteTitle;
-                setSave(saveValue)
-                if (selectedSiteTitle !== undefined) {
-                    setIsActive({ ...isActive, siteType: true });
-                }
-                else {
-                    setIsActive({ ...isActive, siteType: false });
-                }
             }
-        
+
+            saveValue.siteType = selectedSiteTitle;
+            setSave(saveValue)
+            if (selectedSiteTitle !== undefined) {
+                setIsActive({ ...isActive, siteType: true });
+            }
+            else {
+                setIsActive({ ...isActive, siteType: false });
+            }
+        }
+
 
     }
 
@@ -1198,13 +1136,17 @@ function CreateTaskComponent(props: any) {
                 });
             }
             if (title?.indexOf('Design') > -1) {
+
                 var flag = true;
                 taskUsers?.map((User: any) => {
                     if (User.Role == 'Developer' && User.Title == 'Design Team') {
+
                         AssignedToUsers.filter((item: any) => item.Id != User.Id)
                         AssignedToUsers.push(User);
                         flag = false;
                     }
+
+
                 });
             }
             if (title?.indexOf('Support') > -1) {
@@ -1236,17 +1178,17 @@ function CreateTaskComponent(props: any) {
             {
                 accessorFn: (row) => row?.siteType,
                 cell: ({ row }) => (
-                  <span>
-                    <img className='circularImage rounded-circle' title={row?.original?.siteType} src={row?.original?.SiteIcon} />
-                  </span>
+                    <span>
+                        <img className='circularImage rounded-circle' title={row?.original?.siteType} src={row?.original?.SiteIcon} />
+                    </span>
                 ),
                 id: "Site",
                 placeholder: "Site",
                 header: "",
                 resetSorting: false,
                 resetColumnFilters: false,
-                size: 50
-              },
+                size: 42
+            },
             {
                 accessorKey: "TaskID",
                 placeholder: "Task Id",
@@ -1254,7 +1196,7 @@ function CreateTaskComponent(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 70,
-                cell: ({ row, getValue }) => (
+                cell: ({ row }) => (
                     <>
                         <span className="d-flex">
                             {row?.original?.TaskID}
@@ -1264,30 +1206,22 @@ function CreateTaskComponent(props: any) {
             },
             {
                 accessorFn: (row) => row?.Title,
-                cell: ({ row, column, getValue }) => (
+                cell: ({ row }) => (
                     <>
-                        <span className='d-flex'>
-                            {row.original.Services.length >= 1 ? (
+                        <div className="alignCenter createTableTitle">
+                            <span className="column-description2 ">
                                 <a
-                                    className="hreflink text-success"
+                                    className="text-content hreflink"
+                                    title={row?.original?.Title}
                                     href={`${row?.original?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
                                     data-interception="off"
                                     target="_blank"
                                 >
                                     {row?.original?.Title}
                                 </a>
-                            ) : (
-                                <a
-                                    className="hreflink"
-                                    href={`${row?.original?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
-                                    data-interception="off"
-                                    target="_blank"
-                                >
-                                    {row?.original?.Title}
-                                </a>
-                            )}
-                            {row?.original?.Body !== null && row?.original?.Body != undefined ? <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /> : ''}
-                        </span>
+                                {row?.original?.Body !== null && row?.original?.Body != undefined ? <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /> : ''}
+                            </span>
+                        </div>
                     </>
                 ),
                 id: "Title",
@@ -1295,37 +1229,26 @@ function CreateTaskComponent(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 header: "",
+                size: 480,
             },
             {
                 accessorFn: (row) => row?.Portfolio,
                 cell: ({ row }) => (
                     <span>
-                        {row.original.Services.length >= 1 ? (
-                            <a
-                                className="hreflink text-success"
-                                data-interception="off"
-                                target="blank"
-                                href={`${row?.original?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`}
-                            >
-                                {row?.original?.portfolio?.Title}
-                            </a>
-                        ) : (
-                            <a
-                                className="hreflink"
-                                data-interception="off"
-                                target="blank"
-                                href={`${row?.original?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`}
-                            >
-                                {row?.original?.portfolio?.Title}
-                            </a>
-                        )}
+                        <a className="hreflink"
+                            data-interception="off"
+                            target="blank"
+                            href={`${row?.original?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`} >
+                            {row?.original?.portfolio?.Title}
+                        </a>
                     </span>
                 ),
                 id: "Portfolio",
                 placeholder: "Portfolio",
                 resetColumnFilters: false,
                 resetSorting: false,
-                header: ""
+                header: "",
+                size: 151,
             },
             {
                 accessorFn: (row) => row?.PriorityRank,
@@ -1347,7 +1270,7 @@ function CreateTaskComponent(props: any) {
                 header: "",
                 resetColumnFilters: false,
                 resetSorting: false,
-                size: 75
+                size: 42
             },
             {
                 accessorFn: (row) => row?.DueDate,
@@ -1366,23 +1289,7 @@ function CreateTaskComponent(props: any) {
                 resetSorting: false,
                 placeholder: "Due Date",
                 header: "",
-                size: 80
-            },
-            {
-                accessorKey: "descriptionsSearch",
-                placeholder: "descriptionsSearch",
-                header: "",
-                resetColumnFilters: false,
-                size: 100,
-                id: "descriptionsSearch",
-            },
-            {
-                accessorKey: "commentsSearch",
-                placeholder: "commentsSearch",
-                header: "",
-                resetColumnFilters: false,
-                size: 100,
-                id: "commentsSearch",
+                size: 100
             },
             {
                 accessorFn: (row) => row?.PercentComplete,
@@ -1403,18 +1310,13 @@ function CreateTaskComponent(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 header: "",
-                size: 55
+                size: 42
             },
             {
                 accessorFn: (row) => row?.CreatedSearch,
                 cell: ({ row }) => (
-                    <span>
-                        {row.original.Services.length >= 1 ? (
-                            <span className='ms-1 text-success'>{row?.original?.CreateDate} </span>
-                        ) : (
-                            <span className='ms-1'>{row?.original?.CreateDate} </span>
-                        )}
-
+                    <span className='alignCenter'>
+                        <span className='ms-1'>{row?.original?.CreateDate} </span>
                         {row?.original?.AuthorCover != undefined ? (
                             <>
                                 <a
@@ -1436,17 +1338,13 @@ function CreateTaskComponent(props: any) {
                 resetSorting: false,
                 placeholder: "Created",
                 header: "",
-                size: 125
+                size: 120
             },
             {
                 accessorFn: (row) => row?.ModifiedSearch,
                 cell: ({ row }) => (
-                    <span>
-                        {row.original.Services.length >= 1 ? (
-                            <span className='ms-1 text-success'>{row?.original?.ModifiedDate} </span>
-                        ) : (
-                            <span className='ms-1'>{row?.original?.ModifiedDate} </span>
-                        )}
+                    <span className='alignCenter'>
+                        <span className='ms-1'>{row?.original?.ModifiedDate} </span>
 
                         {row?.original?.EditorCover != undefined ? (
                             <>
@@ -1469,7 +1367,7 @@ function CreateTaskComponent(props: any) {
                 resetSorting: false,
                 placeholder: "Modified",
                 header: "",
-                size: 125
+                size: 120
             },
             {
                 cell: ({ row }) => (
@@ -1487,78 +1385,12 @@ function CreateTaskComponent(props: any) {
                 resetSorting: false,
                 resetColumnFilters: false,
                 placeholder: "",
-                size: 35
+                size: 10
             },
         ],
         []
     );
-    // const columns: GridColDef[] = [
-    //     { field: 'siteType', headerName: 'Site', width: 60, renderCell: (params) => <img className="client-icons" src={params?.row?.siteCover} /> },
-    //     { field: 'TaskID', headerName: 'Task Id', width: 75 },
-    //     {
-    //         field: 'Title', headerName: 'Title', width: 300, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     <span><a data-interception="off" target="blank" href={`${base_Url}/SitePages/Task-Profile.aspx?taskId=${params?.row?.Id}&Site=${params?.row?.siteType}`}>{params?.row?.Title}</a></span>
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: 'ComponentTitle', headerName: 'Component', width: 150, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     <span><a data-interception="off" target="blank" href={`${base_Url}/SitePages/Portfolio-Profile.aspx?taskId=${params?.row?.newComponentId}`}>{params?.row?.ComponentTitle}</a></span>
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: 'PercentComplete', headerName: '% Complete', width: 100, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     <span>{params?.row?.PercentComplete}%</span>
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     { field: 'Priority', headerName: 'Priority', width: 80 },
-    //     { field: 'Categories', headerName: 'Categories', width: 120 },
 
-    //     { field: 'TaskDueDate', headerName: 'Due Date', width: 115 },
-    //     {
-    //         field: 'Created', headerName: 'Created', width: 120, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     {params?.row?.AuthorCover != undefined ? <img className="client-icons" title={params?.row?.Author} src={params?.row?.AuthorCover} alt='' /> : ''}
-
-    //                     {params.row.CreateDate}
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: 'Modified', headerName: 'Modified', width: 120, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     {params?.row?.EditorCover != undefined ? <img className="client-icons" title={params?.row?.Editor} src={params?.row?.EditorCover} alt='' /> : ''}
-
-    //                     {params.row.ModifiedDate}
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    //     {
-    //         field: '', headerName: '', width: 40, renderCell: (params) => {
-    //             return (
-    //                 <div>
-    //                     <span onClick={() => EditPopup(params?.row)} className="svg__iconbox svg__icon--edit"></span>
-    //                     {/* <img onClick={() => EditPopup(params?.row)} src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"></img> */}
-    //                 </div>
-    //             )
-    //         }
-    //     },
-    // ];
     const CallBack = React.useCallback((items) => {
         setEditTaskPopupData({
             isOpenEditPopup: false,
@@ -1623,7 +1455,7 @@ function CreateTaskComponent(props: any) {
                     }
                     if (ToEmails.length > 0) {
                         var query = '';
-                        query += "AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,Component/Id,Component/Title,Component/ItemType,ComponentLink,Categories,FeedBack,ComponentLink,FileLeafRef,Title,Id,Comments,StartDate,DueDate,Status,Body,Company,Mileage,PercentComplete,FeedBack,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,Services/Id,Services/Title,Events/Id,Events/Title,TaskType/Id,TaskType/Title,TaskID,CompletedDate,TaskLevel,TaskLevel&$expand=AssignedTo,Component,AttachmentFiles,Author,Editor,TaskCategories,TaskType,Services,Events&$filter=Id eq " + itemId;
+                        query += "AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,ComponentLink,Categories,FeedBack,ComponentLink,FileLeafRef,Title,Id,Comments,StartDate,DueDate,Status,Body,Company,Mileage,PercentComplete,FeedBack,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,TaskCategories/Id,TaskCategories/Title,TaskType/Id,TaskType/Title,TaskID,CompletedDate,TaskLevel,TaskLevel,ParentTask/TaskID,ParentTask/Title,ParentTask/Id&$expand=AssignedTo,AttachmentFiles,ParentTask,Author,Editor,TaskCategories,TaskType,Portfolio&$filter=Id eq " + itemId;
                         await getData(siteUrl, listId, query)
                             .then(async (data: any) => {
                                 data?.map((item: any) => {
@@ -1659,7 +1491,7 @@ function CreateTaskComponent(props: any) {
                                     }
                                     UpdateItem.siteType = siteType;
                                 }
-                                UpdateItem.TaskID = globalCommon.getTaskId(UpdateItem);
+                                UpdateItem.TaskID = globalCommon.GetTaskId(UpdateItem);
                                 if (UpdateItem?.Author != undefined) {
                                     UpdateItem.Author1 = '';
                                     UpdateItem.Author1 = UpdateItem.Author.Title;
@@ -1719,10 +1551,8 @@ function CreateTaskComponent(props: any) {
                                     })
                                 }
                                 UpdateItem.ComponentName = '';
-                                if (UpdateItem?.Component != undefined) {
-                                    UpdateItem.Component.map((item: any) => {
-                                        UpdateItem.ComponentName += item.Title + ';';
-                                    })
+                                if (UpdateItem?.Portfolio?.Id != undefined) {
+                                    UpdateItem.ComponentName += UpdateItem?.Portfolio.Title
                                 }
                                 UpdateItem.Category = '';
                                 UpdateItem.Categories = '';
@@ -1999,7 +1829,6 @@ function CreateTaskComponent(props: any) {
                 function (error) { });
     }
     const GetImmediateTaskNotificationEmails = async (item: any, isLoadNotification: any, rootsite: any) => {
-        let pageContent = await pageContext()
         var isLoadNotification = isLoadNotification;
         var CurrentItem = item;
         var Allmail: any[] = [];
@@ -2041,9 +1870,9 @@ function CreateTaskComponent(props: any) {
 
     }
     const changeTitle = (e: any) => {
-        if(e.target.value.length > 56){
+        if (e.target.value.length > 56) {
             alert("Task Title is too long. Please chose a shorter name and enter the details into the task description.")
-        }else{
+        } else {
             setSave(prevSave => ({
                 ...prevSave,
                 taskName: e.target.value
@@ -2057,158 +1886,127 @@ function CreateTaskComponent(props: any) {
 
     return (
         <>  <div className={save.portfolioType == "Service" ? "serviepannelgreena" : ''}>
-            <div className='Create-taskpage'>
-                <div className='row'>
-                    {props?.projectId == undefined ? <div className='col-sm-12'>
-                        <div className='header-section full-width justify-content-between'>
-                            <h2 style={{ color: "#000066", fontWeight: "600" }}>Create Task
-                                <a data-interception="off" className=' text-end pull-right' target='_blank' href={oldTaskIrl} style={{ cursor: "pointer", fontSize: "14px" }}>Old Create Task</a>
-                            </h2>
-                        </div>
-                    </div> : ''}
-                    <div className='col-sm-6 ps-0'>
-                        <label className='full-width'>Task Name</label>
-                        <input type="text" placeholder='Enter task Name' className='full-width' value={save.taskName} onChange={(e) => { changeTitle(e) }}></input>
-                    </div>
-                    <div className='col-sm-2 p-0 mt-4'>
-                        <label className='SpfxCheckRadio'>
-                            <input
-                                type="radio" className="radio" checked={save.portfolioType === 'Component'}
-                                name="taskcategory" onChange={() => selectPortfolioType('Component')} />
-                            Component</label>
-                        {
-                            burgerMenuTaskDetails?.ComponentID == undefined ? <>
-                                <label className='SpfxCheckRadio ms-3'>
-                                    <input
-                                        type="radio" className="radio" checked={save.portfolioType === 'Service'}
-                                        name="taskcategory" onChange={() => selectPortfolioType('Service')} />
-                                    Service </label></> : ''
-                        }
-                    </div>
-                    <div className='col-sm-4 pe-0'>{
-                        save.portfolioType === 'Component' ?
-                            <div className="input-group">
-                                <label className="form-label full-width">Component Portfolio</label>
-                                {smartComponentData?.length > 0 ? null :
-                                    <>
-                                        <input type="text" readOnly
-                                            className="form-control"
-                                            id="{{PortfoliosID}}" autoComplete="off"
-                                        />
-                                    </>
-                                }
-                                {smartComponentData?.length > 0 ? smartComponentData?.map((com: any) => {
-                                    return (
-                                        <>
-                                            <div className="block d-flex justify-content-between pt-1 px-2" style={{ width: "89%" }}>
-                                                <a style={{ color: "#fff !important" }} target="_blank" href={`${base_Url}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
-                                                <a>
-                                                    <span title="Remove Component" onClick={() => setSmartComponentData([])}
-                                                        style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--cross hreflink mx-2"></span>
-                                                </a>
-                                            </div>
-                                        </>
-                                    )
-                                }) : null}
-
-
-                                <span className="input-group-text">
-                                    <span onClick={(e) => EditPortfolio(save, 'Component')} style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--edit"></span>
-                                    {/* <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
-                                        onClick={(e) => EditComponent(save, 'Component')} /> */}
-                                </span>
-                            </div> : ''
-                    }
-                        {
-                            save.portfolioType === 'Service' ?
-                                <div className="input-group">
-                                    <label className="form-label full-width">
-                                        Service Portfolio
-                                    </label>
-                                    {linkedComponentData?.length > 0 ? null :
-                                        <>
-                                            <input type="text" readOnly className="form-control"
-                                                id="{{PortfoliosID}}" autoComplete="off" />
-                                        </>
-                                    }
-                                    {linkedComponentData?.length > 0 ? linkedComponentData?.map((com: any) => {
-                                        return (
-                                            <>
-                                                <div className="block d-flex justify-content-between pt-1 px-2" style={{ width: "89%" }}>
-                                                    <a style={{ color: "#fff !important" }} target="_blank" href={`${base_Url}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
-                                                    <a>
-                                                        <span title="Remove Service" style={{ backgroundColor: 'white', color: "#fff !important" }} onClick={() => setLinkedComponentData([])}
-                                                            className="svg__iconbox svg__icon--cross hreflink mx-2"></span>
-                                                    </a>
-                                                </div>
+            <div className='creatTaskPage'>
+                <div className='generalInfo'>
+                    {/* {props?.projectId == undefined ?
+                        <div className='heading d-flex justify-content-between align-items-center'>
+                            <h2>Create Task </h2>
+                            <span className='text-end fs-6'>
+                             <a data-interception="off" className=' text-end pull-right' target='_blank' href={oldTaskIrl} style={{ cursor: "pointer", fontSize: "14px" }}>Old Create Task</a>
+                             </span>
+                        </div>  : ''} */}
+                    <div>
+                    {props?.projectId == undefined ?
+                        <h4 className="titleBorder">General Information</h4>: ''}
+                        <div className='row p-0'>
+                            <div className='col-sm-6'>
+                                <div className='input-group'>
+                                    <label className='full-width'>Task Name</label>
+                                    <input type="text" placeholder='Enter task Name' className='form-control' value={save.taskName} onChange={(e) => { changeTitle(e) }}></input>
+                                </div>
+                            </div>
+                            <div className='col-sm-6'>{
+                                save.portfolioType === 'Component' ?
+                                    <div className="input-group">
+                                        <label className="full-width">Portfolio</label>
+                                        {smartComponentData?.length > 0 ? null :
+                                            <><div className='input-group'>
+                                                <input type="text" readOnly
+                                                    className="form-control"
+                                                    id="{{PortfoliosID}}" autoComplete="off"
+                                                /></div>
                                             </>
-                                        )
-                                    }) : null}
-                                    <span className="input-group-text">
-                                        <span onClick={(e) => EditPortfolio(save, 'Service')} className="svg__iconbox svg__icon--edit"></span>
-                                        {/* <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
-                                        onClick={(e) => EditLinkedServices(save, 'Component')} /> */}
-                                    </span>
-                                </div> : ''
-                        }
-                    </div>
-                </div>
-                <div className='row mt-2 mb-3'>
-                    <div className='col-sm-12 p-0'>
-                        <input type="text" className='full-width ' placeholder='Enter task Url' value={save.taskUrl} onChange={(e) => UrlPasteTitle(e)} disabled={burgerMenuTaskDetails?.Siteurl?.length > 0}></input>
+                                        }
+                                        {smartComponentData?.length > 0 ? smartComponentData?.map((com: any) => {
+                                            return (
+                                                <>
+                                                    <div className="block d-flex justify-content-between pt-1 px-2" style={{ width: "95%" }}>
+                                                        <a style={{ color: "#fff !important" }} data-interception="off" target="_blank" href={`${base_Url}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
+                                                        <a>
+                                                            <span title="Remove Component" onClick={() => setSmartComponentData([])}
+                                                                style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--cross hreflink mx-2"></span>
+                                                        </a>
+                                                    </div>
+                                                </>
+                                            )
+                                        }) : null}
+                                        <span className="input-group-text">
+                                            <span onClick={(e) => EditPortfolio(save, 'Component')} style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--edit"></span>
+                                            {/* <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
+                                        onClick={(e) => EditComponent(save, 'Component')} /> */}
+                                        </span>
+                                    </div> : ''
+                            }
+                            </div>
+                            <div className='col mt-2'>
+                                <div className='input-group'>
+                                    <label className='full-width'>Task URL</label>
+                                    <input type="text" className='form-control' placeholder='Enter task Url' value={save.taskUrl} onChange={(e) => UrlPasteTitle(e)} disabled={burgerMenuTaskDetails?.Siteurl?.length > 0}></input>
+                                </div>
+                            </div>
 
+                        </div>
                     </div>
+
                 </div>
+
                 {burgerMenuTaskDetails?.Siteurl != undefined && burgerMenuTaskDetails?.ComponentID != undefined ?
-                    <div className={refreshPage != true ? '' : ''}>
+                    <div className={refreshPage != true ? 'mt-2' : 'mt-2'}>
                         <ul className="nav nav-tabs" id="myTab" role="tablist">
                             {burgerMenuTaskDetails?.Siteurl != undefined ?
                                 <button className="nav-link active" id="URL-Tasks" data-bs-toggle="tab" data-bs-target="#URLTasks" type="button" role="tab" aria-controls="URLTasks" aria-selected="true">
-                                    URL TASKS {relevantTasks?.ComponentRelevantTask?.length > 0 ? ("(" + relevantTasks?.TaskUrlRelevantTask?.length + ')') : ''}
+                                    URL TASKS {("(" + (relevantTasks?.TaskUrlRelevantTask?.length > 0 ? relevantTasks?.TaskUrlRelevantTask?.length : 0) + ')')}
                                 </button> : ''}
                             {burgerMenuTaskDetails?.Siteurl != undefined ?
                                 <button className="nav-link " id="Page-Tasks" data-bs-toggle="tab" data-bs-target="#PageTasks" type="button" role="tab" aria-controls="PageTasks" aria-selected="true">
-                                    PAGE TASKS {relevantTasks?.ComponentRelevantTask?.length > 0 ? ("(" + relevantTasks?.PageRelevantTask?.length + ')') : ''}
+                                    PAGE TASKS {("(" + (relevantTasks?.PageRelevantTask?.length > 0 ? relevantTasks?.PageRelevantTask?.length : 0) + ')')}
                                 </button> : ''}
                             {burgerMenuTaskDetails?.ComponentID != undefined ?
-                                <button className="nav-link " id="Component-Tasks" data-bs-toggle="tab" data-bs-target="#ComponentTasks" type="button" role="tab" aria-controls="ComponentTasks" aria-selected="false">COMPONENT TASKS {relevantTasks?.ComponentRelevantTask?.length > 0 ? ("(" + relevantTasks?.ComponentRelevantTask?.length + ')') : ''}</button>
+                                <button className="nav-link " id="Component-Tasks" data-bs-toggle="tab" data-bs-target="#ComponentTasks" type="button" role="tab" aria-controls="ComponentTasks" aria-selected="false">
+                                    COMPONENT TASKS {("(" + (relevantTasks?.ComponentRelevantTask?.length > 0 ? relevantTasks?.ComponentRelevantTask?.length : 0) + ')')} </button>
                                 : ''}
                         </ul>
-                        <div className="border border-top-0 clearfix p-3 tab-content " id="myTabContent">
-                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable mx-height show active" id="URLTasks" role="tabpanel" aria-labelledby="URLTasks">
+                        <div className="border border-top-0 clearfix p-2 tab-content " id="myTabContent">
+                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable mx-height p-0 show active" id="URLTasks" role="tabpanel" aria-labelledby="URLTasks">
                                 {relevantTasks?.TaskUrlRelevantTask?.length > 0 ?
                                     <>
                                         <div className={relevantTasks?.TaskUrlRelevantTask?.length > 0 ? 'fxhg' : ''}>
                                             {/* ?ComponentID=1682&Siteurl=https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/TaskDashboard.aspx */}
-                                            <GlobalCommanTable columns={column2} data={relevantTasks?.TaskUrlRelevantTask} paginatedTable={true} callBackData={callBackData} />
+                                            <GlobalCommanTable columns={column2} data={relevantTasks?.TaskUrlRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
                                             {/* <GlobalCommanTable AllListId={ContextValue} callBackData={callBackData} columns={columns} data={relevantTasks?.TaskUrlRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
                                             {/* <DataGrid rows={relevantTasks?.TaskUrlRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
                                         </div>
-                                    </> : ''
+                                    </> : <div className='text-center full-width'>
+                                        <span>No Tasks Available</span>
+                                    </div>
                                 }
                             </div> : ''}
-                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable mx-height" id="PageTasks" role="tabpanel" aria-labelledby="PageTasks">
+                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable p-0 mx-height" id="PageTasks" role="tabpanel" aria-labelledby="PageTasks">
                                 {relevantTasks?.PageRelevantTask?.length > 0 ?
                                     <>
                                         <div className={relevantTasks?.PageRelevantTask?.length > 0 ? 'fxhg' : ''}>
-                                            <GlobalCommanTable columns={column2} data={relevantTasks?.PageRelevantTask} paginatedTable={true} callBackData={callBackData} />
+                                            <GlobalCommanTable columns={column2} data={relevantTasks?.PageRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
                                             {/* <GlobalCommanTable AllListId={ContextValue} columns={columns} data={relevantTasks?.PageRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
                                             {/* <DataGrid rows={relevantTasks?.PageRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
                                         </div>
-                                    </> : ''
+                                    </> : <div className='text-center full-width'>
+                                        <span>No Tasks Available</span>
+                                    </div>
                                 }
                             </div> : ''}
                             {burgerMenuTaskDetails?.ComponentID != undefined ?
-                                <div className="tab-pane Alltable mx-height" id="ComponentTasks" role="tabpanel" aria-labelledby="ComponentTasks">
+                                <div className="tab-pane Alltable mx-height p-0" id="ComponentTasks" role="tabpanel" aria-labelledby="ComponentTasks">
 
                                     {relevantTasks?.ComponentRelevantTask?.length > 0 ?
                                         <>
                                             <div className={relevantTasks?.ComponentRelevantTask?.length > 0 ? 'fxhg' : ''}>
-                                                <GlobalCommanTable columns={column2} data={relevantTasks?.ComponentRelevantTask} paginatedTable={true} callBackData={callBackData} />
+                                                <GlobalCommanTable columns={column2} data={relevantTasks?.ComponentRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
                                                 {/* <GlobalCommanTable AllListId={ContextValue} columns={columns} data={relevantTasks?.ComponentRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
                                                 {/* <DataGrid rows={relevantTasks?.ComponentRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
                                             </div>
-                                        </> : ''
+                                        </> : <div className='text-center full-width'>
+                                            <span>No Tasks Available</span>
+                                        </div>
                                     }
 
                                 </div> : ''}
@@ -2223,19 +2021,19 @@ function CreateTaskComponent(props: any) {
                 {/*---------------- Sites -------------
             -------------------------------*/}
                 {siteType?.length > 1 ?
-                    <div className='row mt-2 border'>
-                        <fieldset>
-                            <legend className="border-bottom fs-6 ">Sites</legend>
-                            <ul className="quick-actions ">
+                    <div className='col mt-4'>
+                        <h4 className="titleBorder ">Websites</h4>
+                        <div className='clearfix p-0'>
+                            <ul className="site-actions">
                                 {siteType?.map((item: any) => {
                                     return (
                                         <>
                                             {(item.Title !== undefined && item.Title !== 'Offshore Tasks' && item.Title !== 'Master Tasks' && item.Title !== 'DRR' && item.Title !== 'SDC Sites' && item.Title !== 'QA') &&
                                                 <>
                                                     <li
-                                                        className={isActive.siteType && save.siteType === item.Title ? '  mx-1 p-2 bg-siteColor selectedTaskList text-center mb-2 position-relative' : "mx-1 p-2 position-relative bg-siteColor text-center  mb-2"} onClick={() => setActiveTile("siteType", "siteType", item.Title)} >
+                                                        className={isActive.siteType && save.siteType === item.Title ? 'bgtile active text-center position-relative' : "position-relative bgtile text-center"} onClick={() => setActiveTile("siteType", "siteType", item.Title)} >
                                                         {/*  */}
-                                                        <a className='text-white text-decoration-none' >
+                                                        <a className=' text-decoration-none' >
                                                             <span className="icon-sites">
                                                                 {item.Item_x005F_x0020_Cover != undefined &&
                                                                     <img className="icon-sites"
@@ -2249,163 +2047,100 @@ function CreateTaskComponent(props: any) {
                                         </>)
                                 })}
                             </ul>
-                        </fieldset>
+                        </div>
                     </div> : ''}
 
                 {props?.projectId == undefined ? <>
+                    <div className="clearfix"></div>
                     {/*---- Task Categories ---------
             -------------------------------*/}
-                    <div className='row mt-2 border'>
-                        <fieldset >
-                            <legend className="border-bottom fs-6">Task Categories</legend>
-                            <div className="row " style={{ width: "100%" }}>
-                                {TaskTypes?.map((Task: any) => {
-                                    return (
-                                        <>
-                                            <>
-                                                <div
-                                                    className=" col-sm-2 mt-1 text-center"  >
-                                                    <div id={"subcategorytasks" + Task.Id} className={isActiveCategory ? 'task manage_tiles' : 'task manage_tiles'}>
-                                                        <div className='bg-siteColor py-3'>
-                                                            {(Task.Item_x005F_x0020_Cover !== undefined && Task.Item_x005F_x0020_Cover?.Url !== undefined) &&
-                                                                <img className="icon-task"
-                                                                    src={Task.Item_x005F_x0020_Cover.Url} />}
-                                                            <p className='m-0'>{Task.Title}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className='subcategoryTasks kind_task col-sm-10'  >
-                                                    {subCategory?.map((item: any) => {
-                                                        return (
-                                                            <>
-                                                                {Task.Id === item.ParentID && <>
-                                                                    {/* onClick={() => selectSubTaskCategory(item.Title, item.Id)} */}
-                                                                    <a onClick={() => selectSubTaskCategory(item.Title, item.Id, item)} id={"subcategorytasks" + item.Id} className={item.ActiveTile ? 'bg-siteColor subcategoryTask selectedTaskList text-center' : 'bg-siteColor subcategoryTask text-center'} >
-
-                                                                        <span className="icon-box">
-                                                                            {(item.Item_x005F_x0020_Cover !== undefined && item.Item_x005F_x0020_Cover?.Url !== undefined) &&
-                                                                                <img className="icon-task"
-                                                                                    src={item.Item_x005F_x0020_Cover.Url} />}
-                                                                        </span> <span className="tasks-label">{item.Title}</span>
-                                                                    </a>
-                                                                </>
-                                                                }
-                                                            </>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </>
-                                        </>)
-                                })}
-                            </div>
-                        </fieldset>
+                    <div className="col" >
+                        {TaskTypes?.map((Task: any) => {
+                            return (
+                                <>
+                                    <div className='mt-4 clearfix'>
+                                        <h4 className="titleBorder "> {Task?.Title}</h4>
+                                        <div className='col p-0 taskcatgoryPannel'  >
+                                            {subCategory?.map((item: any) => {
+                                                return (
+                                                    <>
+                                                        {Task.Id === item.ParentID &&
+                                                            <a onClick={() => selectSubTaskCategory(item.Title, item.Id, item)} id={"subcategorytasks" + item.Id} className={item.ActiveTile ? 'bg-siteColor subcategoryTask active text-center' : 'bg-siteColor subcategoryTask text-center'} >
+                                                                <span className="tasks-label">{item.Title}</span>
+                                                            </a>
+                                                        }
+                                                    </>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </>)
+                        })}
                     </div>
+                    <div className="clearfix"></div>
                     {/*-----Priority Rank ---------------------------------------*/}
-                    <div className='row mt-2 border'>
-                        <fieldset>
-                            <legend className="border-bottom fs-6">Priority Rank</legend>
-                            <dl className="row px-2 text-center">
-                                {priorityRank?.map((item: any) => {
-                                    return (
-                                        <>
+                    <div className='col clearfix mt-4'>
+                        <h4 className="titleBorder ">Priority Rank</h4>
 
-                                            <>
-                                                <dt
-                                                    className={isActive.rank && save.rank === item.Title ? 'bg-siteColor col selectedTaskList  mx-1 p-2  mb-2 ' : 'bg-siteColor col mx-1 p-2  mb-2 '} onClick={() => setActiveTile("rank", "rank", item.Title)}>
+                        {/* <legend className="border-bottom fs-6">Priority Rank</legend> */}
+                        <div className="taskcatgoryPannel alignCenter Priority">
+                            <span className='me-2'>High priority</span>
+                            {priorityRank?.map((item: any) => {
+                                return (
+                                    <a className={isActive.rank && save.rank === item.Title ? 'subcategoryTask active' : 'subcategoryTask'} onClick={() => setActiveTile("rank", "rank", item.Title)}> {item?.Title} </a>
+                                )
+                            })}
+                            <span className='ms-3'>Low priority</span>
 
-                                                    <a className='text-white'>
-                                                        <span>
-                                                            {(item.Item_x005F_x0020_Cover !== undefined && item.Item_x005F_x0020_Cover?.Url !== undefined) &&
-                                                                <img src={item.Item_x005F_x0020_Cover.Url} />}
-                                                        </span>
-                                                    </a>
+                        </div>
 
-                                                </dt>
-
-                                            </>
-
-                                        </>)
-                                })}
-
-                            </dl>
-                        </fieldset>
                     </div>
+                    <div className="clearfix"></div>
                     {/*-----Time --------
             -------------------------------*/}
-                    <div className='row mt-2 border'>
-                        <fieldset>
-                            <legend className="border-bottom fs-6">Time</legend>
-                            <div className="row justify-content-md-center subcategoryTasks">
-                                {Timing?.map((item: any) => {
-                                    return (
-                                        <>
 
-                                            <>
-                                                <div className={isActive.time && save.Time === item.Title ? 'bg-siteColor selectedTaskList Timetask mx-1 p-2 px-2   text-center' : 'bg-siteColor Timetask mx-1 p-2 px-2  text-center'} onClick={() => setActiveTile("Time", "time", item.Title)} >
-
-                                                    <a className='text-decoration-none text-white'>
-                                                        <span className="icon-sites">
-                                                            {(item.Item_x005F_x0020_Cover !== undefined && item.Item_x005F_x0020_Cover?.Url !== undefined) &&
-                                                                <img className="icon-sites"
-                                                                    src={item.Item_x005F_x0020_Cover.Url} />
-                                                            }
-                                                        </span>{item.Title}
-                                                    </a>
-                                                </div>
-
-                                            </>
-
-                                        </>)
-                                })}
-
-                            </div>
-                        </fieldset>
+                    <div className='col mt-4 clearfix'>
+                        <h4 className="titleBorder">Time</h4>
+                        <div className="taskcatgoryPannel">
+                            {Timing?.map((item: any) => {
+                                return (
+                                    <a className={isActive.time && save.Time === item.Title ? ' active subcategoryTask' : 'subcategoryTask'} onClick={() => setActiveTile("Time", "time", item.Title)}>{item.Title}</a>
+                                )
+                            })}
+                        </div>
                     </div>
+                    <div className="clearfix"></div>
                     {/*-----Due date --------
             -------------------------------*/}
-                    <div className='row mt-2 border'>
-                        <fieldset>
-
-                            <legend className="border-bottom fs-6">Due Date</legend>
-                            <div className="row justify-content-md-center text-center mb-2">
-                                <div className={isActive.dueDate && save.dueDate === 'Today' ? 'bg-siteColor col mx-1 p-2 px-2 selectedTaskList text-center' : 'mx-1 p-2 px-4 col bg-siteColor'} onClick={() => setActiveTile("dueDate", "dueDate", 'Today')}>
-                                    <a className='text-decoration-none text-white'>Today&nbsp;{moment(new Date()).format('DD/MM/YYYY')}</a>
-                                </div>
-                                <div className={isActive.dueDate && save.dueDate === 'Tomorrow' ? 'bg-siteColor col mx-1 p-2 px-2 selectedTaskList text-center' : 'mx-1 p-2 px-4 col bg-siteColor'} onClick={() => setActiveTile("dueDate", "dueDate", 'Tomorrow')} id="Tomorrow"><a className='text-decoration-none text-white'>Tomorrow</a> </div>
-                                <div className={isActive.dueDate && save.dueDate === 'ThisWeek' ? 'bg-siteColor col mx-1 p-2 px-2 selectedTaskList text-center' : 'mx-1 p-2 px-4 col bg-siteColor'} onClick={() => setActiveTile("dueDate", "dueDate", 'ThisWeek')} id="ThisWeek"><a className='text-decoration-none text-white'>This Week</a> </div>
-                                <div className={isActive.dueDate && save.dueDate === 'NextWeek' ? 'bg-siteColor col mx-1 p-2 px-2 selectedTaskList text-center' : 'mx-1 p-2 px-4 col bg-siteColor'} onClick={() => setActiveTile("dueDate", "dueDate", 'NextWeek')} id="NextWeek"><a className='text-decoration-none text-white'>Next Week</a> </div>
-                                <div className={isActive.dueDate && save.dueDate === 'ThisMonth' ? 'bg-siteColor col mx-1 p-2 px-2 selectedTaskList text-center' : 'mx-1 p-2 px-4 col bg-siteColor'} onClick={() => setActiveTile("dueDate", "dueDate", 'ThisMonth')} id="ThisMonth"><a className='text-decoration-none text-white'>This Month</a> </div>
-                            </div>
-                        </fieldset>
+                    <div className='col mt-4'>
+                        <h4 className="titleBorder ">Due Date</h4>
+                        <div className="taskcatgoryPannel">
+                            <a className={isActive.dueDate && save.dueDate === 'Today' ? 'subcategoryTask active text-center' : 'subcategoryTask'} onClick={() => setActiveTile("dueDate", "dueDate", 'Today')}>Today&nbsp;{moment(new Date()).format('DD/MM/YYYY')}</a>
+                            <a className={isActive.dueDate && save.dueDate === 'Tomorrow' ? 'subcategoryTask active text-center' : 'subcategoryTask'} onClick={() => setActiveTile("dueDate", "dueDate", 'Tomorrow')} id="Tomorrow">Tomorrow</a>
+                            <a className={isActive.dueDate && save.dueDate === 'ThisWeek' ? 'subcategoryTask active text-center' : 'subcategoryTask'} onClick={() => setActiveTile("dueDate", "dueDate", 'ThisWeek')} id="ThisWeek">This Week</a>
+                            <a className={isActive.dueDate && save.dueDate === 'NextWeek' ? 'subcategoryTask active text-center' : 'subcategoryTask'} onClick={() => setActiveTile("dueDate", "dueDate", 'NextWeek')} id="NextWeek">Next Week</a>
+                            <a className={isActive.dueDate && save.dueDate === 'ThisMonth' ? 'subcategoryTask active text-center' : 'subcategoryTask'} onClick={() => setActiveTile("dueDate", "dueDate", 'ThisMonth')} id="ThisMonth">This Month</a>
+                        </div>
                     </div>
                 </> : ''}
 
-                <div className='col text-end mt-3'>
+                <footer className='col text-end mt-3'>
                     {
                         siteType?.map((site: any) => {
                             if (site.Title === save.siteType) {
                                 return (
                                     <span className='ms-2'>
                                         {(site.Item_x005F_x0020_Cover !== undefined && site.Item_x005F_x0020_Cover?.Url !== undefined) &&
-                                            <img className="client-icons" src={site.Item_x005F_x0020_Cover.Url} />
+                                            <img className="createTask-SiteIcon mx-2" style={{ width: '31.5px' }} src={site.Item_x005F_x0020_Cover.Url} />
                                         }
                                     </span>
                                 )
                             }
                         })
                     }
-                    <button type="button" className='btnCol btn btn-primary' onClick={() => createTask()}>Submit</button>
-                </div>
-                {/* {IsComponent && <ServiceComponentPortfolioPopup props={ShareWebComponent} Call={Call} Dynamic={AllListId} AllListId={AllListId} smartComponentData={smartComponentData} ></ServiceComponentPortfolioPopup>}
-                {IsServices && <LinkedComponent props={ShareWebComponent} Call={Call} AllListId={AllListId} Dynamic={AllListId} linkedComponentData={linkedComponentData}  ></LinkedComponent>} */}
-                {/* {IsComponent &&
-                    <ServiceComponentPortfolioPopup
-                        props={ShareWebComponent}
-                        Dynamic={AllListId}
-                        ComponentType={"Component"}
-                        Call={ComponentServicePopupCallBack}
-                    />
-                } */}
+                    <button type="button" className='btn btn-primary bg-siteColor ' onClick={() => createTask()}>Submit</button>
+                </footer>
+
                 {IsOpenPortfolio &&
                     <ServiceComponentPortfolioPopup
                         props={ShareWebComponent}

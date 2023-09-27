@@ -8,7 +8,7 @@ import CreateActivity from "../../webparts/servicePortfolio/components/CreateAct
 import CreateWS from '../../webparts/servicePortfolio/components/CreateWS'
 let AllMatsterAndTaskData: any = [];
 let counterAllTaskCount: any = 0;
-let checkedData=''
+let checkedData = ''
 
 // export const getTooltiphierarchyWithoutGroupByTable = (row: any) => {
 //     AllMatsterAndTaskData.map((Object: any) => {
@@ -37,10 +37,7 @@ let checkedData=''
 // };
 export const getTooltiphierarchyWithoutGroupByTable = (row: any): any[] => {
     for (let i = 0; i < AllMatsterAndTaskData.length; i++) {
-        let Object = AllMatsterAndTaskData[i];
-        if(Object?.Item_x0020_Type?.toLowerCase()!='task'){
-            Object.SiteIconTitle= Object?.Item_x0020_Type?.charAt(0);
-        }
+        const Object = AllMatsterAndTaskData[i];
         if (Object.Id === row?.ParentTask?.Id && row?.siteType === Object?.siteType) {
             Object.subRows = [];
             Object.subRows.push(row);
@@ -49,19 +46,12 @@ export const getTooltiphierarchyWithoutGroupByTable = (row: any): any[] => {
             Object.subRows = [];
             Object.subRows.push(row);
             return getTooltiphierarchyWithoutGroupByTable(Object);
-        } else if (row?.Component != undefined && row?.Component?.length > 0 && Object.Id === row?.Component[0]?.Id) {
-            Object.subRows = [];
-            Object.subRows.push(row);
-            return getTooltiphierarchyWithoutGroupByTable(Object);
-        } else if (row?.Services != undefined && row?.Services?.length > 0 && Object.Id === row?.Services[0]?.Id) {
-            Object.subRows = [];
-            Object.subRows.push(row);
-            return getTooltiphierarchyWithoutGroupByTable(Object);
         } else if (row?.Portfolio != undefined && Object.Id === row?.Portfolio?.Id) {
             Object.subRows = [];
             Object.subRows.push(row);
             return getTooltiphierarchyWithoutGroupByTable(Object);
         }
+
     }
     return [row];
 };
@@ -109,32 +99,32 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
         scrollToolitem = false;
     };
 
-    const openActivityPopup = (row:any) => {
-        if(row.SharewebTaskType == undefined){
+    const openActivityPopup = (row: any) => {
+        if (row.TaskType == undefined) {
             setOpenActivity(true)
             row['NoteCall'] = 'Task'
             row['PageType'] = 'ProjectManagement'
-            checkedData=row;
+            checkedData = row;
         }
-        if(row?.SharewebTaskType?.Title == 'Activities'){
+        if (row?.TaskType?.Title == 'Activities') {
             setOpenWS(true)
             row['NoteCall'] = 'Task'
             row['PageType'] = 'ProjectManagement'
-            checkedData=row;
+            checkedData = row;
         }
-        if(row?.SharewebTaskType?.Title == 'Workstream'){
+        if (row?.TaskType?.Title == 'Workstream') {
             setOpenActivity(true)
             row['NoteCall'] = 'Task'
             row['PageType'] = 'ProjectManagement'
-            checkedData=row;
+            checkedData = row;
         }
-       
+
     }
     /// Code bye santosh///
-    const Call=(childItem:any)=>{
+    const Call = (childItem: any) => {
         setOpenActivity(false)
         setOpenWS(false)
-       
+
     }
     /// end////
     const tooltiphierarchy = React.useMemo(() => {
@@ -143,7 +133,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
         }
         return [];
     }, [action]);
-    
+
     const columns = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
             {
@@ -151,26 +141,24 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                 placeholder: "",
                 hasCustomExpanded: true,
                 hasExpanded: true,
-                isHeaderNotAvlable:true,
-                size: 27,
+                isHeaderNotAvlable: true,
+                size: 30,
                 id: 'Id',
             },
             {
                 accessorKey: "",
-                size: 40,
+                size: 140,
                 canSort: false,
                 placeholder: "",
-                id: 'Shareweb_x0020_ID',
+                id: 'TaskID',
                 cell: ({ row, getValue }) => (
                     <div>
-                        <><> {row?.original?.SiteIcon != undefined ?
+                        {row?.original?.SiteIcon != undefined ?
                             <a className="hreflink" title="Show All Child" data-toggle="modal">
                                 <img className="icon-sites-img ml20 me-1" src={row?.original?.SiteIcon}></img>
-                            </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons'>{row?.original?.SiteIconTitle}</div> : ""}</>}
-                            <span>{row?.original?.Shareweb_x0020_ID}</span>
-                        </>
-                            {getValue()}
-                        </>
+                                <span>{row?.original?.TaskID}</span>
+                            </a> : <>{row?.original?.Title != "Others" ? <div className=""><div className='Dyicons me-1'>{row?.original?.Item_x0020_Type?.toUpperCase()?.charAt(0)}
+                            </div><span>{row?.original?.PortfolioStructureID}</span></div> : ""}</>}
                     </div>
                 ),
             },
@@ -187,7 +175,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
             },
             {
                 accessorKey: "",
-                size: 30,
+                size: 27,
                 canSort: false,
                 header: "",
                 placeholder: "",
@@ -230,25 +218,25 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                     </div>
 
                     <div className={scrollToolitem === true ? "tool-Wrapper toolWrapper-Th scroll-toolitem" : "tool-Wrapper toolWrapper-Th"}  >
-                        <GlobalCommanTable columns={columns} data={tooltiphierarchy} callBackDataToolTip={callBackDataToolTip} callBackData={callBackData} pageName={pageName} expendedTrue={true}/>
+                        <GlobalCommanTable columns={columns} data={tooltiphierarchy} callBackDataToolTip={callBackDataToolTip} callBackData={callBackData} pageName={pageName} expendedTrue={true} />
                     </div>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
                 </div>
             )}
             {openActivity && (
-        <CreateActivity
-          props={checkedData}
-          Call={Call}
-          SelectedProp={AllListId}
-        ></CreateActivity>
-      )}
-       {openWS && (
-        <CreateWS
-          props={checkedData}
-          Call={Call}
-          SelectedProp={AllListId}
-        ></CreateWS>
-      )}
+                <CreateActivity
+                    props={checkedData}
+                    Call={Call}
+                    SelectedProp={AllListId}
+                ></CreateActivity>
+            )}
+            {openWS && (
+                <CreateWS
+                    props={checkedData}
+                    Call={Call}
+                    SelectedProp={AllListId}
+                ></CreateWS>
+            )}
         </>
     );
 }

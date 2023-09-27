@@ -74,31 +74,7 @@ const TagTaskToProjectPopup = (props: any) => {
 
                 });
     }
-    const checkTaggedService = (item: any) => {
-        let tagged = false
-        if (item != undefined) {
 
-            if (props?.projectItem?.ServicesId.includes(item)) {
-                tagged = true;
-            } else {
-                tagged = false;
-            }
-
-        }
-        return tagged;
-    }
-    const checkTaggedComponent = (item: any) => {
-        let tagged = false
-        if (item != undefined) {
-            if (props?.projectItem?.ComponentId.includes(item)) {
-                tagged = true;
-            } else {
-                tagged = false;
-            }
-        }
-        return tagged;
-
-    }
     const callBackData = React.useCallback((elem: any, ShowingData: any) => {
         let MultiSelectedData: any = [];
         if (elem?.length > 0) {
@@ -121,8 +97,8 @@ const TagTaskToProjectPopup = (props: any) => {
                 smartmeta = await web.lists
                     .getById(config?.listId)
                     .items
-                    .select("Id,Title,PriorityRank,Remark,Project/PriorityRank,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
-                    .expand('AssignedTo,Project,Portfolio,SmartInformation,Author,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory')
+                    .select("Id,Title,PriorityRank,Remark,ParentTask/TaskID,ParentTask/Title,ParentTask/Id,Project/PriorityRank,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,Portfolio/PortfolioStructureID,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
+                    .expand('AssignedTo,Project,Portfolio,ParentTask,SmartInformation,Author,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory')
                     .top(4999)
                     // .filter("Project/Id ne " + props.projectId)
                     .get();
@@ -148,12 +124,12 @@ const TagTaskToProjectPopup = (props: any) => {
                         items.Created != null
                             ? moment(items.Created).format("DD/MM/YYYY")
                             : "";
-              
+
                     items.portfolio = {};
                     if (items?.Portfolio?.Id != undefined) {
-                      items.portfolio = items?.Portfolio;
-                      items.PortfolioTitle = items?.Portfolio?.Title;
-                      // items["Portfoliotype"] = "Component";
+                        items.portfolio = items?.Portfolio;
+                        items.PortfolioTitle = items?.Portfolio?.Title;
+                        // items["Portfoliotype"] = "Component";
                     }
                     items["SiteIcon"] = config?.Item_x005F_x0020_Cover?.Url;
 
@@ -170,13 +146,8 @@ const TagTaskToProjectPopup = (props: any) => {
                             });
                         });
                     }
-                    items.componentString =
-                        items.Component != undefined &&
-                            items.Component != undefined &&
-                            items.Component.length > 0
-                            ? getComponentasString(items.Component)
-                            : "";
-                    items.TaskID = globalCommon.getTaskId(items);
+                  
+                    items.TaskID = globalCommon.GetTaskId(items);
                     AllUser?.map((user: any) => {
                         if (user.AssingedToUserId == items.Author.Id) {
                             items.createdImg = user?.Item_x0020_Cover?.Url;
@@ -212,13 +183,7 @@ const TagTaskToProjectPopup = (props: any) => {
         Array.sort((a: any, b: any) => new Date(b.Created).getTime() - new Date(a.Created).getTime());
         return Array;
     }
-    const getComponentasString = function (results: any) {
-        var component = '';
-        $.each(results, function (cmp: any) {
-            component += cmp.Title + '; ';
-        })
-        return component;
-    }
+   
     useEffect(() => {
         AllListId = props?.AllListId;
         TaskUser();
@@ -232,45 +197,70 @@ const TagTaskToProjectPopup = (props: any) => {
 
     const tagSelectedTasks = async () => {
         let selectedTaskId = ''
-        if(props?.meetingPages){
+        if (props?.meetingPages) {
             // let confirmation = confirm('Are you sure you want to tagTask')
             // if(confirmation){
-                props.callBack(selectedTasks);
-                handleClose()
+            props.callBack(selectedTasks);
+            handleClose()
             // }
-            
-        }else{
+
+        } else {
+            let tasksWithTaggedProjects:any=[];
+            let tasksWithNoProjects:any=[];
             selectedTasks?.map(async (item: any, index: any) => {
                 if (index == 0) {
                     selectedTaskId = selectedTaskId + '(' + item?.siteType + ') ' + item?.TaskID
                 } else {
                     selectedTaskId = selectedTaskId + ',' + '(' + item?.siteType + ') ' + item?.TaskID
                 }
+                if(item?.Project?.Id!=undefined){
+                    tasksWithTaggedProjects.push(item)
+                }else{
+                    tasksWithNoProjects.push(item)
+                }
             })
-    
+
             let confirmation = confirm('Are you sure you want to tag ' + selectedTaskId + ' to this project ?')
             if (confirmation == true) {
-              
-                selectedTasks?.map(async (item: any, index: any) => {
-                    const web = new Web(item?.siteUrl);
-                    await web.lists.getById(item?.listId).items.getById(item?.Id).update({
-                        ProjectId: props?.projectId != undefined ? props?.projectId : ''
-                    }).then((e: any) => {
-                        if (index == selectedTasks?.length - 1) {
-                            props.callBack();
-                           
+                if(tasksWithTaggedProjects?.length>0){
+                    let projectTagedTasks:any=''
+                    tasksWithTaggedProjects?.map(async (item: any, index: any) => {
+                        if (index == 0) {
+                            projectTagedTasks = projectTagedTasks + '(' + item?.siteType + ') ' + item?.TaskID
+                        } else {
+                            projectTagedTasks = projectTagedTasks + ',' + '(' + item?.siteType + ') ' + item?.TaskID
                         }
                     })
-                        .catch((err: { message: any; }) => {
-                            console.log(err.message);
-                        });
-                })
-    
+                    let taggedProjectConfirmation = confirm('These Tasks ' + projectTagedTasks + ' are already tagged to some other Projects, Do you want to over ride there project ?')
+                    if(taggedProjectConfirmation){
+                        updateSelectedTask(selectedTasks);
+                    }else{
+                        updateSelectedTask(tasksWithNoProjects)
+                    }
+                }else{
+                    updateSelectedTask(selectedTasks)
+                }
                 handleClose()
             }
-    
+
         }
-       
+
+    }
+
+    const updateSelectedTask=(selectedTasksArray:any)=>{
+        selectedTasksArray?.map(async (item: any, index: any) => {
+            const web = new Web(item?.siteUrl);
+            await web.lists.getById(item?.listId).items.getById(item?.Id).update({
+                ProjectId: props?.projectId != undefined ? props?.projectId : ''
+            }).then((e: any) => {
+                if (index == selectedTasksArray?.length - 1) {
+                    props.callBack();
+                }
+            })
+                .catch((err: { message: any; }) => {
+                    console.log(err.message);
+                });
+        })
     }
 
     const handleClose = () => {
@@ -300,10 +290,10 @@ const TagTaskToProjectPopup = (props: any) => {
                     Cancel
                 </button>
                 <button className="btn btn-primary px-3"
-                    onClick={()=>{tagSelectedTasks()}}>
+                    onClick={() => { tagSelectedTasks() }}>
                     Tag Tasks
                 </button>
-                
+
                 {/* <Button type="button" className="me-2" variant="secondary" onClick={handleClose}>Cancel</Button>
                 <Button type="button" variant="primary" disabled={selectedTasks?.length > 0 ? false : true} onClick={() => tagSelectedTasks()}>Tag</Button> */}
             </footer>
@@ -311,26 +301,7 @@ const TagTaskToProjectPopup = (props: any) => {
 
         )
     }
-    function IndeterminateCheckbox({
-        indeterminate,
-        className = "",
-        ...rest
-    }: { indeterminate?: boolean } & React.HTMLProps<HTMLInputElement>) {
-        const ref = React.useRef<HTMLInputElement>(null!);
-        React.useEffect(() => {
-            if (typeof indeterminate === "boolean") {
-                ref.current.indeterminate = !rest.checked && indeterminate;
-            }
-        }, [ref, indeterminate]);
-        return (
-            <input
-                type="checkbox"
-                ref={ref}
-                className={className + "  cursor-pointer form-check-input rounded-0"}
-                {...rest}
-            />
-        );
-    }
+    
     const inlineCallBack = React.useCallback((item: any) => {
         setAllTasks(prevTasks => {
             const updatedTasks = prevTasks.map((task: any) => {
@@ -374,25 +345,13 @@ const TagTaskToProjectPopup = (props: any) => {
                 cell: ({ row, column, getValue }) => (
                     <>
                         <span className='d-flex'>
-                            {row.original.Services.length >= 1 ? (
-                                <a
-                                    className="hreflink text-success"
-                                    href={`${props?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
-                                    data-interception="off"
-                                    target="_blank"
-                                >
-                                    {row?.original?.Title}
-                                </a>
-                            ) : (
-                                <a
-                                    className="hreflink"
-                                    href={`${props?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
-                                    data-interception="off"
-                                    target="_blank"
-                                >
-                                    {row?.original?.Title}
-                                </a>
-                            )}
+                            <a className="hreflink"
+                                href={`${props?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${row?.original?.Id}&Site=${row?.original?.siteType}`}
+                                data-interception="off"
+                                target="_blank"
+                            >
+                                {row?.original?.Title}
+                            </a>
                             {row?.original?.Body !== null && row?.original?.Body != undefined ? <InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /> : ''}
                         </span>
                     </>
@@ -421,25 +380,13 @@ const TagTaskToProjectPopup = (props: any) => {
                 accessorFn: (row) => row?.Portfolio,
                 cell: ({ row }) => (
                     <span>
-                        {row.original.Services.length >= 1 ? (
-                            <a
-                                className="hreflink text-success"
-                                data-interception="off"
-                                target="blank"
-                                href={`${props?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`}
-                            >
-                                {row?.original?.portfolio?.Title}
-                            </a>
-                        ) : (
-                            <a
-                                className="hreflink"
-                                data-interception="off"
-                                target="blank"
-                                href={`${props?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`}
-                            >
-                                {row?.original?.portfolio?.Title}
-                            </a>
-                        )}
+                        <a className="hreflink"
+                            data-interception="off"
+                            target="blank"
+                            href={`${props?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${row?.original?.portfolio?.Id}`}
+                        >
+                            {row?.original?.portfolio?.Title}
+                        </a>
                     </span>
                 ),
                 id: "Portfolio",
@@ -551,12 +498,7 @@ const TagTaskToProjectPopup = (props: any) => {
                 accessorFn: (row) => row?.Created,
                 cell: ({ row }) => (
                     <span>
-                        {row.original.Services.length >= 1 ? (
-                            <span className='ms-1 text-success'>{row?.original?.DisplayCreateDate} </span>
-                        ) : (
-                            <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
-                        )}
-
+                        <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
                         {row?.original?.createdImg != undefined ? (
                             <>
                                 <a
@@ -587,9 +529,9 @@ const TagTaskToProjectPopup = (props: any) => {
 
     return (
         <>
-            
-            {props.meetingPages ?<Button type="button" variant="secondary" className='pull-right ms-2' onClick={() => OpenTaskPopupData()}>Add Tasks To Meeting</Button>
-            :<Button type="button" variant="secondary" className='pull-right ms-2' onClick={() => OpenTaskPopupData()}>Add Existing Tasks</Button>}
+
+            {props.meetingPages ? <Button type="button" variant="secondary" className='pull-right ms-2' onClick={() => OpenTaskPopupData()}>Add Tasks To Meeting</Button>
+                : <Button type="button" variant="secondary" className='pull-right ms-2' onClick={() => OpenTaskPopupData()}>Add Existing Tasks</Button>}
             <Panel
                 onRenderHeader={onRenderCustomHeaderMain}
                 type={PanelType.large}
