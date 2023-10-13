@@ -434,7 +434,7 @@ const MeetingOverviewMain = (props: any) => {
                 item?.Childs?.map((child: any, index: any) => {
                     if(child?.TaskType?.Title == 'Workstream'){
                         child.TaskLevel = workId;
-                        child.Shareweb_x0020_ID = 'W' + workId;
+                        child.Shareweb_x0020_ID = `${item.Shareweb_x0020_ID}-W${workId}`
                         itemsToUpdate.push(child)
                         workId++;
                     }

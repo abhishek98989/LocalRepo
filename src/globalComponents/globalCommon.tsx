@@ -34,6 +34,12 @@ export const SendTeamMessage = async (mention_To: any, txtComment: any, Context:
         let pageContent = await pageContext()
         let web = new Web(pageContent?.WebFullUrl);
         let currentUser = await web.currentUser?.get()
+        if (currentUser) {
+            if (currentUser.Email?.length > 0) {
+            } else {
+                currentUser.Email = currentUser.UserPrincipalName;
+            }
+        }
         // const client: MSGraphClientV3 = await Context.msGraphClientFactory.getClient();
         await Context.msGraphClientFactory.getClient().then((client: MSGraphClientV3) => {
             client.api(`/users`).version("v1.0").get(async (err: any, res: any) => {
@@ -723,7 +729,7 @@ export const loadTaskUsers = async () => {
         taskUser = await web.lists
             .getById('b318ba84-e21d-4876-8851-88b94b9dc300')
             .items
-            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,IsShowTeamLeader,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
+            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
             .get();
     }
     catch (error) {
@@ -1647,7 +1653,8 @@ export const getPortfolio = async (type: any) => {
 // ********************* This is for the Getting All Component And Service Portfolio Data ********************
 export const GetServiceAndComponentAllData = async (Props: any) => {
     var ComponentsData: any = [];
-    let TaskUsers: any = [];
+    var AllPathGeneratedData: any = [];
+    // let TaskUsers: any = [];
     let AllMasterTaskData: any = [];
     try {
         let web = new Web(Props.siteUrl);
@@ -1659,7 +1666,7 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
             .expand("TeamMembers", "Author", "ClientCategory", "Parent", "TaskCategories", "AssignedTo", "ClientCategory", "PortfolioType")
             .getAll();
         // console.log("all Service and Coponent data form global Call=======", AllMasterTaskData);
-        TaskUsers = await AllTaskUsers(Props.siteUrl, Props.TaskUserListId);
+        // TaskUsers = await AllTaskUsers(Props.siteUrl, Props.TaskUserListId);
         $.each(AllMasterTaskData, function (index: any, result: any) {
             result.isSelected = false;
             result.isSelected = Props?.selectedItems?.find((obj: any) => obj.Id === result.ID);
@@ -1711,15 +1718,16 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
             }
 
             if (result.Item_x0020_Type == 'Component') {
-                result = componentGrouping(result, AllMasterTaskData)
-                ComponentsData.push(result);
+                const groupedResult = componentGrouping(result, AllMasterTaskData)
+                AllPathGeneratedData = [...AllPathGeneratedData, ...groupedResult?.PathArray];
+                ComponentsData.push(groupedResult?.comp);
             }
 
         });
 
         let dataObject = {
             GroupByData: ComponentsData,
-            AllData: ComponentsData
+            AllData: AllPathGeneratedData,
         }
         return dataObject;
 
@@ -1729,20 +1737,35 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
     console.log("all Service and Coponent data in global common =======", AllMasterTaskData)
 }
 
-const componentGrouping = (Portfolio: any, AllProtFolioData: any) => {
+const componentGrouping = (Portfolio: any, AllProtFolioData: any, path: string = "") => {
+    let pathArray: any = [];
     Portfolio.subRows = [];
-    let subComFeat = AllProtFolioData?.filter((comp: any) => comp?.Parent?.Id === Portfolio?.Id)
+    let subComFeat = AllProtFolioData?.filter((comp: any) => comp?.Parent?.Id === Portfolio?.Id);
     Portfolio.subRows = Portfolio?.subRows?.concat(subComFeat);
+
+    // Create the path for the Portfolio by appending its name to the existing path
+    Portfolio.Path = `${Portfolio.Title}`;
+    pathArray.push(Portfolio);
     subComFeat?.forEach((subComp: any) => {
         subComp.subRows = [];
         let allFeattData = AllProtFolioData?.filter((elem: any) => elem?.Parent?.Id === subComp?.Id);
         subComp.subRows = subComp?.subRows?.concat(allFeattData);
+
+        // Create the path for the sub-component by appending its name to the Portfolio's path
+        subComp.Path = `${Portfolio.Path}>${subComp.Title}`;
+        pathArray.push(subComp);
         allFeattData?.forEach((subFeat: any) => {
             subFeat.subRows = [];
+            // Create the hierarchy path by appending the current sub-component and feature names to the sub-component's path
+            subFeat.Path = `${subComp.Path}>${subFeat.Title}`;
+            pathArray.push(subFeat);
+        });
+    });
 
-        })
-    })
-    return Portfolio;
+    return {
+        comp: Portfolio,
+        PathArray: pathArray
+    };
 }
 
 const AllTaskUsers = async (siteUrl: any, ListId: any) => {
@@ -1752,7 +1775,7 @@ const AllTaskUsers = async (siteUrl: any, ListId: any) => {
         taskUser = await web.lists
             .getById(ListId)
             .items
-            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,IsShowTeamLeader,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
+            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
             .get();
     }
     catch (error) {
@@ -1782,82 +1805,109 @@ export const getParameterByName = async (name: any) => {
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 
 }
-
-export const GetTaskId = (Item: any) => {
+export const GetCompleteTaskId = (Item: any) => {
     const { Portfolio, TaskID, ParentTask, Id, TaskType } = Item;
     let taskIds = "";
     if (Portfolio?.PortfolioStructureID) {
         taskIds += Portfolio.PortfolioStructureID;
     }
-    if (ParentTask?.TaskID && TaskType?.Title === 'Task') {
-        taskIds += taskIds.length > 0 ? `-${ParentTask.TaskID}` : `${ParentTask.TaskID}`;
-    }
-    if (TaskID) {
+    if (TaskType?.Title === 'Activities' || TaskType?.Title === 'Workstream') {
         taskIds += taskIds.length > 0 ? `-${TaskID}` : `${TaskID}`;
-    } else {
+    }
+    if ( ParentTask?.TaskID && TaskType?.Title === 'Task' ) {
+        taskIds += taskIds.length > 0 ? `-${ParentTask?.TaskID}-T${Id}` : `${ParentTask?.TaskID}-T${Id}`;
+    } else if(ParentTask?.TaskID ==undefined && TaskType?.Title === 'Task') {
         taskIds += taskIds.length > 0 ? `-T${Id}` : `T${Id}`;
+    }else if (taskIds?.length<=0){
+        taskIds +=  `T${Id}`;
     }
     return taskIds;
 };
-export const findTaskHierarchy = (row: any, AllMatsterAndTaskData: any): any[] => {
-    let createGrouping = (row: any): any[] => {
-        for (let i = 0; i < AllMatsterAndTaskData.length; i++) {
-            let Object = AllMatsterAndTaskData[i];
-            if (Object?.Item_x0020_Type?.toLowerCase() != 'task') {
-                Object.SiteIconTitle = Object?.Item_x0020_Type?.charAt(0);
-            }
-            if (Object.Id === row?.ParentTask?.Id && row?.siteType === Object?.siteType) {
-                Object.subRows = [];
-                Object.subRows.push(row);
-                return createGrouping(Object);
-            } else if (Object.Id === row?.Parent?.Id) {
-                Object.subRows = [];
-                Object.subRows.push(row);
-                return createGrouping(Object);
-            } else if (row?.Component != undefined && row?.Component?.length > 0 && Object.Id === row?.Component[0]?.Id) {
-                Object.subRows = [];
-                Object.subRows.push(row);
-                return createGrouping(Object);
-            } else if (row?.Services != undefined && row?.Services?.length > 0 && Object.Id === row?.Services[0]?.Id) {
-                Object.subRows = [];
-                Object.subRows.push(row);
-                return createGrouping(Object);
-            }
-            else if (row?.Portfolio != undefined && Object.Id === row?.Portfolio?.Id) {
-                Object.subRows = [];
-                Object.subRows.push(row);
-                return createGrouping(Object);
-            }
-        }
-        return [row];
+export const GetTaskId = (Item: any) => {
+    const { TaskID, ParentTask, Id, TaskType } = Item;
+    let taskIds = "";
+    if (TaskType?.Title === 'Activities' || TaskType?.Title === 'Workstream') {
+        taskIds += taskIds.length > 0 ? `-${TaskID}` : `${TaskID}`;
     }
-    return createGrouping(row);
+    if ( ParentTask?.TaskID!=undefined && TaskType?.Title === 'Task' ) {
+        taskIds += taskIds.length > 0 ? `-${ParentTask?.TaskID}-T${Id}` : `${ParentTask?.TaskID}-T${Id}`;
+    } else if ( ParentTask?.TaskID==undefined && TaskType?.Title === 'Task' ){
+        taskIds += taskIds.length > 0 ? `-T${Id}` : `T${Id}`;
+    }else if (taskIds?.length<=0){
+        taskIds +=  `T${Id}`;
+    }
+    return taskIds;
+};
+export const findTaskHierarchy = (
+  row: any,
+  AllMatsterAndTaskData: any
+): any[] => {
+  let createGrouping = (row: any): any[] => {
+    for (let i = 0; i < AllMatsterAndTaskData.length; i++) {
+      let Object = AllMatsterAndTaskData[i];
+      // if (Object?.Item_x0020_Type?.toLowerCase() != 'task') {
+      //     Object.SiteIconTitle = Object?.Item_x0020_Type?.charAt(0);
+      // }
+      if (
+        Object.Id === row?.ParentTask?.Id &&
+        row?.siteType === Object?.siteType
+      ) {
+        Object.subRows = [];
+        Object.subRows.push(row);
+        return createGrouping(Object);
+      } else if (Object.Id === row?.Parent?.Id) {
+        Object.subRows = [];
+        Object.subRows.push(row);
+        return createGrouping(Object);
+      } else if (
+        row?.Component != undefined &&
+        row?.Component?.length > 0 &&
+        Object.Id === row?.Component[0]?.Id
+      ) {
+        Object.subRows = [];
+        Object.subRows.push(row);
+        return createGrouping(Object);
+      } else if (
+        row?.Services != undefined &&
+        row?.Services?.length > 0 &&
+        Object.Id === row?.Services[0]?.Id
+      ) {
+        Object.subRows = [];
+        Object.subRows.push(row);
+        return createGrouping(Object);
+      } else if (
+        row?.Portfolio != undefined &&
+        Object.Id === row?.Portfolio?.Id &&
+        row?.ParentTask?.Id == undefined
+      ) {
+        Object.subRows = [];
+        Object.subRows.push(row);
+        return createGrouping(Object);
+      }
+    }
+    return [row];
+  };
+  return createGrouping(row);
 };
 
 export const loadAllTimeEntry = async (timesheetListConfig: any) => {
     var AllTimeEntry: any = []
     if (timesheetListConfig?.Id != undefined) {
         let timesheetLists: any = [];
-        let taskLists: any = [];
         timesheetLists = JSON.parse(timesheetListConfig?.Configurations)
-        taskLists = JSON.parse(timesheetListConfig?.Description)
         if (timesheetLists?.length > 0) {
             const fetchPromises = timesheetLists.map(async (list: any) => {
                 let web = new Web(list?.siteUrl);
                 try {
-                    const data = await web.lists
-                        .getById(list?.listId)
-                        .items.select(list?.query)
-                        .getAll();
+                    const data = await web.lists.getById(list?.listId).items.select(list?.query).getAll();
                     AllTimeEntry = [...AllTimeEntry, ...data];
                 } catch (error) {
                     console.log(error, 'HHHH Time');
                 }
             });
-
             await Promise.all(fetchPromises)
             return AllTimeEntry
         }
 
-    }
+    } 
 }

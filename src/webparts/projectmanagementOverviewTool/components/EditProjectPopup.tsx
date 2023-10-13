@@ -516,7 +516,10 @@ function EditProjectPopup(item: any) {
         "Editor/Id",
         "Editor/Title",
         "ClientCategory/Id",
-        "ClientCategory/Title"
+        "ClientCategory/Title",
+        "ResponsibleTeam/Title",
+        "ResponsibleTeam/Name",
+        "ResponsibleTeam/Id"
       )
       .expand(
         "ClientCategory",
@@ -525,6 +528,7 @@ function EditProjectPopup(item: any) {
         "Portfolios",
         "AttachmentFiles",
         "Author",
+        "ResponsibleTeam",
         "Editor",
         "TeamMembers",
         "SharewebComponent",

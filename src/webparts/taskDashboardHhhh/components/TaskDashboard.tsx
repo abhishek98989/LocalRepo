@@ -405,7 +405,7 @@ const TaskDashboard = (props: any) => {
                         let smartmeta = [];
                         await web.lists
                             .getById(config.listId)
-                            .items.select("ID", "Title", "ClientCategory/Id","Portfolio/PortfolioStructureID", "ParentTask/TaskID","ParentTask/Title","ParentTask/Id","ClientCategory/Title","EstimatedTimeDescription", 'ClientCategory', "Comments", "DueDate", "ClientActivityJson", "EstimatedTime", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Body", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Modified")
+                            .items.select("ID", "Title", "ClientCategory/Id","Portfolio/PortfolioStructureID","TaskID", "ParentTask/TaskID","ParentTask/Title","ParentTask/Id","ClientCategory/Title","EstimatedTimeDescription", 'ClientCategory', "Comments", "DueDate", "ClientActivityJson", "EstimatedTime", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title","FeedBack", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Body", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Modified")
                             .expand("TeamMembers", "Approver", "ParentTask", "ClientCategory", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "ParentTask","TaskType", "Portfolio")
                             .getAll().then((data: any) => {
                                 smartmeta = data;
@@ -512,7 +512,7 @@ const TaskDashboard = (props: any) => {
                                         if (isEmailNotification) {
                                             AllEmails.push(task)
                                         }
-                                        if (task.ClientActivityJson != undefined) {
+                                        if (task?.ClientActivityJson != undefined) {
                                             SharewebTask.push(task)
                                         }
                                         if (parseInt(task.PriorityRank) >= 8 && parseInt(task.PriorityRank) <= 10) {
@@ -830,6 +830,13 @@ const TaskDashboard = (props: any) => {
                 internalHeader: "Created",
                 accessor: "Created",
                 showSortIcon: true,
+                filterFn: (row:any, filterValue:any) => {
+                    if(row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase())|| row?.original?.DisplayCreateDate?.includes(filterValue)){
+                      return  true
+                    }else{
+                      return false
+                    }
+                  },
                 style: { width: "125px" },
                 Cell: ({ row }: any) => (
                     <span>
@@ -1974,7 +1981,7 @@ const TaskDashboard = (props: any) => {
                 '<span style="font-size: 18px;margin-bottom: 10px;">'
                 + 'Hi there, <br><br>'
                 + "Below is the today's working task of all the team members :"
-                + '<p>' + '<a href =' + `${AllListId?.siteUrl}/SitePages/Project-Management-Overview.aspx` + ">Click here for flat overview of the today's tasks: " + '</a>' + '</p>'
+                + '<p>' + '<a href =' + `${AllListId?.siteUrl}/SitePages/Project-Management-Overview.aspx?SelectedView=TodaysTask` + ">Click here for flat overview of the today's tasks: " + '</a>' + '</p>'
                 + '</span>'
                 + finalBody
                 + '<h3>'

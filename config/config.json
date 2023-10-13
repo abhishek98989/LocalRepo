@@ -81,6 +81,14 @@
           "manifest": "./src/webparts/meetingOverview/MeetingOverviewWebPart.manifest.json"
         }
       ]
+    },
+    "test-web-part-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/testWebPart/TestWebPartWebPart.js",
+          "manifest": "./src/webparts/testWebPart/TestWebPartWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {
@@ -112,6 +120,7 @@
     "ProjectManagementWebPartStrings": "lib/webparts/projectManagement/loc/{locale}.js",
     "TaskDashboardHhhhWebPartStrings": "lib/webparts/taskDashboardHhhh/loc/{locale}.js",
     "ProjectmanagementOverviewToolWebPartStrings": "lib/webparts/projectmanagementOverviewTool/loc/{locale}.js",
-    "MeetingOverviewWebPartStrings": "lib/webparts/meetingOverview/loc/{locale}.js"
+    "MeetingOverviewWebPartStrings": "lib/webparts/meetingOverview/loc/{locale}.js",
+    "TestWebPartWebPartStrings": "lib/webparts/testWebPart/loc/{locale}.js"
   }
 }
