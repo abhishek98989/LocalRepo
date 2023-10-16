@@ -6,7 +6,7 @@ import Example from "./SubCommentComponent";
 import pnp from 'sp-pnp-js';
 import * as Moment from 'moment';
 import ApprovalHistoryPopup from "./ApprovalHistoryPopup";
-// import FroalaCommentBox from '../FlorarComponents/FroalaCommentBoxComponent'
+// import FroalaCommentBox from '../FlorarComponents/FroalaCommentBoxComponent';
 
 const CommentBoxComponent = (commentData: any) => {
     const Context = commentData.Context;
@@ -60,7 +60,7 @@ const CommentBoxComponent = (commentData: any) => {
             setIsCurrentUserApprover(true);
         }
         getCurrentUserDetails();
-    }, [])
+    }, [commentData.FeedbackCount])
 
     const getCurrentUserDetails = async () => {
         let currentUserId: number;
@@ -182,8 +182,7 @@ const CommentBoxComponent = (commentData: any) => {
                     commentArray?.map((obj, i) => {
                         return (
                             <div className="row">
-                                <div
-                                    data-id={i}
+                                <div data-id={i}
                                     className="col"
                                     onChange={handleChangeComment}
                                 >
@@ -218,7 +217,7 @@ const CommentBoxComponent = (commentData: any) => {
 
                                         <div>
                                             <span className="mx-1">
-                                                <input className="form-check-input m-0 rounded-0 commentSectionLabel " type="checkbox"
+                                                <input className="form-check-input mt--3" type="checkbox"
                                                     checked={obj.Phone}
                                                     value={obj.Phone}
                                                     name='Phone'
@@ -227,7 +226,7 @@ const CommentBoxComponent = (commentData: any) => {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input m-0 rounded-0 commentSectionLabel "
+                                                <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input mt--3"
                                                 />
                                                 <label className="commentSectionLabel ms-1">
                                                     Low Importance
@@ -236,7 +235,7 @@ const CommentBoxComponent = (commentData: any) => {
                                             <span> | </span>
                                             <span className="mx-1">
                                                 <input type="checkbox" name='HighImportance' checked={obj.HighImportance}
-                                                    value={obj.HighImportance} className="form-check-input m-0 rounded-0 commentSectionLabel "
+                                                    value={obj.HighImportance} className="form-check-input mt--3"
                                                 />
                                                 <label className="commentSectionLabel ms-1">
                                                     High Importance
@@ -244,7 +243,7 @@ const CommentBoxComponent = (commentData: any) => {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" id="" className="form-check-input m-0 rounded-0 commentSectionLabel "
+                                                <input type="checkbox" id="" className="form-check-input mt--3"
                                                     name='Completed' checked={obj.Completed} value={obj.Completed} />
                                                 <label className="commentSectionLabel ms-1">
                                                     Mark As Completed
@@ -268,7 +267,6 @@ const CommentBoxComponent = (commentData: any) => {
                                             callBack={HtmlEditorCallBack}
                                         >
                                         </FroalaCommentBox> */}
-
                                     </div>
                                 </div>
                                 <div>
@@ -284,12 +282,14 @@ const CommentBoxComponent = (commentData: any) => {
                                             Context={Context}
                                             ApprovalStatus={ApprovalStatus}
                                             isCurrentUserApprover={isCurrentUserApprover}
+                                            FeedbackCount = {commentData.FeedbackCount}
+                                            SmartLightStatus = {obj.isShowLight}
                                         />
                                     </div>
                                     <div>
                                         <Example
                                             SubTextItemsArray={obj.Subtext ? obj.Subtext : []}
-                                            index={1}
+                                            index={0}
                                             commentId={obj.Id}
                                             callBack={subTextCallBack}
                                             currentIndex={0}
@@ -300,6 +300,7 @@ const CommentBoxComponent = (commentData: any) => {
                                             Context={Context}
                                             isCurrentUserApprover={isCurrentUserApprover}
                                             isFirstComment = {true}
+                                            FeedbackCount = {commentData.FeedbackCount}
                                         />
                                     </div>
                                 </div>

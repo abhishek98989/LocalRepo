@@ -8,14 +8,16 @@ import Froala from "react-froala-wysiwyg";
 
 const defaultContent = "";
 let CallBackFunction:any ;
+let FileName:any;
 
 export interface ITeamConfigurationProps {
-    callBack: (dt: any) => void;
+    callBack: (dt: any,FileName:any) => void;
 }
 
 const froalaEditorConfig = {
     heightMin: 230,
     heightMax: 500,
+    // width:250,
     pastePlain: true,
     wordPasteModal: false,
     listAdvancedTypes: false,
@@ -29,12 +31,16 @@ const froalaEditorConfig = {
     events: {
         "image.beforeUpload": function (files: any, arg1: any, arg2: any) {
             var editor = this;
+            FileName=files[0].name;
             if (files.length) {
+                // Create a File Reader.
                 var reader = new FileReader();
+                // Set the reader to insert images when they are loaded.
                 reader.onload = (e) => {
                     var result = e.target.result;
                     editor.image.insert(result, null, null, editor.image.get());
                 };
+                // Read image as base64.
                 reader.readAsDataURL(files[0]);
                 let data = files[0]
                 var reader = new FileReader();
@@ -47,7 +53,7 @@ const froalaEditorConfig = {
                 }
                 const runThis = (data: any) => {
                     if(data != undefined){
-                        CallBackFunction(data);
+                        CallBackFunction(data,FileName);
                     }
                 }
                 
@@ -90,5 +96,4 @@ export default class App extends React.Component<ITeamConfigurationProps> {
         let elem = document.createElement("img");
         elem.innerHTML = edData;
     };
-   
 }

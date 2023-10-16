@@ -117,18 +117,18 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
         let taskDetails = [];
         if (this.props.ItemInfo.listId != undefined) {
             taskDetails = await web.lists
-                .getById(this?.props?.ItemInfo?.listId)
+                .getById(this.props.ItemInfo.listId)
                 .items
-                .getById(this?.props?.ItemInfo?.Id)
-                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id")
+                .getById(this.props.ItemInfo.Id)
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id" )
                 .expand("TeamMembers", "AssignedTo", "ResponsibleTeam")
                 .get()
         } else {
             taskDetails = await web.lists
                 .getByTitle('Master Tasks')
                 .items
-                .getById(this?.props?.ItemInfo?.Id)
-                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id")
+                .getById(this.props.ItemInfo.Id)
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id" )
                 .expand("TeamMembers", "AssignedTo", "ResponsibleTeam")
                 .get()
         }

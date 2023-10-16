@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import * as $ from 'jquery';
 import * as Moment from 'moment';
 import { Web, sp } from "sp-pnp-js";
-import * as pnp from 'sp-pnp-js';
 import Picker from "./SmartMetaDataPicker";
 import Example from "./FroalaCommnetBoxes";
 import * as globalCommon from "../globalCommon";
@@ -11,7 +10,6 @@ import ImageUploading, { ImageListType } from "react-images-uploading";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/js/dist/modal.js";
 import ServiceComponentPortfolioPopup from './ServiceComponentPortfolioPopup';
-import axios, { AxiosResponse } from 'axios';
 import "bootstrap/js/dist/tab.js";
 import "bootstrap/js/dist/carousel.js";
 import CommentCard from "../../globalComponents/Comments/CommentCard";
@@ -45,9 +43,8 @@ import EditSiteComposition from "./EditSiteComposition";
 import SmartTotalTime from './SmartTimeTotal';
 import "react-datepicker/dist/react-datepicker.css";
 import BackgroundCommentComponent from "./BackgroundCommentComponent";
-import { TooltipHost, ITooltipHostStyles } from '@fluentui/react/lib/Tooltip';
-import { useId } from '@fluentui/react-hooks';
-import context from "react-bootstrap/esm/AccordionContext";
+import EODReportComponent from "../EOD Report Component/EODReportComponent";
+
 
 
 
@@ -91,14 +88,14 @@ var LinkedPortfolioDataBackup: any = [];
 var userSendAttentionEmails: any = [];
 var TempSmartInformationIds: any = [];
 let StatusOptionsBackupArray: any = [];
+var TaskCreatorApproverBackupArray: any = [];
+var TaskApproverBackupArray: any = [];
 
 const EditTaskPopup = (Items: any) => {
-    var TaskCreatorApproverBackupArray: any = [];
-    var TaskApproverBackupArray: any = [];
-    const Context = Items.context;
-    const AllListIdData = Items.AllListId;
-    AllListIdData.listId = Items.Items.listId;
-    Items.Items.Id = Items.Items.ID;
+    const Context = Items?.context;
+    const AllListIdData = Items?.AllListId;
+    AllListIdData.listId = Items?.Items?.listId;
+    Items.Items.Id = Items?.Items?.ID;
     let ShareWebConfigData: any = [];
     const [TaskImages, setTaskImages] = useState([]);
     const [SmartMetaDataAllItems, setSmartMetaDataAllItems] = useState<any>([]);
@@ -191,25 +188,32 @@ const EditTaskPopup = (Items: any) => {
     const [SiteCompositionShow, setSiteCompositionShow] = useState(false);
     const [IsSendAttentionMsgStatus, setIsSendAttentionMsgStatus] = useState(false);
     const [SendCategoryName, setSendCategoryName] = useState('');
-    let [StatusOptions, setStatusOptions] = useState([]);
-    const hostStyles: Partial<ITooltipHostStyles> = { root: { display: 'inline-block' } };
-    const buttonId = useId(`callout-button`);
-    const calloutProps = { gapSpace: 0 };
-    let FeedBackCount: any = 0;
-    const StatusArray = [
+    const [OpenEODReportPopup, setOpenEODReportPopup] = useState(false);
+    let [StatusOptions, setStatusOptions] = useState([
+        { value: 0, status: "0% Not Started", taskStatusComment: "Not Started" },
         { value: 1, status: "1% For Approval", taskStatusComment: "For Approval" },
         { value: 2, status: "2% Follow Up", taskStatusComment: "Follow Up" },
         { value: 3, status: "3% Approved", taskStatusComment: "Approved" },
         { value: 5, status: "5% Acknowledged", taskStatusComment: "Acknowledged" },
-        { value: 10, status: "10% working on it", taskStatusComment: "working on it" },
-        { value: 70, status: "70% Re-Open", taskStatusComment: "Re-Open" },
-        { value: 80, status: "80% In QA Review", taskStatusComment: "In QA Review" },
-        { value: 90, status: "90% Task completed", taskStatusComment: "Task completed" },
-        { value: 93, status: "93% For Review", taskStatusComment: "For Review" },
-        { value: 96, status: "96% Follow-up later", taskStatusComment: "Follow-up later" },
-        { value: 99, status: "99% Completed", taskStatusComment: "Completed" },
-        { value: 100, status: "100% Closed", taskStatusComment: "Closed" }
-    ]
+        { value: 10, status: "10% working on it", taskStatusComment: "working on it" }
+    ]);
+
+    let FeedBackCount: any = 0;
+    // const StatusArray = [
+    //     { value: 0, status: "0% Not Started", taskStatusComment: "Not Started" },
+    //     { value: 1, status: "1% For Approval", taskStatusComment: "For Approval" },
+    //     { value: 2, status: "2% Follow Up", taskStatusComment: "Follow Up" },
+    //     { value: 3, status: "3% Approved", taskStatusComment: "Approved" },
+    //     { value: 5, status: "5% Acknowledged", taskStatusComment: "Acknowledged" },
+    //     { value: 10, status: "10% working on it", taskStatusComment: "working on it" },
+    //     { value: 70, status: "70% Re-Open", taskStatusComment: "Re-Open" },
+    //     { value: 80, status: "80% In QA Review", taskStatusComment: "In QA Review" },
+    //     { value: 90, status: "90% Task completed", taskStatusComment: "Task completed" },
+    //     { value: 93, status: "93% For Review", taskStatusComment: "For Review" },
+    //     { value: 96, status: "96% Follow-up later", taskStatusComment: "Follow-up later" },
+    //     { value: 99, status: "99% Completed", taskStatusComment: "Completed" },
+    //     { value: 100, status: "100% Closed", taskStatusComment: "Closed" }
+    // ]
 
     let ItemRankArray = [
         { rankTitle: 'Select Item Rank', rank: null },
@@ -259,16 +263,14 @@ const EditTaskPopup = (Items: any) => {
     }
     useEffect(() => {
         if (FeedBackCount == 0) {
-
             loadTaskUsers();
             GetExtraLookupColumnData();
             GetMasterData();
             SmartMetaDataListInformations();
+            GetAllComponentAndServiceData("Component");
             AddImageDescriptionsIndex = undefined;
         }
     }, [FeedBackCount])
-
-
 
     const SmartMetaDataListInformations = async () => {
         let AllSmartDataListData: any = [];
@@ -741,20 +743,20 @@ const EditTaskPopup = (Items: any) => {
                 smartMeta = await web.lists
                     .getById(Items.Items.listId)
                     .items
-                    .select("Id,Title,PriorityRank,Comments,workingThisWeek,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
+                    .select("Id,Title,PriorityRank,Comments,workingThisWeek,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID")
                     .top(5000)
                     .filter(`Id eq ${Items.Items.Id}`)
-                    .expand('AssignedTo,Author,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio')
+                    .expand('AssignedTo,Author,ParentTask,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio')
                     .get();
             }
             else {
                 smartMeta = await web.lists
                     .getByTitle(Items.Items.listName)
                     .items
-                    .select("Id,Title,PriorityRank,Comments,BasicImageInfo,EstimatedTime,EstimatedTimeDescription,workingThisWeek,OffshoreImageUrl,OffshoreComments,waitForResponse,SiteCompositionSettings,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
+                    .select("Id,Title,PriorityRank,Comments,workingThisWeek,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID")
                     .top(5000)
                     .filter(`Id eq ${Items.Items.Id}`)
-                    .expand('AssignedTo,Author,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio')
+                    .expand('AssignedTo,Author,ParentTask,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio')
                     .get();
             }
             let statusValue: any
@@ -902,10 +904,7 @@ const EditTaskPopup = (Items: any) => {
                         item.siteCompositionData = [object];
                         setClientTimeData([object]);
                     }
-
                 }
-
-
                 if (item.Body != undefined) {
                     item.Body = item.Body.replace(/(<([^>]+)>)/ig, '');
                 }
@@ -950,11 +949,6 @@ const EditTaskPopup = (Items: any) => {
                                 }
                             })
                         }
-                        if (statusValue == 0) {
-                            setTaskStatus('Not Started');
-                            setPercentCompleteStatus('Not Started');
-                            setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: '0' })
-                        }
                         if (statusValue <= 2 && ApprovalStatusGlobal) {
                             ChangeTaskUserStatus = false;
                         } else {
@@ -962,7 +956,6 @@ const EditTaskPopup = (Items: any) => {
                         }
                     }
                 }
-
 
                 if (item.Author != undefined && item.Author != null) {
                     taskUsers.map((userData: any) => {
@@ -976,9 +969,16 @@ const EditTaskPopup = (Items: any) => {
                     })
                     if ((statusValue <= 2) && ApprovalStatusGlobal) {
                         let tempArray: any = [];
-                        if (TaskApproverBackupArray != undefined && TaskApproverBackupArray.length > 0) {
+                        const TaskApproverBackupTemp = TaskApproverBackupArray?.filter((val: any, id: any, array: any) => {
+                            return array.indexOf(val) == id;
+                        });
+                        const TaskCreatorApproverBackupTemp = TaskCreatorApproverBackupArray?.filter((val: any, id: any, array: any) => {
+                            return array.indexOf(val) == id;
+                        });
+
+                        if (TaskApproverBackupTemp != undefined && TaskApproverBackupTemp.length > 0) {
                             taskUsers.map((userData1: any) => {
-                                TaskApproverBackupArray.map((itemData: any) => {
+                                TaskApproverBackupTemp.map((itemData: any) => {
                                     if (itemData.Id == userData1?.AssingedToUserId) {
                                         AssignedUsers.push(userData1);
                                         TeamMemberTemp.push(userData1);
@@ -987,9 +987,9 @@ const EditTaskPopup = (Items: any) => {
                                 })
                             })
                         } else {
-                            if (TaskCreatorApproverBackupArray?.length > 0) {
+                            if (TaskCreatorApproverBackupTemp?.length > 0) {
                                 taskUsers.map((userData1: any) => {
-                                    TaskCreatorApproverBackupArray?.map((itemData: any) => {
+                                    TaskCreatorApproverBackupTemp?.map((itemData: any) => {
                                         if (itemData.Id == userData1?.AssingedToUserId) {
                                             AssignedUsers.push(userData1);
                                             TeamMemberTemp.push(userData1);
@@ -1211,9 +1211,14 @@ const EditTaskPopup = (Items: any) => {
     }
 
     const autoSuggestionsForServiceAndComponent = (e: any, usedFor: any) => {
-        GetAllComponentAndServiceData("Component");
         let SearchedKeyWord: any = e.target.value;
         let TempArray: any = [];
+        if (usedFor == "Portfolio") {
+            setSearchedServiceCompnentKey(SearchedKeyWord);
+        }
+        if (usedFor == "Linked-Portfolios") {
+            setSearchedLinkedPortfolioKey(SearchedKeyWord)
+        }
         if (SearchedKeyWord.length > 0) {
             if (GlobalServiceAndComponentData != undefined && GlobalServiceAndComponentData.length > 0) {
                 GlobalServiceAndComponentData.map((AllDataItem: any) => {
@@ -1225,11 +1230,10 @@ const EditTaskPopup = (Items: any) => {
             if (TempArray != undefined && TempArray.length > 0) {
                 if (usedFor == "Portfolio") {
                     setSearchedServiceCompnentData(TempArray);
-                    setSearchedServiceCompnentKey(SearchedKeyWord);
+
                 }
                 if (usedFor == "Linked-Portfolios") {
                     setSearchedLinkedPortfolioData(TempArray);
-                    setSearchedLinkedPortfolioKey(SearchedKeyWord)
                 }
 
             }
@@ -1319,7 +1323,6 @@ const EditTaskPopup = (Items: any) => {
     const setSelectedCategoryData = (selectCategoryData: any, usedFor: any) => {
         setIsComponentPicker(false);
         let TempArray: any = [];
-
         selectCategoryData.map((existingData: any) => {
             let elementFoundCount: any = 0;
             if (tempShareWebTypeData != undefined && tempShareWebTypeData.length > 0) {
@@ -1349,6 +1352,7 @@ const EditTaskPopup = (Items: any) => {
                     selectCategoryData.map((categoryData: any) => {
                         if (usedFor == "For-Auto-Search") {
                             tempShareWebTypeData.push(categoryData);
+
                         }
                         TempArray.push(categoryData)
                         let isExists: any = 0;
@@ -1397,12 +1401,23 @@ const EditTaskPopup = (Items: any) => {
             }
         })
 
+        let uniqueIds: any = {};
+        const result: any = tempShareWebTypeData.filter((item: any) => {
+            if (!uniqueIds[item.Id]) {
+                uniqueIds[item.Id] = true;
+                return true;
+            }
+            return false;
+        });
+
+        tempShareWebTypeData = result
+
         if (usedFor == "For-Panel") {
             setShareWebTypeData(selectCategoryData);
             tempShareWebTypeData = selectCategoryData;
         }
         if (usedFor == "For-Auto-Search") {
-            setShareWebTypeData(tempShareWebTypeData);
+            setShareWebTypeData(result);
             setSearchedCategoryData([])
             setCategorySearchKey("");
         }
@@ -1515,6 +1530,7 @@ const EditTaskPopup = (Items: any) => {
                 if (type == "Approval") {
                     setApprovalStatus(true);
                     setApproverData(TaskApproverBackupArray);
+                    Items.sendApproverMail = true;
                     StatusOptions?.map((item: any) => {
                         if (item.value == 1) {
                             setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: '1' })
@@ -1540,41 +1556,44 @@ const EditTaskPopup = (Items: any) => {
     const loadTaskUsers = async () => {
         var AllTaskUsers: any = []
         let currentUserId = Context.pageContext._legacyPageContext.userId
-        axios.get(`${siteUrls}/_api/web/lists/getbyid('${AllListIdData?.TaskUsertListID}')/items?$select=Id,UserGroupId,TimeCategory,Suffix,Title,Email,SortOrder,Role,IsShowTeamLeader,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver&$orderby=SortOrder asc,Title asc`)
-            .then((response: AxiosResponse) => {
-                taskUsers = response.data.value;
-                getAllEmployeeData();
-                $.each(taskUsers, function (index: any, user: any) {
-                    var ApproverUserItem = '';
-                    var UserApproverMail: any = []
-                    if (user.Title != undefined && user.IsShowTeamLeader === true) {
-                        if (user.Approver != undefined) {
-                            $.each(user.Approver.results, function (ApproverUser: any, index) {
-                                ApproverUserItem += ApproverUser.Title + (index === user.Approver.results?.length - 1 ? '' : ',');
-                                UserApproverMail.push(ApproverUser.Name.split('|')[2]);
-                            })
-                            user['UserManagerName'] = ApproverUserItem;
-                            user['UserManagerMail'] = UserApproverMail;
-                        }
-                        AllTaskUsers.push(user);
-                    }
-                    if (user.AssingedToUserId == currentUserId) {
-                        let temp: any = [];
-                        temp.push(user)
-                        setCurrentUserData(temp);
-                        currentUserBackupArray.push(user);
-                        if (user.UserGroupId == 7) {
-                            setIsUserFromHHHHTeam(true);
-                        }
-                    }
-
-                });
-                if (AllMetaData != undefined && AllMetaData?.length > 0) {
-                    GetSelectedTaskDetails();
+        const web = new Web(siteUrls);
+        taskUsers = await web.lists
+            .getById(AllListIdData?.TaskUsertListID)
+            .items
+            .select("Id,UserGroupId,TimeCategory,IsActive,Suffix,Title,Email,SortOrder,Role,IsShowTeamLeader,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name")
+            .filter('IsActive eq 1')
+            .expand('AssingedToUser,Approver')
+            .orderBy('SortOrder', true)
+            .orderBy("Title", true)
+            .getAll()
+        getAllEmployeeData();
+        taskUsers?.map((user: any, index: any) => {
+            var ApproverUserItem = '';
+            var UserApproverMail: any = []
+            if (user.Title != undefined && user.IsShowTeamLeader === true) {
+                if (user.Approver != undefined) {
+                    $.each(user.Approver.results, function (ApproverUser: any, index) {
+                        ApproverUserItem += ApproverUser.Title + (index === user.Approver.results?.length - 1 ? '' : ',');
+                        UserApproverMail.push(ApproverUser.Name.split('|')[2]);
+                    })
+                    user['UserManagerName'] = ApproverUserItem;
+                    user['UserManagerMail'] = UserApproverMail;
                 }
-            },
-                function (data) {
-                });
+                AllTaskUsers.push(user);
+            }
+            if (user.AssingedToUserId == currentUserId) {
+                let temp: any = [];
+                temp.push(user)
+                setCurrentUserData(temp);
+                currentUserBackupArray.push(user);
+                if (user.UserGroupId == 7) {
+                    setIsUserFromHHHHTeam(true);
+                }
+            }
+        });
+        if (AllMetaData != undefined && AllMetaData?.length > 0) {
+            GetSelectedTaskDetails();
+        }
     }
 
 
@@ -1706,8 +1725,8 @@ const EditTaskPopup = (Items: any) => {
             let AllProjects: any = [];
             AllProjects = await web.lists.getById(AllListIdData?.MasterTaskListID)
                 .items
-                .select("Id,Title,DueDate,TeamMembers/Id,TeamMembers/Title,Parent/Id,Parent/Title,PercentComplete,Status,PriorityRank")
-                .expand("TeamMembers,Parent")
+                .select("Id,Title,DueDate,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,AssignedTo/Id,AssignedTo/Title,Parent/Id,Parent/Title,PercentComplete,Status,PriorityRank")
+                .expand("TeamMembers,Parent,ResponsibleTeam,AssignedTo")
                 .top(4999)
                 .filter("Item_x0020_Type eq 'Project'")
                 .getAll();
@@ -1746,7 +1765,7 @@ const EditTaskPopup = (Items: any) => {
             if (StatusInput.length > 0) {
                 if (StatusInput == 0) {
                     setTaskStatus('Not Started');
-                    setPercentCompleteStatus('Not Started');
+                    setPercentCompleteStatus('0% Not Started');
                     setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: '0' })
                 }
                 if (StatusInput < 70 && StatusInput > 10 || StatusInput < 80 && StatusInput > 70) {
@@ -1804,7 +1823,7 @@ const EditTaskPopup = (Items: any) => {
 
                 }
                 if (StatusInput == 93 || StatusInput == 96 || StatusInput == 99) {
-                    setWorkingMember(9);
+                    setWorkingMember(32);
                     EditData.IsTodaysTask = false;
                     EditData.workingThisWeek = false;
                     StatusOptions?.map((item: any) => {
@@ -1923,7 +1942,7 @@ const EditTaskPopup = (Items: any) => {
             if (StatusData.value == 93 || StatusData.value == 96 || StatusData.value == 99) {
                 EditData.IsTodaysTask = false;
                 EditData.workingThisWeek = false;
-                setWorkingMember(9);
+                setWorkingMember(32);
                 StatusOptions?.map((item: any) => {
                     if (StatusData.value == item.value) {
                         setPercentCompleteStatus(item.status);
@@ -2199,6 +2218,7 @@ const EditTaskPopup = (Items: any) => {
 
         if (PrecentStatus == 1) {
             let tempArrayApprover: any = [];
+
             if (TaskApproverBackupArray != undefined && TaskApproverBackupArray.length > 0) {
                 if (TaskApproverBackupArray?.length > 0) {
                     TaskApproverBackupArray.map((dataItem: any) => {
@@ -2413,12 +2433,12 @@ const EditTaskPopup = (Items: any) => {
                 Description: EditData.Relevant_Url ? EditData.Relevant_Url : '',
                 Url: EditData.Relevant_Url ? EditData.Relevant_Url : ''
             },
-            BasicImageInfo: UploadImageArray != undefined && UploadImageArray.length > 0 ? JSON.stringify(UploadImageArray) : JSON.stringify(UploadImageArray),
+            // BasicImageInfo: UploadImageArray != undefined && UploadImageArray.length > 0 ? JSON.stringify(UploadImageArray) : JSON.stringify(UploadImageArray),
             ProjectId: (selectedProject.length > 0 ? selectedProject[0].Id : null),
             ApproverId: { "results": (ApproverIds != undefined && ApproverIds.length > 0) ? ApproverIds : [] },
-            ClientTime: JSON.stringify(ClientCategoryData),
-            ClientCategoryId: { "results": (ClientCategoryIDs != undefined && ClientCategoryIDs.length > 0) ? ClientCategoryIDs : [] },
-            SiteCompositionSettings: (SiteCompositionSetting != undefined && SiteCompositionSetting.length > 0) ? JSON.stringify(SiteCompositionSetting) : EditData.SiteCompositionSettings,
+            // ClientTime: JSON.stringify(ClientCategoryData),
+            // ClientCategoryId: { "results": (ClientCategoryIDs != undefined && ClientCategoryIDs.length > 0) ? ClientCategoryIDs : [] },
+            // SiteCompositionSettings: (SiteCompositionSetting != undefined && SiteCompositionSetting.length > 0) ? JSON.stringify(SiteCompositionSetting) : EditData.SiteCompositionSettings,
             ApproverHistory: ApproverHistoryData?.length > 0 ? JSON.stringify(ApproverHistoryData) : null,
             EstimatedTime: EditData.EstimatedTime ? EditData.EstimatedTime : null,
             EstimatedTimeDescription: EditData.EstimatedTimeDescriptionArray ? JSON.stringify(EditData.EstimatedTimeDescriptionArray) : null,
@@ -2831,6 +2851,7 @@ const EditTaskPopup = (Items: any) => {
                     item.attachmentFiles.add(imageName, data).then(() => {
                         console.log("Attachment added");
                         UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
+                        EditData.UploadedImage = DataJson;
                     });
                     setUploadBtnStatus(false);
                 })().catch(console.log)
@@ -2841,6 +2862,7 @@ const EditTaskPopup = (Items: any) => {
                     item.attachmentFiles.add(imageName, data).then(() => {
                         console.log("Attachment added");
                         UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
+                        EditData.UploadedImage = DataJson;
                     });
                     setUploadBtnStatus(false);
                 })().catch(console.log)
@@ -2911,6 +2933,7 @@ const EditTaskPopup = (Items: any) => {
                 let item = web.lists.getById(Items.Items.listId).items.getById(Items.Items.Id);
                 item.attachmentFiles.getByName(imageName).recycle();
                 UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
+                EditData.UploadedImage = tempArray;
                 console.log("Attachment deleted");
 
             })().catch(console.log)
@@ -2920,13 +2943,14 @@ const EditTaskPopup = (Items: any) => {
                 let item = web.lists.getByTitle(Items.Items.listName).items.getById(Items.Items.Id);
                 item.attachmentFiles.getByName(imageName).recycle();
                 UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
+                EditData.UploadedImage = tempArray;
                 console.log("Attachment deleted");
 
             })().catch(console.log)
         }
     }
     const ReplaceImageFunction = (Data: any, ImageIndex: any) => {
-        let ImageName = EditData.UploadedImage[ImageIndex].ImageName
+        let ImageName = EditData?.UploadedImage[ImageIndex]?.ImageName
         var src = Data?.data_url?.split(",")[1];
         var byteArray = new Uint8Array(atob(src)?.split("")?.map(function (c) {
             return c.charCodeAt(0);
@@ -2997,7 +3021,8 @@ const EditTaskPopup = (Items: any) => {
         setTaskImages(tempArray);
 
     }
-    const ImageCustomizeFunction = (currentImagIndex: any) => {
+    const ImageCustomizeFunction = async (currentImagIndex: any) => {
+        UpdateTaskInfoFunction("Image-Tab");
         setImageCustomizePopup(true);
         setModalIsOpen(false);
     }
@@ -3574,6 +3599,10 @@ const EditTaskPopup = (Items: any) => {
         GetExtraLookupColumnData();
     }
 
+    const EODReportComponentCallback = () => {
+        setOpenEODReportPopup(false);
+    }
+
     // const SiteCompositionCallBack = useCallback((Data: any, Type: any) => {
     //     if (Data.ClientTime != undefined && Data.ClientTime.length > 0) {
     //         setEnableSiteCompositionValidation(true)
@@ -3698,7 +3727,7 @@ const EditTaskPopup = (Items: any) => {
                         {SmartMedaDataUsedPanel == "Status" ? `Update Status` : `Select Category`}
                     </span>
                 </div>
-                <Tooltip ComponentId={SmartMedaDataUsedPanel == "Status" ? "1683" : "1735"} isServiceTask={ServicesTaskCheck} />
+                <Tooltip ComponentId={SmartMedaDataUsedPanel == "Status" ? "6840" : "1735"} isServiceTask={ServicesTaskCheck} />
             </div>
         );
     };
@@ -3708,7 +3737,7 @@ const EditTaskPopup = (Items: any) => {
             <div className={ServicesTaskCheck ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"}>
                 <div className="subheading">
                     <img className="imgWid29 pe-1 mb-1 " src={Items.Items.SiteIcon} />
-                    <span>
+                    <span className="siteCOlor">
                         Select Site
                     </span>
                 </div>
@@ -3719,10 +3748,8 @@ const EditTaskPopup = (Items: any) => {
     const onRenderCustomReplaceImageHeader = () => {
         return (
             <div className={ServicesTaskCheck ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"}>
-                <div className="subheading">
-                    <span>
-                        Replace Image
-                    </span>
+                <div className="subheading siteColor">
+                    Replace Image
                 </div>
                 <Tooltip ComponentId="6776" isServiceTask={ServicesTaskCheck} />
             </div>
@@ -3731,10 +3758,8 @@ const EditTaskPopup = (Items: any) => {
     const onRenderCustomProjectManagementHeader = () => {
         return (
             <div className={ServicesTaskCheck ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"}>
-                <div className="subheading">
-                    <span>
-                        Select Project
-                    </span>
+                <div className="subheading siteColor">
+                    Select Project
                 </div>
                 <Tooltip ComponentId="1608" isServiceTask={ServicesTaskCheck} />
             </div>
@@ -3897,7 +3922,7 @@ const EditTaskPopup = (Items: any) => {
 
     const customFooterForProjectManagement = () => {
         return (
-            <footer className={ServicesTaskCheck ? "serviepannelgreena text-end me-4" : "text-end me-4"}>
+            <footer className={ServicesTaskCheck ? "serviepannelgreena bg-f4 me-4 pe-2 py-3 text-end" : "bg-f4 me-4 pe-2 py-3 text-end"}>
                 <button type="button" className="btn btn-primary">
                     <a target="_blank" className="text-light" data-interception="off"
                         href={`${siteUrls}/SitePages/Project-Management-Overview.aspx`}>
@@ -4119,7 +4144,7 @@ const EditTaskPopup = (Items: any) => {
                                             <div className="col ps-0">
                                                 <div className="input-group mb-2">
                                                     <label className="form-label full-width">
-                                                        Portfolio
+                                                        Portfolio Item
                                                     </label>
                                                     {TaggedPortfolioData?.length > 0 ?
                                                         <div className="full-width">
@@ -4141,7 +4166,7 @@ const EditTaskPopup = (Items: any) => {
                                                                 className="form-control"
                                                                 value={SearchedServiceCompnentKey}
                                                                 onChange={(e) => autoSuggestionsForServiceAndComponent(e, "Portfolio")}
-                                                                placeholder="Search Portfolio Components"
+                                                                placeholder="Search Portfolio Item"
                                                             />
                                                             <span className="input-group-text">
                                                                 <span title="Component Popup" onClick={() => OpenTeamPortfolioPopupFunction(EditData, 'Portfolio')} className="svg__iconbox svg__icon--editBox"></span>
@@ -4322,14 +4347,14 @@ const EditTaskPopup = (Items: any) => {
                                                             </div>
                                                             <div className="Approval-History-section my-2">
                                                                 {ApproverHistoryData != undefined && ApproverHistoryData.length > 1 ?
-                                                                    <div>
+                                                                    <div className="border p-1">
                                                                         {ApproverHistoryData.map((HistoryData: any, index: any) => {
                                                                             if (index < ApproverHistoryData.length - 1) {
                                                                                 return (
-                                                                                    <div className="d-flex full-width justify-content-between">
-                                                                                        <div className="d-flex">
-                                                                                            Approved by-
-                                                                                            <span className="siteColor mx-1">{HistoryData.ApproverName}</span>
+                                                                                    <div className={index + 1 == ApproverHistoryData.length - 1 ? "alignCenter full-width justify-content-between py-1" : "alignCenter  border-bottom full-width justify-content-between py-1"}>
+                                                                                        <div className="alignCenter">
+                                                                                            Prev-Approver |
+                                                                                            <img title={HistoryData.ApproverName} className="workmember ms-1" src={HistoryData?.ApproverImage?.length > 0 ? HistoryData?.ApproverImage : ""} />
                                                                                         </div>
                                                                                         <div>
                                                                                             <span>{HistoryData.ApprovedDate}</span>
@@ -4408,13 +4433,13 @@ const EditTaskPopup = (Items: any) => {
                                                 <div className="col-12 mb-2 mt-2">
                                                     <div className="input-group mb-2">
                                                         <label className="form-label full-width">
-                                                            Linked Portfolios
+                                                            Linked Portfolio Items
                                                         </label>
                                                         <input type="text"
                                                             className="form-control"
                                                             value={SearchedLinkedPortfolioKey}
                                                             onChange={(e) => autoSuggestionsForServiceAndComponent(e, "Linked-Portfolios")}
-                                                            placeholder="Search Portfolio Components"
+                                                            placeholder="Search Portfolio Items"
                                                         />
                                                         <span className="input-group-text">
                                                             <span title="Component Popup" onClick={() => OpenTeamPortfolioPopupFunction(EditData, 'Linked-Portfolios')} className="svg__iconbox svg__icon--editBox"></span>
@@ -4464,7 +4489,6 @@ const EditTaskPopup = (Items: any) => {
                                                         />
                                                         <span className="input-group-text" onClick={() => setProjectManagementPopup(true)} title="Project Items Popup" >
                                                             <span className="svg__iconbox svg__icon--editBox">
-
                                                             </span>
                                                         </span>
                                                     </div>
@@ -4485,12 +4509,18 @@ const EditTaskPopup = (Items: any) => {
                                                         <div>
                                                             {selectedProject.map((ProjectData: any) => {
                                                                 return (
-                                                                    <div className="block">
-                                                                        <a className="hreflink wid90" target="_blank" data-interception="off" href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}>
-                                                                            {ProjectData.Title}
-                                                                        </a>
-                                                                        <span onClick={() => setSelectedProject([])} className="bg-light hreflink ml-auto svg__icon--cross svg__iconbox"></span>
+                                                                    <div>
+                                                                        {ProjectData.Title != undefined ?
+                                                                            <div className="block w-100">
+                                                                                <a className="hreflink wid90" target="_blank" data-interception="off" href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}>
+                                                                                    {ProjectData.Title}
+                                                                                </a>
+                                                                                <span onClick={() => setSelectedProject([])} className="bg-light hreflink ml-auto svg__icon--cross svg__iconbox"></span>
+                                                                            </div> :
+                                                                            null
+                                                                        }
                                                                     </div>
+
                                                                 )
                                                             })}
                                                         </div> : null}
@@ -4513,7 +4543,7 @@ const EditTaskPopup = (Items: any) => {
                                     </div>
 
                                     <div className="col-md-3">
-                                        {EditData.siteCompositionData != undefined && EditData.siteCompositionData.length > 0 && AllListIdData.isShowSiteCompostion ?
+                                        {AllListIdData.isShowSiteCompostion ?
                                             <div className="Sitecomposition mb-2">
                                                 <div className='dropdown'>
                                                     <a className="sitebutton bg-fxdark alignCenter justify-content-between" >
@@ -4525,10 +4555,10 @@ const EditTaskPopup = (Items: any) => {
                                                             onClick={() => setSiteCompositionShow(true)}>
                                                         </span>
                                                     </a>
-                                                    {composition ?
+                                                    {composition && EditData.siteCompositionData?.length > 0 ?
                                                         <div className="spxdropdown-menu">
                                                             <ul>
-                                                                {EditData.siteCompositionData != undefined && EditData.siteCompositionData.length > 0 ?
+                                                                {EditData.siteCompositionData != undefined && EditData.siteCompositionData?.length > 0 ?
                                                                     <>
                                                                         {EditData.siteCompositionData?.map((SiteDtls: any, i: any) => {
                                                                             return <li className="Sitelist">
@@ -4560,10 +4590,13 @@ const EditTaskPopup = (Items: any) => {
                                                             </ul>
                                                         </div> : null
                                                     }
-                                                    <div className="bg-e9 border-1 p-1 total-time">
-                                                        <label className="siteColor">Total Time</label>
-                                                        {EditData.Id != null ? <span className="pull-right siteColor"><SmartTotalTime props={EditData} callBack={SmartTotalTimeCallBack} /> h</span> : null}
-                                                    </div>
+                                                    {EditData.siteCompositionData?.length > 0 ?
+                                                        <div className="bg-e9 border-1 p-1 total-time">
+                                                            <label className="siteColor">Total Time</label>
+                                                            {EditData.Id != null ? <span className="pull-right siteColor"><SmartTotalTime props={EditData} callBack={SmartTotalTimeCallBack} /> h</span> : null}
+                                                        </div> : null
+                                                    }
+
                                                 </div>
                                             </div>
                                             : null}
@@ -4575,25 +4608,26 @@ const EditTaskPopup = (Items: any) => {
                                                     //  disabled={InputFieldDisable}
                                                     disabled readOnly
                                                     className="form-control px-2"
-                                                    defaultValue={PercentCompleteCheck ? (EditData.PercentComplete != undefined && Math.floor(EditData.PercentComplete) === EditData.PercentComplete ? Number(EditData.PercentComplete).toFixed(0) : null) : (UpdateTaskInfo.PercentCompleteStatus ? UpdateTaskInfo.PercentCompleteStatus : null)}
+                                                    // defaultValue={PercentCompleteCheck ? (EditData.PercentComplete != undefined && Math.floor(EditData.PercentComplete) === EditData.PercentComplete ? Number(EditData.PercentComplete).toFixed(0) : null) : (UpdateTaskInfo.PercentCompleteStatus ? UpdateTaskInfo.PercentCompleteStatus : null)}
+                                                    value={PercentCompleteStatus}
                                                     onChange={(e) => StatusAutoSuggestion(e)} />
 
                                                 <span
                                                     className="input-group-text"
                                                     title="Status Popup"
                                                     // onClick={() => openTaskStatusUpdatePopup(EditData, "Status")}
-                                                    onClick={TaggedPortfolioData?.length > 0 ? () => setSmartMedaDataUsedPanel("Status") : () => alert("Please Selecte Portfolio")}
+                                                    onClick={() => setSmartMedaDataUsedPanel("Status")}
                                                 >
                                                     <span title="Edit Task" className="svg__iconbox svg__icon--editBox"></span>
                                                 </span>
-                                                {PercentCompleteStatus?.length > 0 ?
+                                                {/* {PercentCompleteStatus?.length > 0 ?
                                                     <span className="full-width ">
                                                         <label className="SpfxCheckRadio">
                                                             <input type='radio' className="my-2 radio" checked />
 
                                                             {PercentCompleteStatus}
                                                         </label>
-                                                    </span> : null}
+                                                    </span> : null} */}
                                             </div>
                                         </div>
                                         <div className="row">
@@ -4664,7 +4698,7 @@ const EditTaskPopup = (Items: any) => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="border p-2">
+                                        <div className="border p-2 mb-3">
                                             <div>Estimated Task Time Details</div>
                                             <div className="col-12">
                                                 <div onChange={UpdateEstimatedTimeDescriptions} className="full-width">
@@ -4735,6 +4769,17 @@ const EditTaskPopup = (Items: any) => {
                                                 }
                                             </div>
                                         </div>
+                                        <div className="Sitecomposition mb-3">
+                                            <a className="sitebutton bg-fxdark alignCenter justify-content-between">
+                                                <span className="alignCenter">
+                                                    <span className="svg__iconbox svg__icon--docx"></span>
+                                                    <span className="mx-2">Submit EOD Report</span>
+                                                </span>
+                                                <span className="svg__iconbox svg__icon--editBox hreflink" title="Submit EOD Report Popup"
+                                                    onClick={() => setOpenEODReportPopup(true)}>
+                                                </span>
+                                            </a>
+                                        </div>
                                     </div>
                                     <div className="col-md-4">
                                         <div className="full_width ">
@@ -4751,6 +4796,9 @@ const EditTaskPopup = (Items: any) => {
                                             </span>
                                         </div>
                                     </div>
+
+
+
                                 </div>
                                 <div className="row py-3">
                                     <div className={IsShowFullViewImage != true ?
@@ -4939,7 +4987,7 @@ const EditTaskPopup = (Items: any) => {
                     {SiteCompositionShow ?
                         <EditSiteComposition
                             EditData={EditData}
-                            context={context}
+                            context={Context}
                             ServicesTaskCheck={ServicesTaskCheck}
                             AllListId={AllListIdData}
                             Call={closeSiteCompsotionPanelFunction}
@@ -4955,6 +5003,7 @@ const EditTaskPopup = (Items: any) => {
                             ApprovalTaskStatus={ApprovalTaskStatus}
                             callBack={SendEmailNotificationCallBack}
                         /> : null}
+                    {OpenEODReportPopup ? <EODReportComponent TaskDetails={EditData} siteUrl={siteUrls} Callback={EODReportComponentCallback} /> : null}
                 </div>
             </Panel>
             {/* ***************** this is Image compare panel *********** */}
@@ -5169,7 +5218,7 @@ const EditTaskPopup = (Items: any) => {
                                                         <div className="col ps-0">
                                                             <div className="input-group mb-2">
                                                                 <label className="form-label full-width">
-                                                                    Portfolio
+                                                                    Portfolio Item
                                                                 </label>
                                                                 {TaggedPortfolioData?.length > 0 ?
                                                                     <div className="full-width">
@@ -5191,7 +5240,7 @@ const EditTaskPopup = (Items: any) => {
                                                                             className="form-control"
                                                                             value={SearchedServiceCompnentKey}
                                                                             onChange={(e) => autoSuggestionsForServiceAndComponent(e, "Portfolio")}
-                                                                            placeholder="Search Portfolio Components"
+                                                                            placeholder="Search Portfolio Items"
                                                                         />
                                                                         <span className="input-group-text">
                                                                             <span title="Component Popup" onClick={() => OpenTeamPortfolioPopupFunction(EditData, 'Portfolio')} className="svg__iconbox svg__icon--editBox"></span>
@@ -5376,14 +5425,14 @@ const EditTaskPopup = (Items: any) => {
                                                                         </div>
                                                                         <div className="Approval-History-section my-2">
                                                                             {ApproverHistoryData != undefined && ApproverHistoryData.length > 1 ?
-                                                                                <div>
+                                                                                <div className="border p-1">
                                                                                     {ApproverHistoryData.map((HistoryData: any, index: any) => {
                                                                                         if (index < ApproverHistoryData.length - 1) {
                                                                                             return (
-                                                                                                <div className="d-flex full-width justify-content-between">
-                                                                                                    <div className="d-flex">
-                                                                                                        Approved by-
-                                                                                                        <span className="siteColor mx-1">{HistoryData.ApproverName}</span>
+                                                                                                <div className={index + 1 == ApproverHistoryData.length - 1 ? "alignCenter full-width justify-content-between py-1" : "alignCenter border-bottom full-width justify-content-between py-1"}>
+                                                                                                    <div className="alignCenter">
+                                                                                                        Prev-Approver |
+                                                                                                        <img title={HistoryData.ApproverName} className="workmember ms-1" src={HistoryData?.ApproverImage?.length > 0 ? HistoryData?.ApproverImage : ""} />
                                                                                                     </div>
                                                                                                     <div>
                                                                                                         <span>{HistoryData.ApprovedDate}</span>
@@ -5539,11 +5588,16 @@ const EditTaskPopup = (Items: any) => {
                                                                     <div>
                                                                         {selectedProject.map((ProjectData: any) => {
                                                                             return (
-                                                                                <div className="block w-100">
-                                                                                    <a className="hreflink wid90" target="_blank" data-interception="off" href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}>
-                                                                                        {ProjectData.Title}
-                                                                                    </a>
-                                                                                    <span onClick={() => setSelectedProject([])} className="bg-light ml-auto hreflink svg__icon--cross svg__iconbox"></span>
+                                                                                <div>
+                                                                                    {ProjectData.Title != undefined ?
+                                                                                        <div className="block w-100">
+                                                                                            <a className="hreflink wid90" target="_blank" data-interception="off" href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}>
+                                                                                                {ProjectData.Title}
+                                                                                            </a>
+                                                                                            <span onClick={() => setSelectedProject([])} className="bg-light hreflink ml-auto svg__icon--cross svg__iconbox"></span>
+                                                                                        </div> :
+                                                                                        null
+                                                                                    }
                                                                                 </div>
                                                                             )
                                                                         })}
@@ -5567,7 +5621,7 @@ const EditTaskPopup = (Items: any) => {
                                                 </div>
 
                                                 <div className="col-md-3">
-                                                    {EditData.siteCompositionData != undefined && EditData.siteCompositionData.length > 0 && AllListIdData.isShowSiteCompostion ?
+                                                    {AllListIdData.isShowSiteCompostion ?
                                                         <div className="Sitecomposition">
                                                             <div className='dropdown'>
                                                                 <a className="sitebutton bg-fxdark d-flex justify-content-between" >
@@ -5582,10 +5636,11 @@ const EditTaskPopup = (Items: any) => {
                                                                         ></span>
                                                                     </div>
                                                                 </a>
-                                                                {composition ?
+                                                                {composition && EditData.siteCompositionData?.length > 0
+                                                                    ?
                                                                     <div className="mt-1 spxdropdown-menu">
                                                                         <ul>
-                                                                            {EditData.siteCompositionData != undefined && EditData.siteCompositionData.length > 0 ?
+                                                                            {EditData.siteCompositionData != undefined && EditData.siteCompositionData?.length > 0 ?
                                                                                 <>
                                                                                     {EditData.siteCompositionData?.map((SiteDtls: any, i: any) => {
                                                                                         return <li className="Sitelist">
@@ -5617,41 +5672,43 @@ const EditTaskPopup = (Items: any) => {
                                                                         </ul>
                                                                     </div> : null
                                                                 }
-                                                                <div className="bg-e9 border-1 p-1 total-time">
-                                                                    <label className="siteColor">Total Time</label>
-                                                                    {EditData.Id != null ? <span className="pull-right siteColor"><SmartTotalTime props={EditData} callBack={SmartTotalTimeCallBack} /> h</span> : null}
-                                                                </div>
+                                                                {EditData.siteCompositionData?.length > 0 ?
+                                                                    <div className="bg-e9 border-1 p-1 total-time">
+                                                                        <label className="siteColor">Total Time</label>
+                                                                        {EditData.Id != null ? <span className="pull-right siteColor"><SmartTotalTime props={EditData} callBack={SmartTotalTimeCallBack} /> h</span> : null}
+                                                                    </div> : null
+                                                                }
                                                             </div>
                                                         </div>
                                                         : null}
 
-                                                    <div className="col mt-2">
+                                                    <div className="col mt-2 clearfix">
                                                         <div className="input-group taskTime">
                                                             <label className="form-label full-width">Status</label>
                                                             <input type="text" maxLength={3} placeholder="% Complete"
-                                                                //  disabled={InputFieldDisable} 
+                                                                //  disabled={InputFieldDisable}
                                                                 disabled readOnly
                                                                 className="form-control px-2"
-                                                                defaultValue={PercentCompleteCheck ? (EditData.PercentComplete != undefined ? Number(EditData.PercentComplete).toFixed(0) : null) : (UpdateTaskInfo.PercentCompleteStatus ? UpdateTaskInfo.PercentCompleteStatus : null)}
+                                                                // defaultValue={PercentCompleteCheck ? (EditData.PercentComplete != undefined && Math.floor(EditData.PercentComplete) === EditData.PercentComplete ? Number(EditData.PercentComplete).toFixed(0) : null) : (UpdateTaskInfo.PercentCompleteStatus ? UpdateTaskInfo.PercentCompleteStatus : null)}
+                                                                value={PercentCompleteStatus}
                                                                 onChange={(e) => StatusAutoSuggestion(e)} />
 
                                                             <span
                                                                 className="input-group-text"
                                                                 title="Status Popup"
                                                                 // onClick={() => openTaskStatusUpdatePopup(EditData, "Status")}
-                                                                onClick={TaggedPortfolioData?.length > 0 ? () => setSmartMedaDataUsedPanel("Status") : () => alert("Please Select Proftolio")}
+                                                                onClick={() => setSmartMedaDataUsedPanel("Status")}
                                                             >
                                                                 <span title="Edit Task" className="svg__iconbox svg__icon--editBox"></span>
-
                                                             </span>
-                                                            {PercentCompleteStatus?.length > 0 ?
-                                                                <span className="full-width ">
-                                                                    <label className="SpfxCheckRadio">
-                                                                        <input type='radio' className="my-2 radio" checked />
+                                                            {/* {PercentCompleteStatus?.length > 0 ?
+                                                    <span className="full-width ">
+                                                        <label className="SpfxCheckRadio">
+                                                            <input type='radio' className="my-2 radio" checked />
 
-                                                                        {PercentCompleteStatus}
-                                                                    </label>
-                                                                </span> : null}
+                                                            {PercentCompleteStatus}
+                                                        </label>
+                                                    </span> : null} */}
                                                         </div>
                                                     </div>
                                                     <div className="row">
@@ -5792,6 +5849,7 @@ const EditTaskPopup = (Items: any) => {
                                                             />
                                                         </span>
                                                     </div>
+
                                                 </div>
                                             </div>
                                         </div>

@@ -920,76 +920,82 @@ const AncTool = (props: any) => {
                 <div className={ServicesTaskCheck ? "serviepannelgreena" : ""} >
 
                     <ModalBody>
-                        <ul className="nav nav-tabs" id="myTab" role="tablist">
+                        <ul className="fixed-Header nav nav-tabs" id="myTab" role="tablist">
                             <button className="nav-link active" id="Documnets-Tab" data-bs-toggle="tab" data-bs-target="#Documents" type="button" role="tab" aria-controls="Documents" aria-selected="true">
-                               DOCUMENTS
+                                Documents
                             </button>
                         </ul>
-                        <div className="border border-top-0 clearfix p-2 tab-content Anctoolpopup" id="myTabContent">
-                            <div className="tab-pane show active" id="Documents" role="tabpanel" aria-labelledby="Documents">
+                        <div className="border border-top-0 clearfix p-3 tab-content Anctoolpopup " id="myTabContent">
+                            <div className="tab-pane  show active" id="Documents" role="tabpanel" aria-labelledby="Documents">
+                                <Row>
+                                    <Col>
                                         {selectedPath?.displayPath?.length > 0 ?
                                             // <DefaultFolderContent Context={props.Context} AllListId={props?.AllListId} item={Item} folderPath={selectedPath?.displayPath} /> 
-                                <div className='panel mb-2'>
-                                    <h3 className='pageTitle siteColor'>1. Upload a Document<hr className='siteBdr'></hr></h3>
-                                    <Row className='mt-4'>
-                                    <Col>
-                                        <div className='clearfix input-group'>
-                                            <input id="searchinput" type="search" onChange={(e) => { searchCurrentFolder(e.target.value) }} placeholder="Search..." className="form-control" />
-                                            <div className="Alltable mt-2">
-                                                <div className="col">
-                                                    {currentFolderFiles?.length > 0 ?
-                                                        <div>
-                                                            <Table className='mb-0' hover responsive>
-                                                                <thead className='fixed-Header top-0'>
-                                                                    <tr>
-                                                                        <th className='p-1'>Doc Type</th>
-                                                                        <th className='p-1'>Title</th>
-
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {currentFolderFiles?.map((file: any) => {
-                                                                        return (
+                                            <div className='panel  mb-2'>
+                                                <h3 className='pageTitle'>1. Default Folder Content  <hr></hr></h3>
+                                                <div>
+                                                    <input id="searchinput" type="search" onChange={(e) => { searchCurrentFolder(e.target.value) }} placeholder="Search..." className="form-control" />
+                                                    <div className="Alltable mt-2">
+                                                        <div className="col">
+                                                            {currentFolderFiles?.length > 0 ?
+                                                                <div>
+                                                                    <Table className='mb-0' hover responsive>
+                                                                        <thead className='fixed-Header top-0'>
                                                                             <tr>
-                                                                                <td><span className={`alignIcon  svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
+                                                                                <th className='p-1'>Doc Type</th>
+                                                                                <th className='p-1'>Title</th>
 
-                                                                                <td><a href={file?.docType == 'pdf' ? file?.ServerRelativeUrl : file?.LinkingUri} target="_blank" data-interception="off" className='hreflink siteColor'> {file?.Title} </a></td>
                                                                             </tr>
-                                                                        )
-                                                                    })}
+
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {currentFolderFiles?.map((file: any) => {
+                                                                                return (
+                                                                                    <tr>
+                                                                                        <td><span className={`alignIcon  svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
+
+                                                                                        <td><a href={file?.docType == 'pdf' ? file?.ServerRelativeUrl : file?.LinkingUri} target="_blank" data-interception="off" className='hreflink'> {file?.Title} </a></td>
+                                                                                    </tr>
+                                                                                )
+                                                                            })}
 
 
-                                                                </tbody>
-                                                            </Table>
-                                                            {/* <table>
-                                                                <tr>
-                                                                    <th>DocType</th>
-                                                                    <th>Title</th>
-                                                                </tr>
-                                                                {currentFolderFiles?.map((file: any) => {
-                                                                    return (
+                                                                        </tbody>
+                                                                    </Table>
+                                                                    {/* <table>
                                                                         <tr>
-                                                                            <td><span className={`svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
-
-                                                                            <td><a href={file?.docType == 'pdf' ? file?.ServerRelativeUrl : file?.LinkingUri} target="_blank" data-interception="off" className='hreflink'>{file?.Title}</a></td>
+                                                                            <th>DocType</th>
+                                                                            <th>Title</th>
                                                                         </tr>
-                                                                    )
-                                                                })}
-                                                            </table> */}
-                                                        </div>
-                                                        :
-                                                        <div className="No_Documents">
-                                                            No Documents Available
-                                                        </div>
-                                                    }
+                                                                        {currentFolderFiles?.map((file: any) => {
+                                                                            return (
+                                                                                <tr>
+                                                                                    <td><span className={`svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
 
+                                                                                    <td><a href={file?.docType == 'pdf' ? file?.ServerRelativeUrl : file?.LinkingUri} target="_blank" data-interception="off" className='hreflink'>{file?.Title}</a></td>
+                                                                                </tr>
+                                                                            )
+                                                                        })}
+                                                                    </table> */}
+                                                                </div>
+                                                                :
+                                                                <div className="No_Documents">
+                                                                    No Documents Available
+                                                                </div>
+                                                            }
+
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className='my-3'>
+                                            : ''
+                                        }
+                                    </Col>
+                                    <Col>
+                                        <div className='panel  mb-2'>
                                             {selectPathFromPopup?.length > 0 ?
-                                                <label className='boldClable full-width'> Selected Folder </label>
-                                                : <label className='boldClable full-width'> Select Upload Folder </label>
+                                                <h3 className='pageTitle'> Selected Folder <hr></hr> </h3>
+                                                : <h3 className='pageTitle'> Default Folder <hr></hr> </h3>
                                             }
                                             <div className='alignCenter'>
                                                 <span>{folderExist == true ? <span>{selectedPath?.displayPath}</span> : <span>{selectedPath?.displayPath?.split(siteName)}<span className='highlighted'>{siteName}
@@ -1005,10 +1011,21 @@ const AncTool = (props: any) => {
                                                 <span><a title="Click for Associated Folder" className='hreflink ms-2' onClick={() => setChoosePathPopup(true)} > Change Path </a></span>
                                             </div>
                                         </div>
-                                        <div className="my-2">
-                                            <div className='input-group'>
-                                                <label className="full-width boldClable">Search Existing Documents
-                                                </label>
+
+
+                                    </Col>
+
+                                </Row>
+                                <Row className='mt-2'>
+                                    <Col>
+                                        {/* <ConnectExistingDoc Context={props.Context} AllListId={props?.AllListId} item={Item} folderPath={selectedPath?.completePath} /> */}
+                                        <div className="panel">
+                                            <h3 className="pageTitle">
+                                                2. Connect Existing Documents
+                                                <hr></hr>
+                                            </h3>
+
+                                            <div>
                                                 <input id="searchinputCED" type="search" onChange={(e) => { searchExistingFile(e.target.value) }} placeholder="Search..." className="form-control" />
                                                 <div className="Alltable mt-2">
                                                     <div>
@@ -1054,176 +1071,127 @@ const AncTool = (props: any) => {
                                         </div>
                                     </Col>
                                     <Col>
-                                        <ul className="nav nav-tabs" id="myTab" role="tablist">
-                                            <button className="nav-link active" id="UPLOAD-Tab" data-bs-toggle="tab" data-bs-target="#UPLOADTAB" type="button" role="tab" aria-controls="UPLOADTAB" aria-selected="true">
-                                                UPLOAD
-                                            </button>
-                                            <button className="nav-link" id="DRAG-AND-DROP" data-bs-toggle="tab" data-bs-target="#DRAGANDDROP" type="button" role="tab" aria-controls="DRAGANDDROP" aria-selected="false">
-                                                DRAG AND DROP
-                                            </button>
-                                            <button className="nav-link" id="LINK-TO" data-bs-toggle="tab" data-bs-target="#LINKTO" type="button" role="tab" aria-controls="LINKTO" aria-selected="false">
-                                                LINK TO
-                                            </button>
-                                        </ul>
-                                        <div className="border border-top-0 clearfix p-2 tab-content Anctoolpopup " id="myTabContent">
-                                            <div className="tab-pane show active" id="UPLOADTAB" role="tabpanel" aria-labelledby="UPLOADTAB">
-                                                <div className='clearfix'>
-                                                    <label className='form-label ps-0 full-width'>Item Rank 
-                                                    <div className="popover__wrapper me-1" data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                        <span className="alignIcon svg__iconbox svg__icon--info " ></span>
-                                                        <div className="popover__content">
-                                                            <span>
-                                                           {" Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)"}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                        {/* <span className='alignIcon' data-toggle="popover" data-placement="auto" data-trigger="hover" data-content="Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)" title="">
-                                                            <span className='svg__iconbox svg__icon--info'></span>
-                                                        </span> */}
-                                                    </label>
+                                        <div className="panel">
+                                            <h3 className="pageTitle">
+                                                3. Upload a New Document
+                                                <hr></hr>
+                                            </h3>
+
+                                            <Col>
+                                                <Row className='mb-2 px-2'>
+                                                    <label className='form-label full-width ps-0'>Item Rank</label>
                                                     <select value={itemRank} onChange={(e: any) => { handleRankChange(e, 'Upload') }} className='form-select'>
                                                         {itemRanks.map((rank) => (
                                                             <option key={rank?.rank} value={rank?.rank}>{rank?.rankTitle}</option>
                                                         ))}
                                                     </select>
-                                                </div>
-                                                <div className='my-2'>
-                                                    <div className='input-group'>
-                                                        <input type="file" onChange={handleFileInputChange} className='form-control' />
-                                                    </div>
-                                                </div>
-                                                <div className='mb-2 input-group'>
-                                                    <label className='form-label ps-0 full-width'>Rename The Document</label>
-                                                    <input type="text" onChange={(e) => { setRenamedFileName(e.target.value) }} value={renamedFileName} placeholder='Rename your document' className='form-control' />
-                                                </div>
-                                                <button onClick={handleUpload} disabled={selectedFile?.name?.length > 0 ? false : true} className="btn btn-primary mt-2 my-1  float-end px-3">Upload</button>
-                                            
-                                            </div>
-                                            <div className="tab-pane show" id="DRAGANDDROP" role="tabpanel" aria-labelledby="DRAGANDDROP">
-                                                <div className='clearfix'>
-                                                    <label className='form-label ps-0 full-width'>Item Rank 
-                                                    {/* <span className='alignIcon' data-toggle="popover" data-placement="auto" data-trigger="hover" data-content="Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)" title="">
-                                                        <span className='svg__iconbox svg__icon--info'></span>
-                                                    </span> */}
-                                                    <div className="popover__wrapper me-1" data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                        <span className="alignIcon svg__iconbox svg__icon--info " ></span>
-                                                        <div className="popover__content">
-                                                            <span>
-                                                           {" Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)"}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    </label>
-                                                    <select value={itemRank} onChange={(e: any) => { handleRankChange(e, 'Upload') }} className='form-select'>
-                                                        {itemRanks.map((rank) => (
-                                                            <option key={rank?.rank} value={rank?.rank}>{rank?.rankTitle}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                </Row>
                                                 <div className='dragDropbox ' onDragOver={(event) => event.preventDefault()} onDrop={handleFileDrop}>
                                                     {selectedFile ? <p>Selected file: {selectedFile.name}</p> : <p>Drag and drop file here </p>}
                                                 </div>
+
+                                                <Col  className='text-center pb-2'>OR</Col>
+                                                <Row className='mb-2 px-2'>
+                                                    <input type="file" onChange={handleFileInputChange} className='full-width' />
+                                                </Row>
+                                                <Row className='mb-2 px-2'>
+                                                    <input type="text" onChange={(e) => { setRenamedFileName(e.target.value) }} value={renamedFileName} placeholder='Rename your document' className='full-width' />
+                                                </Row>
+                                                <button onClick={handleUpload} disabled={selectedFile?.name?.length > 0 ? false : true} className="btn btn-primary mt-2 my-1  float-end px-3">Upload</button>
+                                            </Col>
+
+                                        </div>
+                                    </Col>
+                                </Row>
+                                <Row className='mt-2'>
+                                    <Col>
+                                        {/* <ConnectExistingDoc Context={props.Context} AllListId={props?.AllListId} item={Item} folderPath={selectedPath?.completePath} /> */}
+                                        <div className="panel">
+                                            <h3 className="pageTitle">
+                                                4. Already Tagged Documents
+                                                <hr></hr>
+                                            </h3>
+
+                                            <div className='Alltable'>
+
+                                                {AllReadytagged?.length > 0 ?
+                                                    <div>
+                                                        <Table className='mb-0' hover responsive>
+                                                            <thead className='fixed-Header top-0'>
+                                                                <tr>
+
+                                                                    <th className='p-1'>Type</th>
+                                                                    <th className='p-1'>Title</th>
+                                                                    <th>Item Rank</th>
+                                                                    <th>&nbsp;</th>
+
+                                                                </tr>
+
+                                                            </thead>
+                                                            <tbody>
+                                                                {AllReadytagged?.map((file: any) => {
+                                                                    return (
+                                                                        <tr>
+                                                                            <td><span className={`alignIcon  svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
+                                                                            <td><a href={file?.EncodedAbsUrl} target="_blank" data-interception="off" className='hreflink'>{file?.Title}</a></td>
+                                                                            <td>{file?.ItemRank}</td>
+                                                                            <td> <span
+                                                                                style={{ marginLeft: '6px' }}
+                                                                                title='Untag Document'
+                                                                                onClick={() => { tagSelectedDoc(file) }}
+                                                                                className='alignIcon  svg__iconbox svg__icon--cross dark hreflink'
+                                                                            ></span></td>
+                                                                        </tr>
+                                                                    )
+                                                                })}
+
+
+                                                            </tbody>
+                                                        </Table>
+
+                                                    </div>
+                                                    :
+                                                    <div className="No_Documents">
+                                                        No Documents Tagged
+                                                    </div>
+                                                }
                                             </div>
-                                            <div className="tab-pane show" id="LINKTO" role="tabpanel" aria-labelledby="LINKTO">
-                                                <div className='clearfix'>
-                                                    <label className='form-label ps-0 full-width'>Item Rank 
-                                                        {/* <span className='alignIcon' data-toggle="popover" data-placement="auto" data-trigger="hover" data-content="Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)" title="">
-                                                            <span className='svg__iconbox svg__icon--info'></span>
-                                                        </span> */}
-                                                        <div className="popover__wrapper me-1" data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                            <span className="alignIcon svg__iconbox svg__icon--info " ></span>
-                                                            <div className="popover__content">
-                                                                <span>
-                                                            {" Select Importance and where it should show: 8 =Top highlight(Shows under highlight item list), 7=featured (shows on featured item list on homepage), 6=key item (shows on right list on homepage and as key item on featured profile pages,5=relevant (shows on profile pages), 4= background item (....), 2= to be verified (...)  1= Archive (...) ,  0= no show (does not show in any list but in search results)"}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </label>
+                                        </div>
+                                    </Col>
+                                    <Col>
+                                        <div className="panel">
+
+                                            <h3 className="pageTitle">
+                                                5. Add a link to a document
+                                                <hr></hr>
+                                            </h3>
+
+
+                                            <Col>
+                                                <Col className='col mb-2'>
+                                                    <label>Name</label>
+                                                    <input type="text" placeholder='Name' onChange={(e) => { setLinkToDocTitle(e.target.value) }} value={LinkToDocTitle} className='full-width' />
+                                                </Col>
+                                                <Col className='clearfix col mb-2'>
+                                                    <label>URL</label>
+                                                    <input type="text" onChange={(e) => { setLinkToDocUrl(e.target.value) }} value={LinkToDocUrl} placeholder='Url' className='full-width' />
+                                                </Col>
+                                                <Col className='pe-0'>
+                                                    <label>Item Rank</label>
                                                     <select value={LinkDocitemRank} onChange={(e: any) => { handleRankChange(e, 'linkDoc') }} className='full-width form-select '>
                                                         {itemRanks.map((rank) => (
                                                             <option key={rank?.rank} value={rank?.rank}>{rank?.rankTitle}</option>
                                                         ))}
                                                     </select>
-                                                </div>
-                                                <div className='my-2 input-group clearfix'>
-                                                    <label className='full-width'>Name</label>
-                                                    <input type="text" placeholder='Name' onChange={(e) => { setLinkToDocTitle(e.target.value) }} value={LinkToDocTitle} className='form-control' />
-                                                </div>
-                                                <div className='clearfix my-2 input-group'>
-                                                    <label className='full-width'>URL</label>
-                                                    <input type="text" onChange={(e) => { setLinkToDocUrl(e.target.value) }} value={LinkToDocUrl} placeholder='Url' className='form-control' />
-                                                </div>
-                                                <div>
+                                                </Col>
+                                                <Col>
                                                     <button disabled={(LinkToDocUrl?.length > 0 && LinkToDocTitle?.length > 0) ? false : true} className="btn btn-primary mt-2 my-1  float-end px-3" onClick={() => { CreateLinkAndTag() }}>Create</button>
-                                                </div>
-
-                                            </div>
+                                                </Col>
+                                            </Col>
                                         </div>
                                     </Col>
-                                        
-                                    </Row>
-                                </div>
-                                : ''
-                            }
-                            
-                                <div className='mt-2'>
-                                    {/* <ConnectExistingDoc Context={props.Context} AllListId={props?.AllListId} item={Item} folderPath={selectedPath?.completePath} /> */}
-                                    <div className="panel">
-                                        <h3 className="pageTitle siteColor">
-                                            2. Already Tagged Documents
-                                            <hr className='siteBdr'></hr>
-                                        </h3>
-                                        <div className='input-group mb-2'>
-                                            <label className="full-width">Search</label>
-                                            <input id="searchinput" type="search" ng-model="SmarttagDocumentSearch" ng-show="alreadyTaggedItemLength>0" placeholder="Search..." className="form-control" />
-                                        </div>
-                                        <div className='Alltable'>
 
-                                            {AllReadytagged?.length > 0 ?
-                                                <div>
-                                                    <Table className='mb-0' hover responsive>
-                                                        <thead className='fixed-Header top-0'>
-                                                            <tr>
-
-                                                                <th className='p-1'>Type</th>
-                                                                <th className='p-1'>Title</th>
-                                                                <th>Item Rank</th>
-                                                                <th>&nbsp;</th>
-
-                                                            </tr>
-
-                                                        </thead>
-                                                        <tbody>
-                                                            {AllReadytagged?.map((file: any) => {
-                                                                return (
-                                                                    <tr>
-                                                                        <td><span className={`alignIcon  svg__iconbox svg__icon--${file?.docType}`} title={file?.docType}></span></td>
-                                                                        <td><a href={file?.EncodedAbsUrl} target="_blank" data-interception="off" className='hreflink'>{file?.Title}</a></td>
-                                                                        <td>{file?.ItemRank}</td>
-                                                                        <td><div className="text-end"> <span
-                                                                            style={{ marginLeft: '6px' }}
-                                                                            title='Untag Document'
-                                                                            onClick={() => { tagSelectedDoc(file) }}
-                                                                            className='alignIcon  svg__iconbox svg__icon--cross dark hreflink'
-                                                                        ></span></div></td>
-                                                                    </tr>
-                                                                )
-                                                            })}
-
-
-                                                        </tbody>
-                                                    </Table>
-
-                                                </div>
-                                                :
-                                                <div className="No_Documents">
-                                                    No Documents Tagged
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                                       
+                                </Row>
                             </div>
                         </div>
                     </ModalBody>

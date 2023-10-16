@@ -7,7 +7,7 @@ export interface ITeamConfigurationProps {
     parentCallback: (dt: any) => void;
     ItemInfo: any;
     // AllListId: any;
-    Sitel:any
+    Sitel: any
 }
 
 export interface ITeamConfigurationState {
@@ -22,7 +22,7 @@ export interface ITeamConfigurationState {
 }
 
 const dragItem: any = {};
-let web:any;
+let web: any;
 
 export class TeamConfigurationCard extends React.Component<ITeamConfigurationProps, ITeamConfigurationState> {
     constructor(props: ITeamConfigurationProps) {
@@ -122,16 +122,16 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                 .getById(this.props?.ItemInfo?.listId || this.props?.ItemInfo?.listName)
                 .items
                 .getById(this.props.ItemInfo.Id)
-                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "Team_x0020_Members/Title", "Team_x0020_Members/Id", "Responsible_x0020_Team/Title", "Responsible_x0020_Team/Id", "SharewebTaskType/Title", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
-                .expand("Team_x0020_Members", "AssignedTo", "Responsible_x0020_Team", "SharewebTaskType", "Component", "Services")
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id","Component/Id", "Component/Title", "Services/Id", "Services/Title")
+                .expand("TeamMembers", "AssignedTo", "ResponsibleTeam", "Component", "Services")
                 .get()
         } else {
             taskDetails = await web.lists
-                .getByTitle(this.props?.ItemInfo?.siteType )
+                .getByTitle(this.props?.ItemInfo?.siteType)
                 .items
                 .getById(this.props.ItemInfo.Id)
-                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "Team_x0020_Members/Title", "Team_x0020_Members/Id", "Responsible_x0020_Team/Title", "Responsible_x0020_Team/Id", "SharewebTaskType/Title", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
-                .expand("Team_x0020_Members", "AssignedTo", "Responsible_x0020_Team", "SharewebTaskType", "Component", "Services")
+                .select("ID", "Title", "AssignedTo/Title", "AssignedTo/Id", "TeamMembers/Title", "TeamMembers/Id", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "Component/Id", "Component/Title", "Services/Id", "Services/Title")
+                .expand("TeamMembers", "AssignedTo", "ResponsibleTeam",  "Component", "Services")
                 .get()
         }
 
@@ -168,9 +168,9 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
         let taskUsers = this.state.taskUsers;
         let self = this;
 
-        if (Item.Responsible_x0020_Team != undefined) {
+        if (Item.ResponsibleTeam != undefined) {
             if (self.ResponsibleTeam != undefined && self.ResponsibleTeam.length > 0) {
-                let TeamLeaderData = self.getUsersWithImage(Item.Responsible_x0020_Team);
+                let TeamLeaderData = self.getUsersWithImage(Item.ResponsibleTeam);
                 TeamLeaderData.forEach(function (item: any) {
                     if (!self.isItemExists(self.ResponsibleTeam, item.Id)) {
                         self.ResponsibleTeam.push(item);
@@ -178,16 +178,16 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                 });
             }
             else {
-                self.ResponsibleTeam = self.getUsersWithImage(Item.Responsible_x0020_Team);
+                self.ResponsibleTeam = self.getUsersWithImage(Item.ResponsibleTeam);
             }
             self.NewTeamConfigurations.push({ Title: 'Task Leader', childs: self.ResponsibleTeam });
         }
         console.log('Team Leader');
         console.log(this.NewTeamConfigurations);
 
-        if (Item.Team_x0020_Members != undefined) {
+        if (Item.TeamMembers != undefined) {
             if (self.TeamMemberUsers != undefined && self.TeamMemberUsers.length > 0) {
-                let TeamMemberUsersData = self.getUsersWithImage(Item.Team_x0020_Members);
+                let TeamMemberUsersData = self.getUsersWithImage(Item.TeamMembers);
                 TeamMemberUsersData.forEach(function (item: any) {
                     if (!self.isItemExists(self.TeamMemberUsers, item.Id)) {
                         self.TeamMemberUsers.push(item);
@@ -195,7 +195,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                 });
             }
             else {
-                self.TeamMemberUsers = self.getUsersWithImage(Item.Team_x0020_Members);
+                self.TeamMemberUsers = self.getUsersWithImage(Item.TeamMembers);
             }
             self.NewTeamConfigurations.push({ Title: 'Team Members', childs: self.TeamMemberUsers });
         }
@@ -285,7 +285,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
             if (self.AllUsers[i]) {
                 items.forEach(function (item: any) {
                     if (self.AllUsers[i] != undefined && self.AllUsers[i].AssingedToUserId != undefined && self.AllUsers[i].AssingedToUserId == item.Id) {
-                        if (self.AllUsers[i].Item_x0020_Cover == undefined || self.AllUsers[i].Item_x0020_Cover == null ) {
+                        if (self.AllUsers[i].Item_x0020_Cover == undefined || self.AllUsers[i].Item_x0020_Cover == null) {
                             self.AllUsers[i].Item_x0020_Cover = {}
                             self.AllUsers[i].Item_x0020_Cover.Url = 'https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg'
                         }
@@ -332,62 +332,62 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
         this.dropSuccessHandler(true);
     }
 
-    private onDropTeam(e: any, array: any, Team: any, AllUser: any,userType:any) {
-        if(dragItem.userType != userType){
+    private onDropTeam(e: any, array: any, Team: any, AllUser: any, userType: any) {
+        if (dragItem.userType != userType) {
 
-        
-        let $data = dragItem.user;
-        let self = this;
-        array.forEach(function (user: any, indexParent: any) {
-            if (user.Title == $data.Company && !self.isItemExists(array, $data.Id)) {
-                user.childs.push($data);
-            }
-        })
-        if (!self.isItemExists(array, $data.Id)) {
-            array.push($data);
-        }
-        if (Team != undefined) {
-            AllUser.forEach(function (Group: any, index: any) {
-                if (Group.childs != undefined && Group.childs.length > 0) {
-                    Group.childs.forEach(function (user: any, userindex: any) {
-                        if ((user.AssingedToUserId != undefined && user.AssingedToUserId == $data.AssingedToUserId) || (user.Id != undefined && user.Id == $data.Id)) {
-                            Group.childs.splice(userindex, 1);
-                        }
-                    })
+
+            let $data = dragItem.user;
+            let self = this;
+            array.forEach(function (user: any, indexParent: any) {
+                if (user.Title == $data.Company && !self.isItemExists(array, $data.Id)) {
+                    user.childs.push($data);
                 }
             })
+            if (!self.isItemExists(array, $data.Id)) {
+                array.push($data);
+            }
+            if (Team != undefined) {
+                AllUser.forEach(function (Group: any, index: any) {
+                    if (Group.childs != undefined && Group.childs.length > 0) {
+                        Group.childs.forEach(function (user: any, userindex: any) {
+                            if ((user.AssingedToUserId != undefined && user.AssingedToUserId == $data.AssingedToUserId) || (user.Id != undefined && user.Id == $data.Id)) {
+                                Group.childs.splice(userindex, 1);
+                            }
+                        })
+                    }
+                })
+            }
+            this.dropSuccessHandler(true);
         }
-        this.dropSuccessHandler(true);
-    }
     }
 
-    private onDropTeam1(e: any, array: any, Team: any, AllUser: any,userType:any) {
-        if(dragItem.userType != userType){
-        let $data = dragItem.user;
-        let self = this;
-        array.forEach(function (user: any, indexParent: any) {
-            if (user.Title == $data.Company && !self.isItemExists(array, $data.Id)) {
-                user.childs.push($data);
-            }
-        })
-        if (Team != undefined) {
-            AllUser.forEach(function (Group: any, index: any) {
-                if (Group.childs != undefined && Group.childs.length > 0) {
-                    Group.childs.forEach(function (user: any, userindex: any) {
-                        if ((user.AssingedToUserId != undefined && user.AssingedToUserId == $data.AssingedToUserId) || (user.Id != undefined && user.Id == $data.Id)) {
-                            Group.childs.splice(userindex, 1);
-                        }
-                    })
+    private onDropTeam1(e: any, array: any, Team: any, AllUser: any, userType: any) {
+        if (dragItem.userType != userType) {
+            let $data = dragItem.user;
+            let self = this;
+            array.forEach(function (user: any, indexParent: any) {
+                if (user.Title == $data.Company && !self.isItemExists(array, $data.Id)) {
+                    user.childs.push($data);
                 }
             })
-        }
+            if (Team != undefined) {
+                AllUser.forEach(function (Group: any, index: any) {
+                    if (Group.childs != undefined && Group.childs.length > 0) {
+                        Group.childs.forEach(function (user: any, userindex: any) {
+                            if ((user.AssingedToUserId != undefined && user.AssingedToUserId == $data.AssingedToUserId) || (user.Id != undefined && user.Id == $data.Id)) {
+                                Group.childs.splice(userindex, 1);
+                            }
+                        })
+                    }
+                })
+            }
 
-        if (!self.isItemExists(array, $data.Id)) {
-            array.push($data);
+            if (!self.isItemExists(array, $data.Id)) {
+                array.push($data);
+            }
+            this.dropSuccessHandler(false);
         }
-        this.dropSuccessHandler(false);
     }
-}
 
     private dropSuccessHandler(isRemove: any) {
         if (isRemove) {
@@ -403,8 +403,8 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
             TeamMemberUsers: this.state.TeamMemberUsers,
             ResponsibleTeam: this.state.ResponsibleTeam,
             AssignedTo: this.state.AssignedToUsers,
-            isDrop : true,
-            isDropRes : true
+            isDrop: true,
+            isDropRes: true
         }
         //set state of array element
         this.setState({
@@ -446,26 +446,28 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                                 <div className='d-flex'>
                                                     {user.childs.map((item: any, i: number) => {
                                                         return <div className="marginR41 ng-scope">
-                                                             {item.Item_x0020_Cover != undefined && item.Item_x0020_Cover != null ?
+                                                            {item.Item_x0020_Cover != undefined && item.Item_x0020_Cover != null ?
                                                                 <span>
-                                                                    <div
+                                                                    <img
                                                                         className="ProirityAssignedUserPhoto"
-                                                                        style={{ backgroundImage: "url('" + item.Item_x0020_Cover?.Url + "')", backgroundSize: "36px 36px" }}
+                                                                        src={item.Item_x0020_Cover?.Url}
+                                                                        // style={{ backgroundImage: "url('" + item.Item_x0020_Cover?.Url + "')", backgroundSize: "36px 36px" }}
                                                                         title={item.AssingedToUser.Title}
                                                                         draggable
                                                                         onDragStart={(e) => this.dragStart(e, i, item, 'All')}
                                                                         onDragOver={(e) => e.preventDefault()} />
-                                                                </span>:  <span>
-                                                                    <div title={item.Title}
+                                                                </span> : <span>
+                                                                    <img title={item.Title}
+                                                                        src={'https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg'}
                                                                         draggable
-                                                                        style={{ backgroundImage: "url('https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg')", backgroundSize: "36px 36px" }}
+                                                                        // style={{ backgroundImage: "url('https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg')", backgroundSize: "36px 36px" }}
                                                                         onDragStart={(e) => this.dragStart(e, i, item, 'All')}
                                                                         onDragOver={(e) => e.preventDefault()}
                                                                         className="ProirityAssignedUserPhoto"
                                                                     />
                                                                 </span>
                                                             }
-                                                            
+
                                                         </div>
                                                     })}
                                                 </div>
@@ -476,73 +478,74 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                 }
                             </div>
                             <div className="row">
-                                
+
                                 <div className="col-sm-7">
                                     <h6>Team Members</h6>
                                     <div className="ps-3">
-                                    <div className="row  UserTimeTabGray">
-                                        <div className='col-sm-5 ps-1 border-end'>
-                                            <div className="col"
-                                                onDrop={(e) => this.onDropTeam1(e, this.state.AssignedToUsers, 'Assigned User', this.state.taskUsers,'Assigned User')}
-                                                onDragOver={(e) => e.preventDefault()}>
-                                                <div className=" p-1" >
-                                                    <div className='d-flex flex-wrap'  
-                                                             data-placeholder="Task Leaders" style={{minHeight:"30px", height:"auto"}} >
-                                                        {this.state.AssignedToUsers && this.state.AssignedToUsers.map((image: any, index: number) => {
-                                                            return <div
-                                                           
-                                                                className="ProirityAssignedUserPhoto"
-                                                                style={{ backgroundImage: "url('" + (image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url) + "')", backgroundSize: "36px 36px" }}
-                                                                title={image.Title}
-                                                                draggable
-                                                                onDragStart={(e) => this.dragStart(e, index, image, 'Assigned User')}
-                                                                onDragOver={(e) => e.preventDefault()} ></div>
-                                                        })
-                                                        }
+                                        <div className="row  UserTimeTabGray">
+                                            <div className='col-sm-5 ps-1 border-end'>
+                                                <div className="col"
+                                                    onDrop={(e) => this.onDropTeam1(e, this.state.AssignedToUsers, 'Assigned User', this.state.taskUsers, 'Assigned User')}
+                                                    onDragOver={(e) => e.preventDefault()}>
+                                                    <div className=" p-1" >
+                                                        <div className='d-flex flex-wrap'
+                                                            data-placeholder="Task Leaders" style={{ minHeight: "30px", height: "auto" }} >
+                                                            {this.state.AssignedToUsers && this.state.AssignedToUsers.map((image: any, index: number) => {
+                                                                return <img
+                                                                    className="ProirityAssignedUserPhoto"
+                                                                    src={image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url}
+                                                                    // style={{ backgroundImage: "url('" + (image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url) + "')", backgroundSize: "36px 36px" }}
+                                                                    title={image.Title}
+                                                                    draggable
+                                                                    onDragStart={(e) => this.dragStart(e, index, image, 'Assigned User')}
+                                                                    onDragOver={(e) => e.preventDefault()} />
+                                                            })
+                                                            }
+                                                        </div>
+
                                                     </div>
 
                                                 </div>
-
                                             </div>
-                                        </div>
-                                        
-                                        <div className="col-sm-7"
-                                            onDrop={(e) => this.onDropTeam(e, this.state.TeamMemberUsers, 'Team Members', this.state.taskUsers,'TeamMemberUsers')}
-                                            onDragOver={(e) => e.preventDefault()}>
-                                            <div className="p-1">
-                                                <div className='d-flex flex-wrap'
+
+                                            <div className="col-sm-7"
+                                                onDrop={(e) => this.onDropTeam(e, this.state.TeamMemberUsers, 'Team Members', this.state.taskUsers, 'TeamMemberUsers')}
+                                                onDragOver={(e) => e.preventDefault()}>
+                                                <div className="p-1">
+                                                    <div className='d-flex flex-wrap'
                                                         data-placeholder="Responsible Team">
-                                                    {this.state.TeamMemberUsers != null && this.state.TeamMemberUsers.length > 0 && this.state.TeamMemberUsers.map((image: any, index: number) => {
-                                                        return <div
-                                                        
-                                                            className="ProirityAssignedUserPhoto" style={{ backgroundImage: "url('" + (image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url) + "')", backgroundSize: "36px 36px" }}
-                                                            title={image.Title}
-                                                            draggable
-                                                            onDragStart={(e) => this.dragStart(e, index, image, 'TeamMemberUsers')}
-                                                            onDragOver={(e) => e.preventDefault()} />
-                                                    })
-                                                    }
+                                                        {this.state.TeamMemberUsers != null && this.state.TeamMemberUsers.length > 0 && this.state.TeamMemberUsers.map((image: any, index: number) => {
+                                                            return <img
+                                                                className="ProirityAssignedUserPhoto" 
+                                                                src={image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url}
+                                                                // style={{ backgroundImage: "url('" + (image.userImage != null ? image.userImage : image.Item_x0020_Cover?.Url) + "')", backgroundSize: "36px 36px" }}
+                                                                title={image.Title}
+                                                                draggable
+                                                                onDragStart={(e) => this.dragStart(e, index, image, 'TeamMemberUsers')}
+                                                                onDragOver={(e) => e.preventDefault()} />
+                                                        })
+                                                        }
+                                                    </div>
                                                 </div>
                                             </div>
+
                                         </div>
-                                          
-                                    </div>
                                     </div>
                                 </div>
 
                                 <div className="col-sm-2">
                                     <div onDrop={(e) => this.onDropRemoveTeam(e, this.state.taskUsers)}
                                         onDragOver={(e) => e.preventDefault()}>
-                                            <label className="full_width"></label>
+                                        <label className="full_width"></label>
                                         <img title="Drag user here to  remove user from team for this Network Activity." className="width-75"
-                                            src={this.props?.ItemInfo?.Portfolio_x0020_Type == 'Service'?"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Service_Icons/icon_Dustbin-green.png":"https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/icon_Dustbin.png"}/>
+                                            src={this.props?.ItemInfo?.Portfolio_x0020_Type == 'Service' ? "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Service_Icons/icon_Dustbin-green.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/icon_Dustbin.png"} />
                                     </div>
                                 </div>
-                                </div>
-                                
-                               
                             </div>
-                        
+
+
+                        </div>
+
                         : null}
 
                 </div>

@@ -77,9 +77,9 @@ const ClientCategoryPupup=(props:any)=>{
 
     const customHeader = () => {
         return (
-            <div className={props.props.Services.length>0?"d-flex full-width pb-1 serviepannelgreena":"d-flex full-width pb-1"} >
-                <div    style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
-              <h2 className="heading">Select -Client Category</h2>
+            <div className={props?.props?.PortFolioType?.Id == 2 ?"d-flex full-width pb-1 serviepannelgreena":"d-flex full-width pb-1"} >
+                <div className="subheading">
+                   <span>Select -Client Category</span> 
                  </div>
                 <Tooltip ComponentId="1626" />
             </div>
@@ -174,33 +174,11 @@ const ClientCategoryPupup=(props:any)=>{
                 onDismiss={closePopupSmartTaxanomy}
                 isBlocking={false}
                 onRenderFooter={customFooter}
-                className={props?.props?.Portfolio_x0020_Type == 'Service'||props?.props?.Services?.length>0 ? "serviepannelgreena" : ""}
+                className={props?.props?.PortfolioType?.Color}
             >
                 <div id="SmartTaxonomyPopup">
                     <div className="modal-body">
-                        {/* <table className="ms-dialogHeaderDescription">
-                            <tbody>
-                                <tr id="addNewTermDescription" className="">
-                                    <td>New items are added under the currently selected item.</td>
-                                    <td className="TaggingLinkWidth">
-                                        <a className="hreflink" ng-click="gotomanagetaxonomy();">
-                                            Add New Item
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr id="SendFeedbackTr">
-                                    <td>Make a request or send feedback to the Term Set manager.</td>
-                                    <td className="TaggingLinkWidth">
-                                        <a ng-click="sendFeedback();">
-                                            Send Feedback
-                                        </a>
-                                    </td>
-                                    <td className="TaggingLinkWidth">
-                                        {select}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table> */}
+                       
                         <section>
                             <div className="row">
                                 <div className="d-flex text-muted pt-3 showCateg">
@@ -218,11 +196,11 @@ const ClientCategoryPupup=(props:any)=>{
                                         </div>
                                         {/* <div className="block col p-1"> {select}</div> */}
                                     </div>
-                                    <div className="d-end">
+                                    {/* <div className="d-end">
                                         <button type="button" className="btn btn-primary">
                                             OK
                                         </button>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </section>

@@ -25,12 +25,12 @@ import Picker from "../../../globalComponents/EditTaskPopup/SmartMetaDataPicker"
 import { EditorState } from "draft-js";
 import HtmlEditorCard from "../../../globalComponents/HtmlEditor/HtmlEditor";
 import TeamConfigurationCard from "../../../globalComponents/TeamConfiguration/TeamConfiguration";
-import Tooltip from "../../../globalComponents/Tooltip";
 // import ImagesC from "./Image";
 import { AllOut } from "@material-ui/icons";
 import VersionHistoryPopup from "../../../globalComponents/VersionHistroy/VersionHistory";
 // import PortfolioTagging from "./PortfolioTagging"; // replace
 import ServiceComponentPortfolioPopup from "../../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup";
+import Tooltip from "../../../globalComponents/Tooltip";
 
 // % complete save on the project popup
 

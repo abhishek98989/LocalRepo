@@ -7,7 +7,6 @@ import {
     getCoreRowModel,
     getFilteredRowModel,
     getExpandedRowModel,
-    ColumnDef,
     flexRender,
     ColumnFiltersState,
     getSortedRowModel,
@@ -16,7 +15,7 @@ import {
     getPaginationRowModel
 } from "@tanstack/react-table";
 import { RankingInfo, rankItem, compareItems } from "@tanstack/match-sorter-utils";
-import { FaSearch, FaSort, FaSortDown, FaSortUp, FaChevronRight, FaChevronLeft, FaAngleDoubleRight, FaAngleDoubleLeft, FaInfoCircle, FaPlus, FaMinus } from 'react-icons/fa';
+import { FaSort, FaSortDown, FaSortUp, FaChevronRight, FaChevronLeft, FaAngleDoubleRight, FaAngleDoubleLeft, FaInfoCircle, FaPlus, FaMinus, FaListAlt } from 'react-icons/fa';
 import { HTMLProps } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,10 +27,8 @@ import SelectFilterPanel from './selectFilterPannel';
 import ExpndTable from '../ExpandTable/Expandtable';
 import RestructuringCom from '../Restructuring/RestructuringCom';
 import { SlArrowDown, SlArrowRight } from 'react-icons/sl';
-import Loader from "react-loader";
-import PageLoader from '../pageLoader';
-import { BsSearch } from 'react-icons/bs';
-
+import { BsClockHistory, BsList, BsSearch } from 'react-icons/bs';
+import Tooltip from "../../globalComponents/Tooltip";
 // ReactTable Part/////
 declare module "@tanstack/table-core" {
     interface FilterFns {
@@ -108,7 +105,7 @@ export function Filter({
     const columnFilterValue = column.getFilterValue();
     // style={{ width: placeholder?.size }}
     return (
-        <input style={{ width: "100%" }} className="me-1 mb-1 mx-1 on-search-cross"
+        <input style={{ width: "100%" }} className="m-1 ps-10 on-search-cross"
             // type="text"
             title={placeholder?.placeholder}
             type="search"
@@ -144,13 +141,13 @@ export function IndeterminateCheckbox(
 
 // ********************* function with globlize Expended And Checkbox*******************
 let forceExpanded: any = [];
-const getFirstColHeader = ({ hasCheckbox, hasExpanded, isHeaderNotAvlable }: any) => {
+const getFirstColHeader = ({ hasCheckbox, hasExpanded, isHeaderNotAvlable, portfolioColor }: any) => {
     return ({ table }: any) => (
         <>
             {hasExpanded && isHeaderNotAvlable != true && (<>
-                <span className="border-0 bg-Ff" {...{ onClick: table.getToggleAllRowsExpandedHandler(), }}>
+                <span className="border-0 bg-Ff ms-1" {...{ onClick: table.getToggleAllRowsExpandedHandler(), }}>
                     {table.getIsAllRowsExpanded() ? (
-                        <SlArrowDown title='Tap to collapse the childs' />) : (<SlArrowRight title='Tap to expand the childs' />)}
+                        <SlArrowDown style={{ color: portfolioColor, width: '12px' }} title='Tap to collapse the childs' />) : (<SlArrowRight style={{ color: portfolioColor, width: '12px' }} title='Tap to expand the childs' />)}
                 </span>{" "}
             </>)}
             {hasCheckbox && (
@@ -165,11 +162,11 @@ const getFirstColCell = ({ setExpanded, hasCheckbox, hasCustomExpanded, hasExpan
         <div className="alignCenter">
             {hasExpanded && row.getCanExpand() && (
                 <div className="border-0 alignCenter" {...{ onClick: row.getToggleExpandedHandler(), style: { cursor: "pointer" }, }}>
-                    {row.getIsExpanded() ? <SlArrowDown title={'collapse ' + `${row.original.Title}` + ' childs'} style={{ color: `${row?.original?.PortfolioType?.Color}` }} /> : <SlArrowRight title={'Expand' + `${row.original.Title}` + 'childs'} style={{ color: `${row?.original?.PortfolioType?.Color}` }} />}
+                    {row.getIsExpanded() ? <SlArrowDown title={'Collapse ' + `${row.original.Title}` + ' childs'} style={{ color: `${row?.original?.PortfolioType?.Color}`, width: '12px' }} /> : <SlArrowRight title={'Expand ' + `${row.original.Title}` + ' childs'} style={{ color: `${row?.original?.PortfolioType?.Color}`, width: '12px' }} />}
                 </div>
             )}{" "}
-            {hasCheckbox && (
-                <span style={{ marginLeft: hasExpanded && row.getCanExpand() ? '11px' : hasExpanded !== true ? '0px' : '25px' }}> <IndeterminateCheckbox {...{ checked: row.getIsSelected(), indeterminate: row.getIsSomeSelected(), onChange: row.getToggleSelectedHandler(), }} />{" "}</span>
+            {hasCheckbox && row?.original?.Title != "Others" && (
+                <span style={{ marginLeft: hasExpanded && row.getCanExpand() ? '11px' : hasExpanded !== true ? '0px' : '23px' }}> <IndeterminateCheckbox {...{ checked: row.getIsSelected(), indeterminate: row.getIsSomeSelected(), onChange: row.getToggleSelectedHandler(), }} />{" "}</span>
             )}
             {hasCustomExpanded && <div>
                 {((row.getCanExpand() &&
@@ -268,6 +265,7 @@ const GlobalCommanTable = (items: any, ref: any) => {
     const [selectedFilterPanelIsOpen, setSelectedFilterPanelIsOpen] = React.useState(false);
     const [tablecontiner, settablecontiner]: any = React.useState("hundred");
     const [trueRestructuring, setTrueRestructuring] = React.useState(false);
+    // const [clickFlatView, setclickFlatView] = React.useState(false);
     const [columnVisibility, setColumnVisibility] = React.useState({ descriptionsSearch: false, commentsSearch: false });
     const [selectedFilterPannelData, setSelectedFilterPannelData] = React.useState({
         Title: { Title: 'Title', Selected: true },
@@ -327,7 +325,8 @@ const GlobalCommanTable = (items: any, ref: any) => {
                     header: getFirstColHeader({
                         hasCheckbox: elem.hasCheckbox,
                         hasExpanded: elem.hasExpanded,
-                        isHeaderNotAvlable: elem.isHeaderNotAvlable
+                        isHeaderNotAvlable: elem.isHeaderNotAvlable,
+                        portfolioColor: portfolioColor,
                     }),
                     cell: getFirstColCell({
                         setExpanded,
@@ -348,6 +347,28 @@ const GlobalCommanTable = (items: any, ref: any) => {
         }
         setSelectedFilterPanelIsOpen(false)
     }, []);
+
+    /****************** defult sorting  part *******************/
+    React.useEffect(() => {
+        if (columns?.length > 0 && columns != undefined) {
+            let sortingDescData: any = [];
+            columns.map((sortDec: any) => {
+                if (sortDec.isColumnDefultSortingDesc === true) {
+                    let obj = { 'id': sortDec.id, desc: true }
+                    sortingDescData.push(obj);
+                } else if (sortDec.isColumnDefultSortingAsc === true) {
+                    let obj = { 'id': sortDec.id, desc: false }
+                    sortingDescData.push(obj)
+                }
+            })
+            if (sortingDescData.length > 0) {
+                setSorting(sortingDescData);
+            } else {
+                setSorting([]);
+            }
+        }
+    }, [columns])
+    /****************** defult sorting  part end *******************/
 
     const table: any = useReactTable({
         data,
@@ -381,25 +402,18 @@ const GlobalCommanTable = (items: any, ref: any) => {
         enableSubRowSelection: false,
         // filterFns: undefined
     });
-    /****************** defult sorting  part *******************/
+    /****************** defult Expend Other Section  part *******************/
     React.useEffect(() => {
-        if (columns?.length > 0 && columns != undefined) {
-            let sortingDescData: any = [];
-            columns.map((sortDec: any) => {
-                if (sortDec.isColumnDefultSortingDesc === true) {
-                    let obj = { 'id': sortDec.id, desc: true }
-                    sortingDescData.push(obj);
-                } else if (sortDec.isColumnDefultSortingAsc === true) {
-                    let obj = { 'id': sortDec.id, desc: false }
-                    sortingDescData.push(obj)
+        if (table?.getRowModel()?.rows.length > 0) {
+            table?.getRowModel()?.rows.map((elem: any) => {
+                if (elem?.original?.Title === "Others") {
+                    const newExpandedState = { [elem.id]: true };
+                    setExpanded(newExpandedState);
                 }
             })
-            if (sortingDescData.length > 0) {
-                setSorting(sortingDescData);
-            }
         }
-    }, [])
-    /****************** defult sorting  part end *******************/
+    }, [data])
+    /****************** defult Expend Other Section end *******************/
 
     React.useEffect(() => {
         CheckDataPrepre()
@@ -536,7 +550,7 @@ const GlobalCommanTable = (items: any, ref: any) => {
                 });
                 callBackData(item)
             } else {
-                restructureFunct(false)
+                // restructureFunct(false)
                 callBackData(item)
             }
             console.log("itrm", item)
@@ -636,7 +650,14 @@ const GlobalCommanTable = (items: any, ref: any) => {
         };
         table.getRowModel().rows.forEach(flattenRowData);
         const worksheet = XLSX.utils.aoa_to_sheet([]);
-        XLSX.utils.sheet_add_json(worksheet, flattenedData, {
+        function removeDuplicates(arr: any) {
+            const uniqueArray = [];
+            const seen = new Set();
+            for (const obj of arr) { const objString = JSON.stringify(obj); if (!seen.has(objString)) { uniqueArray.push(obj); seen.add(objString); } }
+            return uniqueArray;
+        }
+        const uniqueArray: any = removeDuplicates(flattenedData);
+        XLSX.utils.sheet_add_json(worksheet, uniqueArray, {
             skipHeader: false,
             origin: "A1",
         });
@@ -696,6 +717,12 @@ const GlobalCommanTable = (items: any, ref: any) => {
             items?.addActivity();
         } else if (eventValue === "Add Workstream-Task") {
             items?.AddWorkstreamTask();
+        } else if (eventValue === "Smart-Time") {
+            items?.smartTimeTotalFunction();
+        } else if (eventValue === "Flat-View") {
+            items?.switchFlatViewData(data);
+        } else if (eventValue === "Groupby-View") {
+            items?.switchGroupbyData();
         }
     }
 
@@ -715,7 +742,7 @@ const GlobalCommanTable = (items: any, ref: any) => {
     };
 
     React.useImperativeHandle(ref, () => ({
-        callChildFunction, trueTopIcon, setRowSelection
+        callChildFunction, trueTopIcon, setRowSelection, globalFilter
     }));
 
     const restructureFunct = (items: any) => {
@@ -726,26 +753,24 @@ const GlobalCommanTable = (items: any, ref: any) => {
 
     return (
         <>
-            {showHeader === true && <div className='tbl-headings justify-content-between mb-1'>
+            {showHeader === true && <div className='tbl-headings justify-content-between fixed-Header top-0' style={{ background: '#e9e9e9' }}>
                 <span className='leftsec'>
-                    {showingAllPortFolioCount === true ? <div className='mb-1'>
-                        <label style={{ color: `${portfolioColor}` }}>
-                            Showing
+                    {showingAllPortFolioCount === true ? <div className='alignCenter mt--2'>
+                        <label>
+                            <label style={{ color: `${portfolioColor}` }}>
+                                Showing
+                            </label>
+                            {portfolioTypeData.map((type: any, index: any) => {
+                                return (
+                                    <>
+                                        {isShowingDataAll === true ? <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'numberCopy']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < type.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</> :
+                                            <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'filterNumber']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < type.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</>}
+                                    </>
+                                )
+                            })}
                         </label>
-                        {portfolioTypeData.map((type: any, index: any) => {
-                            return (
-                                <>
-                                    {isShowingDataAll === true ? <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'numberCopy']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < type.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</> :
-                                        <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'number']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < type.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</>}
-                                </>
-                            )
-                        })}
-
-
-
-                        <span className="popover__wrapper ms-1" style={{ position: "unset" }} data-bs-toggle="tooltip" data-bs-placement="auto">
-                            {/* <FaInfoCircle style={{ color: `${portfolioColor}` }} /> */}
-                            <span className='svg__iconbox svg__icon--info alignIcon dark'></span>
+                        <span className="popover__wrapper ms-1 mt--5" style={{ position: "unset" }} data-bs-toggle="tooltip" data-bs-placement="auto">
+                            <span className='svg__iconbox svg__icon--info alignIcon dark mt--2'></span>
                             <span className="popover__content mt-3 m-3 mx-3" style={{ zIndex: 100 }}>
                                 <label style={{ color: `${portfolioColor}` }}>
                                     Showing
@@ -754,7 +779,7 @@ const GlobalCommanTable = (items: any, ref: any) => {
                                     return (
                                         <>
                                             {isShowingDataAll === true ? <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'numberCopy']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label><label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label></> :
-                                                <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'number']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label><label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label></>}
+                                                <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'filterNumber']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label><label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label></>}
                                         </>
                                     )
                                 })}
@@ -762,14 +787,15 @@ const GlobalCommanTable = (items: any, ref: any) => {
                                     return (
                                         <>
                                             {isShowingDataAll === true ? <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'numberCopy']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < items?.taskTypeDataItem?.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</> :
-                                                <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'number']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < items?.taskTypeDataItem?.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</>}
+                                                <><label className='ms-1' style={{ color: `${portfolioColor}` }}>{` ${type[type.Title + 'filterNumber']} `} of {" "} </label> <label style={{ color: `${portfolioColor}` }} className='ms-0'>{` ${type[type.Title + 'number']} `}</label><label style={{ color: `${portfolioColor}` }} className='ms-1'>{" "} {type.Title}</label>{index < items?.taskTypeDataItem?.length - 1 && <label style={{ color: `${portfolioColor}` }} className="ms-1"> | </label>}</>}
                                         </>
                                     )
                                 })}
                             </span>
                         </span>
                     </div> :
-                        <span style={{ color: `${portfolioColor}` }} className='Header-Showing-Items'>{`Showing ${table?.getFilteredRowModel()?.rows?.length} out of ${data?.length}`}</span>}
+                        <span style={{ color: `${portfolioColor}` }} className='Header-Showing-Items'>{`Showing ${table?.getFilteredRowModel()?.rows?.length} of ${data?.length} `}</span>}
+                    <span>{items?.showDateTime}</span>
                     <DebouncedInput
                         value={globalFilter ?? ""}
                         onChange={(value) => setGlobalFilter(String(value))}
@@ -779,7 +805,7 @@ const GlobalCommanTable = (items: any, ref: any) => {
                     <span className="svg__iconbox svg__icon--setting" style={{ backgroundColor: `${portfolioColor}` }} onClick={() => setSelectedFilterPanelIsOpen(true)}></span>
                     <span className='ms-1'>
                         <select style={{ height: "30px", color: `${portfolioColor}` }}
-                            className="w80"
+                            className="w-100"
                             aria-label="Default select example"
                             value={globalSearchType}
                             onChange={(e) => {
@@ -795,19 +821,27 @@ const GlobalCommanTable = (items: any, ref: any) => {
                 </span>
                 <span className="toolbox">
                     {items.taskProfile != true && items?.showCreationAllButton === true && <>
-                        {table?.getSelectedRowModel()?.flatRows?.length === 1 && table?.getSelectedRowModel()?.flatRows[0]?.original?.Item_x0020_Type != "Feature" &&
-                            table?.getSelectedRowModel()?.flatRows[0]?.original?.SharewebTaskType?.Title != "Activities" && table?.getSelectedRowModel()?.flatRows[0]?.original?.SharewebTaskType?.Title != "Workstream" &&
-                            table?.getSelectedRowModel()?.flatRows[0]?.original?.SharewebTaskType?.Title != "Task" || table?.getSelectedRowModel()?.flatRows?.length === 0 ? (
-                            <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} title=" Add Structure" onClick={() => openCreationAllStructure("Add Structure")}> Add Structure </button>
+                        {items?.PortfolioFeature === "Feature" ? (
+                            <button type="button" disabled className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: "#fff" }} title=" Add Structure"> {" "} Add Structure{" "}</button>
+                        ) : (table?.getSelectedRowModel()?.flatRows?.length === 1 && table?.getSelectedRowModel()?.flatRows[0]?.original?.Item_x0020_Type != "Feature" && table?.getSelectedRowModel()?.flatRows[0]?.original
+                            ?.TaskType?.Title != "Activities" && table?.getSelectedRowModel()?.flatRows[0]?.original?.TaskType?.Title != "Workstream" && table?.getSelectedRowModel()?.flatRows[0]?.original
+                                ?.TaskType?.Title != "Task") || table?.getSelectedRowModel()?.flatRows?.length === 0 ? (
+                            <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: "#fff" }} title=" Add Structure" onClick={() => openCreationAllStructure("Add Structure")}>
+                                {" "} Add Structure{" "}</button>
                         ) : (
-                            <button type="button" disabled className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} title=" Add Structure"> Add Structure </button>
+                            <button type="button" disabled className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: "#fff" }} title=" Add Structure"> {" "} Add Structure{" "}</button>
                         )}
-                        {table?.getSelectedRowModel()?.flatRows.length === 1 ? <button type="button" className="btn btn-primary" title='Add Activity' style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} onClick={() => openCreationAllStructure("Add Activity-Task")}>Add Activity-Task</button> :
-                            <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} disabled={true} > Add Activity-Task</button>}
+
+                        {items?.protfolioProfileButton != true && <>{table?.getSelectedRowModel()?.flatRows.length === 1  && table?.getSelectedRowModel()?.flatRows[0]?.original
+                                ?.TaskType?.Title != "Task" ? <button type="button" className="btn btn-primary" title='Add Activity' style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} onClick={() => openCreationAllStructure("Add Activity-Task")}>Add Activity-Task</button> :
+                            <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} disabled={true} > Add Activity-Task</button>}</>}
+
+                        {items?.protfolioProfileButton === true && <>{items?.protfolioProfileButton === true && table?.getSelectedRowModel()?.flatRows[0]?.original?.TaskType?.Title != "Task" ? <button type="button" className="btn btn-primary" title='Add Activity' style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} onClick={() => openCreationAllStructure("Add Activity-Task")}>Add Activity-Task</button> :
+                            <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} disabled={true} > Add Activity-Task</button>}</>}
 
                         {
                             trueRestructuring == true ?
-                                <RestructuringCom style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} restructureFunct={restructureFunct} ref={childRef} taskTypeId={items.TaskUsers} contextValue={items.AllListId} allData={data} restructureCallBack={items.restructureCallBack} restructureItem={table?.getSelectedRowModel()?.flatRows} />
+                                <RestructuringCom AllMasterTasksData={items.AllMasterTasksData} queryItems={items.queryItems} restructureFunct={restructureFunct} ref={childRef} taskTypeId={items.TaskUsers} contextValue={items.AllListId} allData={data} restructureCallBack={items.restructureCallBack} restructureItem={table?.getSelectedRowModel()?.flatRows} />
                                 : <button type="button" title="Restructure" disabled={true} className="btn btn-primary">Restructure</button>
                         }
                     </>
@@ -817,12 +851,12 @@ const GlobalCommanTable = (items: any, ref: any) => {
                         {table?.getSelectedRowModel()?.flatRows.length < 2 ? <button type="button" className="btn btn-primary" title='Add Activity' style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} onClick={() => openCreationAllStructure("Add Workstream-Task")}>Add Workstream-Task</button> :
                             <button type="button" className="btn btn-primary" style={{ backgroundColor: `${portfolioColor}`, borderColor: `${portfolioColor}`, color: '#fff' }} disabled={true} > Add Workstream-Task</button>}
 
-                        {/* {
+                        {
                             trueRestructuring == true ?
-                                <RestructuringCom restructureFunct={restructureFunct} ref={childRef} taskTypeId={items.TaskUsers} contextValue={items.AllListId} allData={data} restructureCallBack={items.restructureCallBack} restructureItem={table?.getSelectedRowModel()?.flatRows.length > 0 ? [table?.getSelectedRowModel()?.flatRows[0].original] : []} />
+                                <RestructuringCom AllMasterTasksData={items.AllMasterTasksData} queryItems={items.queryItems} restructureFunct={restructureFunct} ref={childRef} taskTypeId={items.TaskUsers} contextValue={items.AllListId} allData={data} restructureCallBack={items.restructureCallBack} restructureItem={table?.getSelectedRowModel()?.flatRows} />
                                 : <button type="button" title="Restructure" disabled={true} className="btn btn-primary"
                                 >Restructure</button>
-                        } */}
+                        }
                     </>
                     }
 
@@ -831,7 +865,15 @@ const GlobalCommanTable = (items: any, ref: any) => {
                     {table?.getSelectedRowModel()?.flatRows?.length > 0 ?
                         <a onClick={() => openTaskAndPortfolioMulti()} title='Open in new tab' className="openWebIcon p-0"><span style={{ color: `${portfolioColor}`, backgroundColor: `${portfolioColor}` }} className="svg__iconbox svg__icon--openWeb"></span></a>
                         : <a className="openWebIcon p-0" title='Open in new tab'><span className="svg__iconbox svg__icon--openWeb" style={{ backgroundColor: "gray" }}></span></a>}
-                    <a className='excal' title='Export to excal' onClick={() => exportToExcel()}><RiFileExcel2Fill style={{ color: `${portfolioColor}` }} /></a>
+                    <a className='excal' title='Export To Excel' onClick={() => exportToExcel()}><RiFileExcel2Fill style={{ color: `${portfolioColor}` }} /></a>
+
+                    {items?.SmartTimeIconShow === true && items?.AllListId?.isShowTimeEntry === true && <a className='smartTotalTime' title="Load SmartTime of AWT" onClick={() => openCreationAllStructure("Smart-Time")} > <BsClockHistory style={{ color: `${portfolioColor}` }} /></a>}
+
+                    {items?.flatView === true && items?.updatedSmartFilterFlatView === false && <>{items?.clickFlatView === false ? <a className='smartTotalTime' title='Switch to Flat-View' style={{ color: `${portfolioColor}` }} onClick={() => openCreationAllStructure("Flat-View")}><BsList /></a> :
+                        <a className='smartTotalTime' title='Switch to Groupby View' style={{ color: `${portfolioColor}` }} onClick={() => openCreationAllStructure("Groupby-View")}><FaListAlt /></a>}</>}
+
+                    {items?.flatView === true && items?.updatedSmartFilterFlatView === true && <a className='smartTotalTime' title='deactivated to Groupby View'><FaListAlt style={{ color: "#918d8d" }} /></a>}
+
 
                     <a className='brush'><i className="fa fa-paint-brush hreflink" style={{ color: `${portfolioColor}` }} aria-hidden="true" title="Clear All" onClick={() => { setGlobalFilter(''); setColumnFilters([]); }}></i></a>
 
@@ -842,11 +884,12 @@ const GlobalCommanTable = (items: any, ref: any) => {
                     {expandIcon === true && <a className="expand" title="Expand table section" style={{ color: `${portfolioColor}` }}>
                         <ExpndTable prop={expndpopup} prop1={tablecontiner} />
                     </a>}
+                    <Tooltip ComponentId={5756} />
                 </span>
             </div>}
 
             <table className="SortingTable table table-hover mb-0" id='my-table' style={{ width: "100%" }}>
-                <thead className='fixed-Header top-0'>
+                <thead className={showHeader === true ? 'fixedSmart-Header top-0' : 'fixed-Header top-0'}>
                     {table.getHeaderGroups().map((headerGroup: any) => (
                         <tr key={headerGroup.id} >
                             {headerGroup.headers.map((header: any) => {
@@ -955,7 +998,8 @@ const GlobalCommanTable = (items: any, ref: any) => {
                     ))}
                 </select>
             </div> : ''}
-            {ShowTeamPopup === true && items?.TaskUsers?.length > 0 ? <ShowTeamMembers props={table?.getSelectedRowModel()?.flatRows} callBack={showTaskTeamCAllBack} TaskUsers={items?.TaskUsers} /> : ''}
+            {/* {ShowTeamPopup === true && items?.TaskUsers?.length > 0 ? <ShowTeamMembers props={table?.getSelectedRowModel()?.flatRows} callBack={showTaskTeamCAllBack} TaskUsers={items?.TaskUsers} /> : ''} */}
+            {ShowTeamPopup === true && items?.TaskUsers?.length > 0 ? <ShowTeamMembers props={table?.getSelectedRowModel()?.flatRows} callBack={showTaskTeamCAllBack} TaskUsers={items?.TaskUsers} portfolioTypeData={items?.portfolioTypeData} context={items?.AllListId?.Context} /> : ''}
             {selectedFilterPanelIsOpen && <SelectFilterPanel isOpen={selectedFilterPanelIsOpen} selectedFilterCallBack={selectedFilterCallBack} setSelectedFilterPannelData={setSelectedFilterPannelData} selectedFilterPannelData={selectedFilterPannelData} portfolioColor={portfolioColor} />}
         </>
     )

@@ -12,7 +12,7 @@ var AutoCompleteItemsArray: any = [];
 var SelectedCategoryBackupArray: any = [];
 const Picker = (item: any) => {
     const usedFor = item.usedFor;
-    const isServiceTask: any = item?.isServiceTask!=undefined?item.isServiceTask:item?.props?.Services?.length>0?true:false;
+    const isServiceTask: any = item?.isServiceTask != undefined ? item.isServiceTask : item?.props?.Services?.length > 0 ? true : false;
     const AllListIdData: any = item?.AllListId;
     const siteUrls: any = item?.AllListId?.siteUrl;
     const selectedCategoryData: any = item.selectedCategoryData;
@@ -38,19 +38,18 @@ const Picker = (item: any) => {
     }, [])
     const closePopupSmartTaxanomy = () => {
         setPopupSmartTaxanomy(false)
-        if(usedFor=="Task-Footertable"){
+        if (usedFor == "Task-Footertable") {
             item?.Call(selectedCategoryData, "Category-Task-Footertable")
-           NewArray = []
-           SelectedCategoryBackupArray = [];
-           setSelect([])
-       }else{
-        NewArray = []
-        setSelect([])
-        item?.Call()
-        item?.closePopupCallBack();
-        SelectedCategoryBackupArray = [];
-       }
-       
+            NewArray = []
+            SelectedCategoryBackupArray = [];
+            setSelect([])
+        } else {
+            NewArray = []
+            setSelect([])
+            item?.closePopupCallBack();
+            SelectedCategoryBackupArray = [];
+        }
+
     }
     const saveCategories = () => {
         if (usedFor == "Task-Popup") {
@@ -59,8 +58,8 @@ const Picker = (item: any) => {
             SelectedCategoryBackupArray = [];
             setSelect([])
         }
-        else if(usedFor=="Task-Footertable"){
-             item?.Call(select, "Category-Task-Footertable")
+        else if (usedFor == "Task-Footertable") {
+            item?.Call(select, "Category-Task-Footertable")
             NewArray = []
             SelectedCategoryBackupArray = [];
             setSelect([])
@@ -142,7 +141,7 @@ const Picker = (item: any) => {
     }
 
     const selectPickerData = (item: any) => {
-        if (usedFor == "Task-Popup"||usedFor=="Task-Footertable") {
+        if (usedFor == "Task-Popup" || usedFor == "Task-Footertable") {
             let tempArray: any = [];
             let checkDataExistCount = 0;
             if (SelectedCategoryBackupArray != undefined && SelectedCategoryBackupArray.length > 0) {
@@ -155,6 +154,7 @@ const Picker = (item: any) => {
             if (checkDataExistCount == 0) {
                 tempArray.push(item);
             }
+            SelectedCategoryBackupArray = select
             if (tempArray != undefined && tempArray.length > 0) {
                 SelectedCategoryBackupArray = SelectedCategoryBackupArray.concat(tempArray)
             } else {
@@ -223,10 +223,8 @@ const Picker = (item: any) => {
         else {
             if (searchedKey?.length > 0) {
                 AutoCompleteItemsArray.map((itemData: any) => {
-                    if (itemData.Description1 != null) {
-                        if (itemData.Newlabel.toLowerCase().includes(searchedKey.toLowerCase()) || itemData.Description1.toLowerCase().includes(searchedKey.toLowerCase())) {
-                            tempArray.push(itemData);
-                        }
+                    if (itemData.Newlabel.toLowerCase().includes(searchedKey.toLowerCase()) || itemData.Description1?.toLowerCase().includes(searchedKey.toLowerCase())) {
+                        tempArray.push(itemData);
                     }
                 })
                 setSearchedData(tempArray)
@@ -270,27 +268,13 @@ const Picker = (item: any) => {
         return previous
     }, [])
 
-    const customFooter = () => {
-        return (
-            <footer className={isServiceTask ||item?.props?.Portfolio_x0020_Type=="Service" ? "serviepannelgreena" : ""}>
-                <span>
-                    <a className="siteColor mx-1" target="_blank" data-interception="off" href={`{}/SitePages/SmartMetadata.aspx`} >Manage Smart Taxonomy</a>
-                </span>
-                <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveCategories} >
-                    Save
-                </button>
-            </footer>
-
-        )
-    }
-
     const customHeader = () => {
         return (
-            <div className={isServiceTask ||item?.props?.Portfolio_x0020_Type=="Service" ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"} >
-                <div style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
-                <h2 className="heading">Select Category</h2>
+            <div className={isServiceTask || item?.props?.Portfolio_x0020_Type == "Service" ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"} >
+                <div className="subheading siteColor">
+                    Select Category
                 </div>
-                <Tooltip ComponentId="1626" />
+                <Tooltip ComponentId="1741" />
             </div>
         )
     }
@@ -305,58 +289,11 @@ const Picker = (item: any) => {
                 customWidth="850px"
                 onDismiss={closePopupSmartTaxanomy}
                 isBlocking={PopupSmartTaxanomy}
-            // onRenderFooter={customFooter}
+
             >
                 <div id="SmartTaxonomyPopup" className={(item?.props?.Portfolio_x0020_Type != undefined && item?.props?.Portfolio_x0020_Type == "Service") ? "serviepannelgreena" : ""}>
                     <div className={isServiceTask ? "modal-body serviepannelgreena" : "modal-body"}>
-                        {/* <table className="ms-dialogHeaderDescription">
-                            <tbody>
-                                <tr id="addNewTermDescription" className="">
-                                    <td>New items are added under the currently selected item.</td>
-                                    <td className="TaggingLinkWidth">
-                                        <a className="hreflink" ng-click="gotomanagetaxonomy();">
-                                            Add New Item
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr id="SendFeedbackTr">
-                                    <td>Make a request or send feedback to the Term Set manager.</td>
-                                    <td className="TaggingLinkWidth">
-                                        <a ng-click="sendFeedback();">
-                                            Send Feedback
-                                        </a>
-                                    </td>
-                                    <td className="TaggingLinkWidth">
-                                        {select}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table> */}
-                        <section>
-                            <div className="row">
-                                <div className="d-flex text-muted pt-3 showCateg">
-                                    <ImPriceTags />
-                                    <div className="pb-3 mb-0">
-                                        <div id="addNewTermDescription">
-                                            <p className="mb-1"> New items are added under the currently selected item.
-                                                <span><a className="hreflink" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} > Add New Item </a></span>
-                                            </p>
-                                        </div>
-                                        <div id="SendFeedbackTr">
-                                            <p className="mb-1">Make a request or send feedback to the Term Set manager.
-                                                <span><a className="hreflink"> Send Feedback </a></span>
-                                            </p>
-                                        </div>
-                                        {/* <div className="block col p-1"> {select}</div> */}
-                                    </div>
-                                    <div className="d-end">
-                                        <button type="button" className="btn btn-primary" onClick={saveCategories}>
-                                            OK
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
+
                         <div className="mb-3">
                             <div className="mb-2 col-sm-12 p-0">
                                 <div>
@@ -375,52 +312,20 @@ const Picker = (item: any) => {
                                                 )}
                                             </ul>
                                         </div>) : null}
-                                    {/* <ul className="list-group"> 
-                                        {AutoCompleteItemsArray.filter((item: any) => {
-                                            const searchTerm = value.toLowerCase();
-                                            var fullName = item.Title != null ? item.Newlabel.toLowerCase() : "";
-                                            return (
-                                                searchTerm &&
-                                                fullName.startsWith(searchTerm) &&
-                                                fullName !== searchTerm
-                                            );
-                                        })
-                                            .slice(0, 10)
-                                            .map((item: any) => (
-                                                <li className="list-group-item rounded-0 list-group-item-action" key={item.Title} onClick={() => selectPickerData(item)} >
-                                                    <a>{item.Newlabel}</a>
-                                                </li>
-                                            ))}
-                                    </ul> */}
+
                                 </div>
                             </div>
-                            <div className="border full-width my-2 p-2 pb-1 ActivityBox">
-                                {select.map((val: any) => {
-                                    return (
-                                        <>
-                                            <span className="bg-69 p-1 ps-2 me-1"> {val.Title}
-                                                <a>
-                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" onClick={() => deleteSelectedCat(val)} />
-                                                </a>
+                            {select?.length > 0 ?
+                                <div className="border full-width ActivityBox">
+                                    {select.map((val: any) => {
+                                        return (
+                                            <span className="block me-1">
+                                                <span>{val.Title}</span>
+                                                <span className="bg-light hreflink ms-2 svg__icon--cross svg__iconbox" onClick={() => deleteSelectedCat(val)}></span>
                                             </span>
-                                        </>
-                                    )
-                                })}
-
-                            </div>
-                            {/* <div className="col-sm-12 ActivityBox">
-                                    <span>
-                                        <a className="hreflink block" ng-click="removeSmartArray(item.Id)"> {select}
-                                        <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={()=>deleteSelectedCat()}/></a>
-                                    </span>
-                                </div> */}
-
-                            {/* <div className="col-sm-12 ActivityBox" ng-show="SmartTaxonomyName==newsmarttaxnomy">
-                                <span>
-                                    <a className="hreflink" ng-click="removeSmartArray(item.Id)"> {select}
-                                    <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif"/></a>
-                                </span>
-                            </div> */}
+                                        )
+                                    })}
+                                </div> : null}
                         </div>
                         <div className='col-sm-12 categScroll'>
                             <ul className="categories-menu p-0">
@@ -451,7 +356,7 @@ const Picker = (item: any) => {
                                                                                     null}
                                                                                 {child1.Title}
                                                                                 {child1.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                                                    <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                                    <span className="svg__iconbox svg__icon--info"></span>
                                                                                     <div className="popover__content">
                                                                                         <span>{child1.Description1}</span>
                                                                                     </div>
@@ -473,7 +378,7 @@ const Picker = (item: any) => {
                                                                                                         null}
                                                                                                     {subChilds.Title}
                                                                                                     {subChilds.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                                                                        <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                                                        <span className="svg__iconbox svg__icon--info"></span>
                                                                                                         <div className="popover__content">
                                                                                                             <span ng-bind-html="child1.Description1 | trustedHTML">{subChilds.Description1}</span>
                                                                                                         </div>
@@ -499,13 +404,30 @@ const Picker = (item: any) => {
                             </ul>
                         </div>
                     </div>
-                    <footer className={isServiceTask ? "serviepannelgreena fixed-bottom bg-f4 text-end pe-2 py-2" : "fixed-bottom bg-f4 text-end pe-2 py-2"}>
-                        <span>
-                            <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >Manage Smart Taxonomy</a>
-                        </span>
-                        <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveCategories} >
-                            Save
-                        </button>
+                    <footer className={isServiceTask ? "serviepannelgreena fixed-bottom bg-f4 p-3" : "fixed-bottom bg-f4 p-3"}>
+                        <div className="alignCenter justify-content-between">
+                            <div className="">
+                                <div id="addNewTermDescription">
+                                    <p className="mb-1"> New items are added under the currently selected item.
+                                        <span><a className="hreflink" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} > Add New Item </a></span>
+                                    </p>
+                                </div>
+                                <div id="SendFeedbackTr">
+                                    <p className="mb-1">Make a request or send feedback to the Term Set manager.
+                                        <span><a className="hreflink"> Send Feedback </a></span>
+                                    </p>
+                                </div>
+
+                            </div>
+                            <div className="pull-right">
+                                <span>
+                                    <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >Manage Smart Taxonomy</a>
+                                </span>
+                                <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveCategories} >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
                     </footer>
                 </div>
             </Panel>

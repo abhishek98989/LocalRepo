@@ -1,28 +1,33 @@
 import * as React from "react";
 import { useState, useEffect } from 'react';
 import { Panel, PanelType } from 'office-ui-fabric-react';
-import { ImPriceTags } from 'react-icons/im';
+import EditComponentProtfolio from '../../webparts/EditPopupFiles/EditComponent';
 import Tooltip from "../Tooltip";
 import { Web } from "sp-pnp-js";
 
 var AutoCompleteItemsArray: any = [];
 var SelectedClientCategoryBackupArray: any = [];
 var BackupSiteTypeData: any = [];
+
 const SiteCompositionComponent = (Props: any) => {
     const SiteData = Props.SiteTypes;
-    var ClientTime = Props.ClientTime != undefined ? Props.ClientTime : [];
+    const SelectedTaskDetails: any = Props?.SelectedItemDetails;
+    var ClientTime = SelectedTaskDetails?.ClientTime != undefined && SelectedTaskDetails?.ClientTime != false ? SelectedTaskDetails?.ClientTime : [];
     var SitesTaggingData: any = Props.SitesTaggingData
     const isPortfolioConncted = Props.isPortfolioConncted;
     const AllListIdData: any = Props.AllListId
     const siteUrls = Props.siteUrls;
     const TotalTime = Props.SmartTotalTimeData;
     const callBack = Props.callBack;
-    const currentListName = Props.currentListName;
+    const ListId = SelectedTaskDetails?.listId;
+    const currentListName = SelectedTaskDetails?.siteType;
+    const usedFor = Props.usedFor;
+    const ItemId = SelectedTaskDetails?.Id;
     const ServicesTaskCheck = Props.isServiceTask;
-    const SiteCompositionSettings = (Props.SiteCompositionSettings != undefined ? JSON.parse(Props.SiteCompositionSettings) : [{ Proportional: true, Manual: false, Portfolio: false, localSiteComposition: false }]);
-    const SelectedClientCategoryFromProps = Props.SelectedClientCategory;
+    const SiteCompositionSettings = (SelectedTaskDetails?.SiteCompositionSettings != undefined ? JSON.parse(SelectedTaskDetails?.SiteCompositionSettings) : [{ Proportional: true, Manual: false, Portfolio: false, localSiteComposition: false }]);
+    const SelectedClientCategoryFromProps = SelectedTaskDetails?.ClientCategory;
     const [SiteTypes, setSiteTypes] = useState([]);
-    const [selectedSiteCount, setSelectedSiteCount] = useState(Props.ClientTime.length);
+    const [selectedSiteCount, setSelectedSiteCount] = useState(Props.ClientTime != undefined || Props.ClientTime != null ? Props.ClientTime?.length : 0);
     const [ProportionalStatus, setProportionalStatus] = useState(true);
     let [ClientTimeData, setClientTimeData] = useState<any>([]);
     const [ClientCategoryPopupStatus, setClientCategoryPopupStatus] = useState(false);
@@ -42,22 +47,34 @@ const SiteCompositionComponent = (Props: any) => {
     const [EIClientCategory, setEIClientCategory] = useState([]);
     const [EducationClientCategory, setEducationClientCategory] = useState([]);
     const [MigrationClientCategory, setMigrationClientCategory] = useState([]);
-    // const [SitesTaggingData, setSitesTaggingData] = useState([]);
     const [isPortfolioComposition, setIsPortfolioComposition] = useState(false);
-    const [checkBoxStatus, setCheckBoxStatus] = useState(false)
-
+    const [EditComponentPanelStaus, setEditComponentPanelStaus] = useState(false);
+    const [checkBoxStatus, setCheckBoxStatus] = useState(false);
+    const [selectedComponentData, setSelectedComponentData] = useState<any>([]);
+    const closePopupCallBack = Props.closePopupCallBack;
     const SiteCompositionObject: any = {
         ClientTime: [],
         selectedClientCategory: [],
         SiteCompositionSettings: []
     }
-
     useEffect(() => {
         setSiteTypes(SiteData);
         let tempData: any = [];
         let tempData2: any = [];
         BackupSiteTypeData = []
-        setClientTimeData(ClientTime);
+        if (ClientTime == null || ClientTime == false || ClientTime == undefined || ClientTime?.length == 0) {
+            const CompositionObject: any = {
+                SiteName: SelectedTaskDetails?.siteType,
+                ClienTimeDescription: 100,
+                localSiteComposition: true,
+                siteIcons: SelectedTaskDetails?.SiteIcon
+            }
+            setClientTimeData([CompositionObject]);
+            ClientTime = [CompositionObject];
+            setSelectedSiteCount(1)
+        } else {
+            setClientTimeData(ClientTime);
+        }
         loadAllCategoryData();
         if (SelectedClientCategoryFromProps != undefined && SelectedClientCategoryFromProps.length > 0) {
             setSelectedClientCategory(SelectedClientCategoryFromProps);
@@ -94,7 +111,7 @@ const SiteCompositionComponent = (Props: any) => {
                         if (ClientItem.SiteName == data.Title || (ClientItem.SiteName ==
                             "DA E+E" && data.Title == "ALAKDigital")) {
                             data.ClienTimeDescription = ClientItem.ClienTimeDescription;
-                            data.BtnStatus = true
+                            data.BtnStatus = true;
                         }
                     })
                     tempData2.push(data);
@@ -123,9 +140,18 @@ const SiteCompositionComponent = (Props: any) => {
             }
         }
 
-        // if (Props.SitesTaggingData != undefined && Props.SitesTaggingData.length > 0) {
-        //     setSitesTaggingData(Props.SitesTaggingData);
-        // }
+        if (Props.selectedServicesData?.length > 0 || Props.selectedComponentData?.length > 0) {
+            let tempArray: any = [];
+            if (Props.selectedServicesData?.length > 0) {
+                tempArray = Props.selectedServicesData;
+            }
+            if (Props.selectedComponentData?.length > 0) {
+                tempArray = Props.selectedComponentData;
+            }
+            setSelectedComponentData(tempArray[0])
+        } else {
+            setSelectedComponentData([]);
+        }
     }, [])
 
     const selectSiteCompositionFunction = (e: any, Index: any) => {
@@ -224,15 +250,7 @@ const SiteCompositionComponent = (Props: any) => {
                 setCheckBoxStatus(false);
                 setClientTimeData([])
             }
-            // if (ClientTime != undefined && ClientTime.length > 0) {
-            //     setIsPortfolioComposition(true);
-            //     setProportionalStatus(true);
-            //     setCheckBoxStatus(true);
-            // } else {
-            //     setIsPortfolioComposition(false);
-            //     setCheckBoxStatus(false);
-            // }
-            // setCheckBoxStatus(true);
+
         }
         if (Type == "Overridden") {
             let object: any;
@@ -242,7 +260,6 @@ const SiteCompositionComponent = (Props: any) => {
                 object = { ...SiteCompositionSettings[0], localSiteComposition: true }
             }
             SiteCompositionSettings[0] = object;
-
         }
         SiteCompositionObject.SiteCompositionSettings = SiteCompositionSettings;
         SiteCompositionObject.ClientTime = ClientTimeData;
@@ -453,20 +470,52 @@ const SiteCompositionComponent = (Props: any) => {
         setSearchedClientCategoryData([]);
         setSearchedClientCategoryDataForInput([]);
         SelectedClientCategoryFromDataList(selectedCategory, Type);
-
     }
 
     const SelectedClientCategoryFromDataList = (selectedCategory: any, Type: any) => {
         if (ClientCategoryPopupSiteName == "EPS") {
+            // if (EPSClientCategory?.length > 0) {
+            //     let checkDataExistInList: any = checkDataExist(EPSClientCategory, selectedCategory);
+            //     if (checkDataExistInList) {
+            //         EPSClientCategory.push(selectedCategory);
+            //     }
+            // } else {
+            //     EPSClientCategory.push(selectedCategory);
+            // }
             EPSClientCategory[0] = selectedCategory;
         }
         if (ClientCategoryPopupSiteName == "EI") {
-            EIClientCategory[0] = selectedCategory;
+            // if (EIClientCategory?.length > 0) {
+            //     let checkDataExistInList: any = checkDataExist(EIClientCategory, selectedCategory);
+            //     if (checkDataExistInList) {
+            //         EIClientCategory.push(selectedCategory);
+            //     }
+            // } else {
+            //     EIClientCategory.push(selectedCategory);
+            // }
+            EIClientCategory[0] = selectedCategory
         }
         if (ClientCategoryPopupSiteName == "Education") {
+            // if (EducationClientCategory?.length > 0) {
+            //     let checkDataExistInList: any = checkDataExist(EducationClientCategory, selectedCategory);
+            //     if (checkDataExistInList) {
+            //         EducationClientCategory.push(selectedCategory);
+            //     }
+            // } else {
+            //     EducationClientCategory.push(selectedCategory);
+            // }
             EducationClientCategory[0] = selectedCategory;
         }
+
         if (ClientCategoryPopupSiteName == "Migration") {
+            // if (MigrationClientCategory?.length > 0) {
+            //     let checkDataExistInList: any = checkDataExist(MigrationClientCategory, selectedCategory);
+            //     if (checkDataExistInList) {
+            //         MigrationClientCategory.push(selectedCategory);
+            //     }
+            // } else {
+            //     MigrationClientCategory.push(selectedCategory);
+            // }
             MigrationClientCategory[0] = selectedCategory;
         }
 
@@ -478,6 +527,16 @@ const SiteCompositionComponent = (Props: any) => {
         }
         // setSelectedClientCategory(selectedClientCategory);
     }
+
+    // const checkDataExist = (DataArray: any, ForCheck: any) => {
+    //     let checkItem: any = 0;
+    //     DataArray?.map((PrevData: any) => {
+    //         if (PrevData?.Title == ForCheck?.Title) {
+    //             checkItem++;
+    //         }
+    //     })
+    //     return checkItem;
+    // }
 
     const saveSelectedClientCategoryData = () => {
         let isCategorySelected: any = false;
@@ -602,90 +661,229 @@ const SiteCompositionComponent = (Props: any) => {
 
     }
 
+    // ************************* This is used for updating Site COmposition on Backend Side *******************
+
+    const UpdateSiteTaggingAndClientCategory = async () => {
+        let SitesTaggingData: any = [];
+        let ClientCategoryIDs: any = [];
+        let ClientCategoryData: any = [];
+        let SiteCompositionSettingData: any = [];
+        let SiteTaggingJSON: any = [];
+        let TotalPercentageCount: any = 0;
+        let TaskShuoldBeUpdate: any = true;
+
+        if (ClientTimeData.length > 0) {
+            SitesTaggingData = ClientTimeData;
+        } else {
+            SitesTaggingData = ClientTime;
+        }
+        if (SelectedClientCategoryBackupArray?.length > 0) {
+            ClientCategoryData = SelectedClientCategoryBackupArray;
+        } else {
+            ClientCategoryData = SelectedClientCategoryFromProps;
+        }
+        if (SiteCompositionSettings.length > 0) {
+            SiteCompositionSettingData = SiteCompositionSettings;
+        } else {
+            SiteCompositionSettingData = SiteCompositionSettings;
+        }
+        if (ClientCategoryData?.length > 0) {
+            ClientCategoryData.map((dataItem: any) => {
+                ClientCategoryIDs.push(dataItem.Id);
+            })
+        } else {
+            ClientCategoryIDs = [];
+        }
+
+        if (ClientTimeData != undefined && ClientTimeData.length > 0) {
+            let SiteIconStatus: any = false
+            ClientTimeData?.map((ClientTimeItems: any) => {
+                if (ClientTimeItems.siteIcons != undefined) {
+                    if (ClientTimeItems.siteIcons?.length > 0 || ClientTimeItems.siteIcons?.Url?.length > 0) {
+                        SiteIconStatus = true;
+                    }
+                }
+                if (ClientTimeItems.ClientCategory != undefined || SiteIconStatus) {
+                    let newObject: any = {
+                        SiteName: ClientTimeItems.SiteName != undefined ? ClientTimeItems.SiteName : ClientTimeItems.Title,
+                        ClienTimeDescription: ClientTimeItems.ClienTimeDescription,
+                        Available: true,
+                        siteIcons: ClientTimeItems.siteIcons
+                    }
+                    SiteTaggingJSON.push(newObject);
+                } else {
+                    SiteTaggingJSON.push(ClientTimeItems);
+                }
+            })
+
+        }
+
+        if (SiteTaggingJSON?.length > 0) {
+            SiteTaggingJSON.map((itemData: any) => {
+                TotalPercentageCount = TotalPercentageCount + Number(itemData.ClienTimeDescription);
+            })
+        }
+
+        if (TotalPercentageCount > 101) {
+            TaskShuoldBeUpdate = false;
+            TotalPercentageCount = 0
+            alert("site composition allocation should not be more than 100%");
+        }
+        if (TotalPercentageCount.toFixed(0) < 99 && TotalPercentageCount > 0) {
+            TotalPercentageCount = 0
+            let conformationSTatus = confirm("Site composition should not be less than 100% if you still want to do it click on OK")
+            if (conformationSTatus) {
+                TaskShuoldBeUpdate = true;
+            } else {
+                TaskShuoldBeUpdate = false;
+            }
+        }
+        if (TaskShuoldBeUpdate) {
+            try {
+                let web = new Web(AllListIdData.siteUrl);
+                await web.lists.getById(ListId).items.getById(ItemId).update({
+                    ClientTime: SiteTaggingJSON?.length > 0 ? JSON.stringify(SiteTaggingJSON) : JSON.stringify(ClientTimeData),
+                    ClientCategoryId: { "results": (ClientCategoryIDs != undefined && ClientCategoryIDs.length > 0) ? ClientCategoryIDs : [] },
+                    SiteCompositionSettings: (SiteCompositionSettingData != undefined && SiteCompositionSettingData.length > 0) ? JSON.stringify(SiteCompositionSettingData) : JSON.stringify(SiteCompositionSettings),
+                }).then(() => {
+                    console.log("Site Composition Updated !!!");
+                    alert("save successfully !!!");
+                    ClientTimeData = [];
+                    closePopupCallBack();
+                })
+            } catch (error) {
+                console.log("Error : ", error.message)
+            }
+        }
+        if (usedFor == "Component-Profile") {
+            // closePopupCallBack()
+        }
+
+    }
+
+    const editComponentCallback = React.useCallback(() => {
+        setEditComponentPanelStaus(false);
+    }, [])
+
+    const openEditComponentPanelFunction = () => {
+        if (selectedComponentData?.Id != undefined) {
+            setEditComponentPanelStaus(true);
+        } else {
+            alert("There are No Tagged Component/Services");
+        }
+
+    }
+
+
     //    ************* this is Custom Header For Client Category Popup *****************
 
     const onRenderCustomClientCategoryHeader = () => {
         return (
             <div className={ServicesTaskCheck ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"} >
-                <div style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600", marginLeft: '20px' }}>
-                    <span>
-                        Select Client Category
-                    </span>
+                <div className="subheading siteColor">
+                    Select Client Category
                 </div>
-                <Tooltip ComponentId="1626" />
+                <Tooltip ComponentId="1626" isServiceTask={ServicesTaskCheck} />
             </div>
         )
     }
     const onRenderFooter = () => {
         return (
             <footer
-                className={ServicesTaskCheck ? "serviepannelgreena bg-f4 pe-2 py-2 text-end" : "bg-f4 pe-2 py-2 text-end"}
+                className={ServicesTaskCheck ? "serviepannelgreena bg-f4 p-3" : "bg-f4 p-3"}
                 style={{ position: "absolute", width: "100%", bottom: "0" }}
             >
-                <span>
-                    <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >
-                        Manage Smart Taxonomy
-                    </a>
-                </span>
-                <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveSelectedClientCategoryData} >
-                    Save
-                </button>
+                <div className="alignCenter justify-content-between">
+                    <div>
+                        <div id="addNewTermDescription">
+                            <p className="mb-1"> New items are added under the currently selected item.
+                                <span><a className="hreflink" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} > Add New Item </a></span>
+                            </p>
+                        </div>
+                        <div id="SendFeedbackTr">
+                            <p className="mb-1">Make a request or send feedback to the Term Set manager.
+                                <span><a className="hreflink" onClick={() => alert("We are working on it. This feature will be live soon..")}> Send Feedback </a></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <span>
+                            <a className="siteColor mx-1" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} >
+                                Manage Smart Taxonomy
+                            </a>
+                        </span>
+                        <button type="button" className="btn btn-primary px-3 mx-1" onClick={saveSelectedClientCategoryData} >
+                            Save
+                        </button>
+                    </div>
+
+                </div>
             </footer>
         )
     }
 
     let TotalPercent: any = 0;
     return (
-        <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
-            <div className="col-sm-12 ps-3">
-                <input
-                    type="radio"
-                    id="Proportional"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
-                    onChange={() => ChangeSiteCompositionSettings("Proportional")}
-                    name="SiteCompositions"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
-                    title="add Proportional Time"
-                    className="me-1"
-                />
-                <label>Proportional</label>
-                <input
-                    type="radio"
-                    id="Manual"
-                    name="SiteCompositions"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
-                    title="add manual Time"
-                    className="mx-1"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
-                    onChange={() => ChangeSiteCompositionSettings("Manual")}
-                />
-                <label>Manual</label>
-                <input
-                    type="radio"
-                    id="Portfolio"
-                    name="SiteCompositions"
-                    defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
-                    title="Portfolio"
-                    value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
-                    onChange={() => ChangeSiteCompositionSettings("Portfolio")}
-                    className="mx-1" />
-                <label>
-                    Portfolio
-                </label>
-                <img className="mt-0 siteColor mx-1" onClick={() => alert("We are working on it. This feature will be live soon..")} title="Click here to edit tagged portfolio site composition." src="/sites/HHHH/SiteCollectionImages/ICONS/32/icon_inline.png" />
-                <span className="pull-right">
+        <div className={ServicesTaskCheck ? "serviepannelgreena" : ""} >
+            <div className="col-sm-12">
+                <span className="SpfxCheckRadio">
                     <input
-                        type="checkbox"
-                        className="form-check-input mb-0 ms-2 mt-1 mx-1 rounded-0"
+                        type="radio"
+                        id="Proportional"
+                        defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
+                        onChange={() => ChangeSiteCompositionSettings("Proportional")}
+                        name="SiteCompositions"
+                        value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Proportional : false}
+                        title="add Proportional Time"
+                        className="radio"
+                    />
+                    Proportional
+                </span>
+                <span className="SpfxCheckRadio">
+                    <input
+                        type="radio"
+                        id="Manual"
+                        name="SiteCompositions"
+                        defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
+                        title="add manual Time"
+                        className="radio"
+                        value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Manual : false}
+                        onChange={() => ChangeSiteCompositionSettings("Manual")}
+                    />
+                    <label> Manual </label>
+                </span>
+                <span className="SpfxCheckRadio">
+                    <input
+                        type="radio"
+                        id="Portfolio"
+                        name="SiteCompositions"
+                        defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
+                        title="Portfolio"
+                        value={SiteCompositionSettings ? SiteCompositionSettings[0]?.Portfolio : false}
+                        onChange={() => ChangeSiteCompositionSettings("Portfolio")}
+                        className="radio" />
+                    <label>
+                        Portfolio
+                    </label>
+                </span>
+                <span className="alignIcon"><span className="svg__iconbox svg__icon--editBox" onClick={openEditComponentPanelFunction} title="Click here to edit tagged portfolio site composition."></span></span>
+                <span className="alignCenter justify-content-center pull-right">
+                    <input type="checkbox" className="form-check-input mx-1"
                         defaultChecked={SiteCompositionSettings ? SiteCompositionSettings[0]?.localSiteComposition : false}
                         onChange={() => ChangeSiteCompositionSettings("Overridden")}
                     />
-                    <label data-toggle="tooltip" data-placement="bottom" title="If this is checked then it should consider site allocations in Time Entry from Task otherwise from tagged component.">
+                    <label className="alignCenter">
                         Overridden
+                        <span className="hover-text alignIcon">
+                            <span className="svg__iconbox svg__icon--info dark"></span>
+                            <span className="tooltip-text pop-left">
+                                If this is checked then it should consider site allocations in Time Entry from Task otherwise from tagged component.
+                            </span>
+                        </span>
                     </label>
                 </span>
             </div>
-            <div className="my-2 ps-3">
+            <div className="my-2">
                 <table className="table table-bordered mb-1">
                     {SiteTypes != undefined && SiteTypes.length > 0 ?
                         <tbody>
@@ -696,88 +894,113 @@ const SiteCompositionComponent = (Props: any) => {
                                         TotalPercent = TotalPercent + Number(num);
                                     }
                                     return (
-                                        <tr>
-                                            <th scope="row" className="m-0 p-1 align-middle" style={{ width: "3%" }}>
-                                                {checkBoxStatus ? <input
-                                                    className="form-check-input rounded-0" type="checkbox"
-                                                    checked={siteData.BtnStatus}
-                                                    value={siteData.BtnStatus}
-                                                    disabled={checkBoxStatus ? true : false}
-                                                    style={checkBoxStatus ? { cursor: "not-allowed" } : {}}
-                                                    onChange={(e) => selectSiteCompositionFunction(e, index)}
-                                                /> : <input
-                                                    className="form-check-input rounded-0" type="checkbox"
-                                                    checked={siteData.BtnStatus}
-                                                    value={siteData.BtnStatus}
-                                                    onChange={(e) => selectSiteCompositionFunction(e, index)}
-                                                />}
-
+                                        <tr
+                                            className={siteData?.StartEndDateValidation ? "Disabled-Link bg-th" : 'hreflink border-1'}
+                                        >
+                                            <th scope="row" style={{ width: "3%" }}>
+                                                <div className="m-0 p-1 align-middle">
+                                                    {checkBoxStatus ? <input
+                                                        className="form-check-input" type="checkbox"
+                                                        checked={siteData.BtnStatus}
+                                                        value={siteData.BtnStatus}
+                                                        disabled={checkBoxStatus ? true : false}
+                                                        style={checkBoxStatus ? { cursor: "not-allowed" } : {}}
+                                                        onChange={(e) => selectSiteCompositionFunction(e, index)}
+                                                    /> : <input
+                                                        className="form-check-input" type="checkbox"
+                                                        checked={siteData.BtnStatus}
+                                                        value={siteData.BtnStatus}
+                                                        onChange={(e) => selectSiteCompositionFunction(e, index)}
+                                                    />}
+                                                </div>
                                             </th>
-                                            <td className="m-0 p-0 align-middle" style={{ width: "30%" }}>
-                                                <img src={siteData.Item_x005F_x0020_Cover ? siteData.Item_x005F_x0020_Cover.Url : ""} style={{ width: '25px' }} className="mx-2" />
-                                                {siteData.Title}
+                                            <td className="m-0 p-1 align-middle" style={{ width: "30%" }}>
+                                                <div className="alignCenter">
+                                                    <img src={siteData.Item_x005F_x0020_Cover ? siteData.Item_x005F_x0020_Cover.Url : ""} style={{ width: '25px' }} className="mx-2" />
+                                                    {siteData.Title}
+                                                </div>
                                             </td>
-                                            <td className="m-0 p-1" style={{ width: "12%" }}>
-                                                {ProportionalStatus ?
-                                                    <>{isPortfolioComposition ? <input
-                                                        type="number" min="1" max='100'
-                                                        value={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
-                                                        className="form-control p-1" readOnly={true} style={{ cursor: "not-allowed" }}
-                                                        onChange={(e) => ChangeTimeManuallyFunction(e, siteData.Title)}
-                                                    /> : <input type="number" min="1" max='100'
-                                                        style={ProportionalStatus && siteData.BtnStatus ? { cursor: "not-allowed" } : {}}
-                                                        defaultValue={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
-                                                        value={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
-                                                        className="form-control p-1" readOnly={ProportionalStatus}
-                                                    />}  </>
-                                                    : <> {siteData.BtnStatus ?
-                                                        <input
+                                            <td style={{ width: "12%" }}>
+                                                <div className="alignCenter">
+                                                    {ProportionalStatus ?
+                                                        <>{isPortfolioComposition ? <input
                                                             type="number" min="1" max='100'
-                                                            defaultValue={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
-                                                            className="form-control p-1" style={{ width: "100%" }}
+                                                            value={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
+                                                            className="form-control p-1" readOnly={true} style={{ cursor: "not-allowed" }}
                                                             onChange={(e) => ChangeTimeManuallyFunction(e, siteData.Title)}
-                                                        /> : <input type="number" readOnly={true} style={{ cursor: "not-allowed", width: "100%" }}
-                                                        />}</>
-                                                }
+                                                        /> : <input type="number" min="1" max='100'
+                                                            style={ProportionalStatus && siteData.BtnStatus ? { cursor: "not-allowed" } : {}}
+                                                            defaultValue={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
+                                                            value={siteData.BtnStatus ? (100 / selectedSiteCount).toFixed(2) : ""}
+                                                            className="form-control p-1" readOnly={ProportionalStatus}
+                                                        />}  </>
+                                                        : <> {siteData.BtnStatus ?
+                                                            <input
+                                                                type="number" min="1" max='100'
+                                                                defaultValue={siteData.ClienTimeDescription ? Number(siteData.ClienTimeDescription).toFixed(2) : null}
+                                                                className="form-control p-1" style={{ width: "100%" }}
+                                                                onChange={(e) => ChangeTimeManuallyFunction(e, siteData.Title)}
+                                                            /> : <input type="number" readOnly={true} style={{ cursor: "not-allowed", width: "100%" }}
+                                                            />}</>
+                                                    }
+                                                </div>
                                             </td>
-                                            <td className="m-0 p-1 align-middle" style={{ width: "3%" }}>
-                                                <span>{siteData.BtnStatus ? "%" : ''}</span>
+                                            <td style={{ width: "3%" }}>
+                                                <div className="alignCenter">{siteData.BtnStatus ? "%" : ''}</div>
                                             </td>
-                                            <td className="m-0 p-1 align-middle" style={{ width: "12%" }}>
-                                                {ProportionalStatus ? <span>{siteData.BtnStatus && TotalTime ? (TotalTime / selectedSiteCount).toFixed(2) + " h" : siteData.BtnStatus ? "0 h" : null}</span> : <span>{siteData.BtnStatus && TotalTime ? (siteData.ClienTimeDescription ? (siteData.ClienTimeDescription * TotalTime / 100).toFixed(2) + " h" : "0 h") : siteData.BtnStatus ? "0 h" : null}</span>}
+                                            <td style={{ width: "12%" }}>
+                                                <div className="alignCenter">{ProportionalStatus ? <span>{siteData.BtnStatus && TotalTime ? (TotalTime / selectedSiteCount).toFixed(2) + " h" : siteData.BtnStatus ? "0 h" : null}</span> : <span>{siteData.BtnStatus && TotalTime ? (siteData.ClienTimeDescription ? (siteData.ClienTimeDescription * TotalTime / 100).toFixed(2) + " h" : "0 h") : siteData.BtnStatus ? "0 h" : null}</span>}</div>
                                             </td>
                                             <td className="m-0 p-1 align-middle" style={{ width: "36%" }}>
                                                 {siteData.Title == "EI" ?
                                                     <>
-                                                        <div className="input-group block justify-content-between">
+                                                        <div className="input-group">
                                                             {EIClientCategory != undefined && EIClientCategory.length > 0 ?
                                                                 <> {EIClientCategory?.map((dataItem: any) => {
                                                                     if (dataItem.siteName == siteData.Title) {
                                                                         return (
-                                                                            <div className="bg-69 p-1 ps-2"> {dataItem.Title ? dataItem.Title : null}
-                                                                                <a className=""
-                                                                                    onClick={() => removeSelectedClientCategory("EI")}
-                                                                                >
-                                                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                                                </a>
+                                                                            <div className="block w-100 justify-content-between" title={dataItem.Title ? dataItem.Title : null}>
+                                                                                {dataItem.Title ? dataItem.Title : null}
+
+                                                                                <span onClick={() => removeSelectedClientCategory("EI")} className="bg-light svg__icon--cross svg__iconbox"></span>
+
                                                                             </div>
                                                                         )
                                                                     } else {
                                                                         return (
-                                                                            <input type="text" value={SearchedKeyForEI} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EI", 340)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                            <div className="input-group">
+                                                                                <input type="text"
+                                                                                    value={SearchedKeyForEI}
+                                                                                    onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EI", 340)}
+                                                                                    style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }}
+                                                                                    className="form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                                {
+                                                                                    siteData.BtnStatus ?
+                                                                                        <span className="input-group-text"
+                                                                                            onClick={() => openClientCategoryModel(340, 'EI')}
+                                                                                        >
+                                                                                            <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                                        </span>
+                                                                                        : null
+                                                                                }
+                                                                            </div>
                                                                         )
                                                                     }
                                                                 })}
-                                                                </> : <input type="text" value={SearchedKeyForEI} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EI", 340)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />}
-                                                            {
-                                                                siteData.BtnStatus ?
-                                                                    <a className="bg-white border border-secondary"
-                                                                        onClick={() => openClientCategoryModel(340, 'EI')}
-                                                                    >
-                                                                        <img src={require('../../Assets/ICON/edit_page.svg')} width="25" />
-                                                                    </a>
-                                                                    : null
-                                                            }
+                                                                </> :
+                                                                <div className="input-group">
+                                                                    <input type="text" value={SearchedKeyForEI} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EI", 340)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                    {
+                                                                        siteData.BtnStatus ?
+                                                                            <span className="input-group-text"
+                                                                                onClick={() => openClientCategoryModel(340, 'EI')}
+                                                                            >
+                                                                                <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                            </span>
+                                                                            : null
+                                                                    }
+                                                                </div>}
+
                                                         </div>
                                                         {SearchedClientCategoryDataForInput?.length > 0 && ClientCategoryPopupSiteName == "EI" ? (
                                                             <div className="SearchTableClientCategoryComponent">
@@ -796,36 +1019,48 @@ const SiteCompositionComponent = (Props: any) => {
                                                     : null}
                                                 {siteData.Title == "EPS" ?
                                                     <>
-                                                        <div className="input-group block justify-content-between">
-                                                            {EPSClientCategory != undefined && EPSClientCategory.length > 0 ?
-                                                                <> {EPSClientCategory?.map((dataItem: any) => {
-                                                                    if (dataItem.siteName == siteData.Title) {
-                                                                        return (
-                                                                            <div className="bg-69 p-1 ps-2"> {dataItem.Title ? dataItem.Title : null}
-                                                                                <a className=""
-                                                                                    onClick={() => removeSelectedClientCategory("EPS")}
-                                                                                >
-                                                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                                                </a>
-                                                                            </div>
-                                                                        )
-                                                                    } else {
-                                                                        return (
-                                                                            <input type="text" value={SearchedKeyForEPS} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EPS", 341)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
-                                                                        )
-                                                                    }
-                                                                })}
-                                                                </> : <input type="text" value={SearchedKeyForEPS} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EPS", 341)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />}
-                                                            {
-                                                                siteData.BtnStatus ?
-                                                                    <a className="bg-white border border-secondary"
-                                                                        onClick={() => openClientCategoryModel(341, "EPS")}
-                                                                    >
-                                                                        <img src={require('../../Assets/ICON/edit_page.svg')} width="25" />
-                                                                    </a>
-                                                                    : null
-                                                            }
-                                                        </div>
+
+
+                                                        {EPSClientCategory != undefined && EPSClientCategory.length > 0 ?
+                                                            <> {EPSClientCategory?.map((dataItem: any) => {
+                                                                if (dataItem.siteName == siteData.Title) {
+                                                                    return (
+                                                                        <div className="block w-100 justify-content-between" title={dataItem.Title ? dataItem.Title : null}>
+                                                                            {dataItem.Title ? dataItem.Title : null}
+                                                                            <span onClick={() => removeSelectedClientCategory("EPS")} className="bg-light hreflink svg__icon--cross svg__iconbox ms-2"></span>
+
+                                                                        </div>
+                                                                    )
+                                                                } else {
+                                                                    return (
+                                                                        <div className="input-group">
+                                                                            <input type="text" value={SearchedKeyForEPS} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EPS", 341)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                            {
+                                                                                siteData.BtnStatus ?
+                                                                                    <span className="input-group-text"
+                                                                                        onClick={() => openClientCategoryModel(341, "EPS")}>
+                                                                                        <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                                    </span>
+                                                                                    : null
+                                                                            }
+                                                                        </div>
+                                                                    )
+                                                                }
+                                                            })}
+                                                            </> : <div className="input-group">
+                                                                <input type="text" value={SearchedKeyForEPS} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "EPS", 341)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                {
+                                                                    siteData.BtnStatus ?
+                                                                        <span className="input-group-text"
+                                                                            onClick={() => openClientCategoryModel(341, "EPS")}
+                                                                        >
+                                                                            <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                        </span>
+                                                                        : null
+                                                                }
+                                                            </div>
+
+                                                        }
                                                         {SearchedClientCategoryDataForInput?.length > 0 && ClientCategoryPopupSiteName == "EPS" ? (
                                                             <div className="SearchTableClientCategoryComponent">
                                                                 <ul className="list-group">
@@ -843,35 +1078,52 @@ const SiteCompositionComponent = (Props: any) => {
                                                     : null}
                                                 {siteData.Title == "Education" ?
                                                     <>
-                                                        <div className="input-group block justify-content-between">
+                                                        <div className="input-group justify-content-between">
                                                             {EducationClientCategory != undefined && EducationClientCategory.length > 0 ?
                                                                 <> {EducationClientCategory?.map((dataItem: any) => {
                                                                     if (dataItem.siteName == siteData.Title) {
                                                                         return (
-                                                                            <div className="bg-69 p-1 ps-2"> {dataItem.Title ? dataItem.Title : null}
-                                                                                <a className=""
-                                                                                    onClick={() => removeSelectedClientCategory("Education")}
-                                                                                >
-                                                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                                                </a>
+                                                                            <div className="block justify-content-between w-100" title={dataItem.Title ? dataItem.Title : null}>
+                                                                                {dataItem.Title ? dataItem.Title : null}
+                                                                                <span onClick={() => removeSelectedClientCategory("Education")} className="bg-light svg__icon--cross svg__iconbox"></span>
                                                                             </div>
                                                                         )
                                                                     } else {
                                                                         return (
-                                                                            <input type="text" value={SearchedKeyForEducation} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Education", 344)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                            <div className="input-group">
+                                                                                <input type="text" value={SearchedKeyForEducation} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Education", 344)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                                {
+                                                                                    siteData.BtnStatus ?
+                                                                                        <span className="input-group-text"
+                                                                                            onClick={() => openClientCategoryModel(344, "Education")}
+                                                                                        >
+                                                                                            <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                                        </span>
+                                                                                        : null
+                                                                                }
+                                                                            </div>
                                                                         )
                                                                     }
                                                                 })}
-                                                                </> : <input type="text" value={SearchedKeyForEducation} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Education", 344)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />}
-
-                                                            {
-                                                                siteData.BtnStatus ?
-                                                                    <a className="bg-white border border-secondary"
-                                                                        onClick={() => openClientCategoryModel(344, "Education")}
-                                                                    >
-                                                                        <img src={require('../../Assets/ICON/edit_page.svg')} width="25" />
-                                                                    </a>
-                                                                    : null
+                                                                </> :
+                                                                <div className="input-group">
+                                                                    <input type="text"
+                                                                        value={SearchedKeyForEducation}
+                                                                        onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Education", 344)}
+                                                                        style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }}
+                                                                        className="form-control"
+                                                                        placeholder="Search Client Category Here!"
+                                                                        readOnly={siteData.BtnStatus ? false : true} />
+                                                                    {
+                                                                        siteData.BtnStatus ?
+                                                                            <span className="input-group-text"
+                                                                                onClick={() => openClientCategoryModel(344, "Education")}
+                                                                            >
+                                                                                <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                            </span>
+                                                                            : null
+                                                                    }
+                                                                </div>
                                                             }
                                                         </div>
                                                         {SearchedClientCategoryDataForInput?.length > 0 && ClientCategoryPopupSiteName == "Education" ? (
@@ -891,35 +1143,61 @@ const SiteCompositionComponent = (Props: any) => {
                                                     : null}
                                                 {siteData.Title == "Migration" ?
                                                     <>
-                                                        <div className="input-group block justify-content-between">
+                                                        <div className="input-group justify-content-between">
                                                             {MigrationClientCategory != undefined && MigrationClientCategory.length > 0 ?
                                                                 <> {MigrationClientCategory?.map((dataItem: any) => {
                                                                     if (dataItem.siteName == siteData.Title) {
                                                                         return (
-                                                                            <div className="bg-69 p-1 ps-2"> {dataItem.Title ? dataItem.Title : null}
-                                                                                <a className=""
-                                                                                    onClick={() => removeSelectedClientCategory("Migration")}
-                                                                                >
-                                                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                                                </a>
+                                                                            <div className="block justify-content-between w-100" title={dataItem.Title ? dataItem.Title : null}>
+                                                                                {dataItem.Title ? dataItem.Title : null}
+                                                                                <span onClick={() => removeSelectedClientCategory("Migration")} className="bg-light svg__icon--cross svg__iconbox"></span>
+
                                                                             </div>
                                                                         )
                                                                     } else {
                                                                         return (
-                                                                            <input type="text" value={SearchedKeyForMigration} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Migration", 569)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />
+                                                                            <div className="input-group">
+                                                                                <input type="text"
+                                                                                    value={SearchedKeyForMigration}
+                                                                                    onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Migration", 569)}
+                                                                                    style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }}
+                                                                                    className="form-control"
+                                                                                    placeholder="Search Client Category Here!"
+                                                                                    readOnly={siteData.BtnStatus ? false : true}
+                                                                                />
+                                                                                {
+                                                                                    siteData.BtnStatus ?
+                                                                                        <span className="input-group-text"
+                                                                                            onClick={() => openClientCategoryModel(569, 'Migration')}
+                                                                                        >
+                                                                                            <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                                        </span>
+                                                                                        : null
+                                                                                }
+                                                                            </div>
                                                                         )
                                                                     }
                                                                 })}
-                                                                </> : <input type="text" value={SearchedKeyForMigration} onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Migration", 569)} style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }} className="border-secondary form-control" placeholder="Search Client Category Here!" readOnly={siteData.BtnStatus ? false : true} />}
-
-                                                            {
-                                                                siteData.BtnStatus ?
-                                                                    <a className="bg-white border border-secondary"
-                                                                        onClick={() => openClientCategoryModel(569, 'Migration')}
-                                                                    >
-                                                                        <img src={require('../../Assets/ICON/edit_page.svg')} width="25" />
-                                                                    </a>
-                                                                    : null
+                                                                </> :
+                                                                <div className="input-group">
+                                                                    <input type="text"
+                                                                        value={SearchedKeyForMigration}
+                                                                        onChange={(e) => autoSuggestionsForClientCategoryIdividual(e, "Migration", 569)}
+                                                                        style={siteData.BtnStatus ? {} : { cursor: "not-allowed" }}
+                                                                        className="form-control"
+                                                                        placeholder="Search Client Category Here!"
+                                                                        readOnly={siteData.BtnStatus ? false : true}
+                                                                    />
+                                                                    {
+                                                                        siteData.BtnStatus ?
+                                                                            <span className="input-group-text"
+                                                                                onClick={() => openClientCategoryModel(569, 'Migration')}
+                                                                            >
+                                                                                <span title="Client Category Popup" className="svg__iconbox svg__icon--editBox hreflink"></span>
+                                                                            </span>
+                                                                            : null
+                                                                    }
+                                                                </div>
                                                             }
                                                         </div>
                                                         {SearchedClientCategoryDataForInput?.length > 0 && ClientCategoryPopupSiteName == "Migration" ? (
@@ -937,7 +1215,6 @@ const SiteCompositionComponent = (Props: any) => {
                                                             </div>) : null}
                                                     </>
                                                     : null}
-
                                             </td>
                                         </tr>
                                     )
@@ -946,152 +1223,117 @@ const SiteCompositionComponent = (Props: any) => {
                         </tbody>
                         : null}
                 </table>
-                <div className="bg-secondary d-flex justify-content-end p-1 shadow-lg">
-                    <div className="bg-body col-sm-2 p-1">
+
+
+                <footer className="bg-e9  d-flex justify-content-end full-width py-1">
+                    <div className="bg-body col-sm-1 p-1 alignCenter">
                         <div className="">{isPortfolioComposition == true || ProportionalStatus == false ? `${TotalPercent} %` : "100%"}</div>
                     </div>
-                    <div className="bg-body col-sm-2 p-1 mx-2">
-                        <div className="">{TotalTime ? TotalTime : 0}</div>
+                    <div className="bg-body col-sm-1 mx-1 p-1 alignCenter">
+                        <div className="">{TotalTime ? TotalTime.toFixed(0) : 0}</div>
                     </div>
-                </div>
-            </div>
-            {/* ********************* this Client Category panel ****************** */}
-            <Panel
-                onRenderHeader={onRenderCustomClientCategoryHeader}
-                isOpen={ClientCategoryPopupStatus}
-                onDismiss={closeClientCategoryPopup}
-                isBlocking={ClientCategoryPopupStatus}
-                type={PanelType.custom}
-                customWidth="850px"
-                onRenderFooter={onRenderFooter}
-            >
-                <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
-                    <div className="">
-                        <div className="row">
-                            <div className="d-flex text-muted pt-3 showCateg">
-                                <ImPriceTags />
-                                <div className="pb-3 mb-0">
-                                    <div id="addNewTermDescription">
-                                        <p className="mb-1"> New items are added under the currently selected item.
-                                            <span><a className="hreflink" target="_blank" data-interception="off" href={`${siteUrls}/SitePages/SmartMetadata.aspx`} > Add New Item </a></span>
-                                        </p>
-                                    </div>
-                                    <div id="SendFeedbackTr">
-                                        <p className="mb-1">Make a request or send feedback to the Term Set manager.
-                                            <span><a className="hreflink"> Send Feedback </a></span>
-                                        </p>
-                                    </div>
-
+                    <div className="me-1">
+                        <button className="btn btn-primary px-4 " onClick={UpdateSiteTaggingAndClientCategory} style={usedFor == 'Task-Profile' ? { display: 'block' } : { display: 'none' }}>
+                            Save
+                        </button>
+                    </div>
+                </footer>
+                {/* ********************* this Client Category panel ****************** */}
+                <Panel
+                    onRenderHeader={onRenderCustomClientCategoryHeader}
+                    isOpen={ClientCategoryPopupStatus}
+                    onDismiss={closeClientCategoryPopup}
+                    isBlocking={false}
+                    type={PanelType.custom}
+                    customWidth="850px"
+                    onRenderFooter={onRenderFooter}
+                >
+                    <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
+                        <div className="">
+                            <div className='col-sm-12'>
+                                <input type="checkbox" className="form-check-input me-1 rounded-0" defaultChecked={SearchWithDescriptionStatus} onChange={() => setSearchWithDescriptionStatus(SearchWithDescriptionStatus ? false : true)} /> <label>Include description (info-icons) in search</label>
+                                <input className="form-control my-2" type='text' placeholder={`Search ${ClientCategoryPopupSiteName} Client Category`} value={searchedKey} onChange={(e) => AutoSuggestionForClientCategory(e, "Popup")} />
+                                {SearchedClientCategoryData?.length > 0 ? (
+                                    <div className="SearchTableCategoryComponent">
+                                        <ul className="list-group">
+                                            {SearchedClientCategoryData.map((item: any) => {
+                                                return (
+                                                    <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Popup")} >
+                                                        <a>{item.newLabel}</a>
+                                                    </li>
+                                                )
+                                            }
+                                            )}
+                                        </ul>
+                                    </div>) : null}
+                                { }
+                                <div className="border full-width ActivityBox">
+                                    {ClientCategoryPopupSiteName == "EPS" ?
+                                        <>
+                                            {EPSClientCategory != undefined && EPSClientCategory.length > 0 ?
+                                                <span className="block me-1">
+                                                    <span>
+                                                        {EPSClientCategory != undefined && EPSClientCategory.length > 0 ? EPSClientCategory[0].Title : null}
+                                                    </span>
+                                                    <span onClick={() => removeSelectedClientCategory("EPS")} className="bg-light hreflink svg__icon--cross svg__iconbox ms-2">
+                                                    </span>
+                                                </span>
+                                                : null}
+                                        </>
+                                        : null}
+                                    {ClientCategoryPopupSiteName == "EI" ?
+                                        <>
+                                            {EIClientCategory != undefined && EIClientCategory.length > 0 ?
+                                                <span className="block me-1">
+                                                    <span>{EIClientCategory[0].Title}</span>
+                                                    <span onClick={() => removeSelectedClientCategory("EI")} className="hreflink bg-light svg__icon--cross svg__iconbox"></span>
+                                                </span>
+                                                : null}
+                                        </>
+                                        : null}
+                                    {ClientCategoryPopupSiteName == "Education" ?
+                                        <>
+                                            {EducationClientCategory != undefined && EducationClientCategory.length > 0 ?
+                                                <span className="block me-1">
+                                                    <span>{EducationClientCategory[0].Title}</span>
+                                                    <span onClick={() => removeSelectedClientCategory("Education")} className="bg-light hreflink ms-2 svg__icon--cross svg__iconbox"></span>
+                                                </span>
+                                                : null}
+                                        </>
+                                        : null}
+                                    {ClientCategoryPopupSiteName == "Migration" ?
+                                        <>
+                                            {MigrationClientCategory != undefined && MigrationClientCategory.length > 0 ?
+                                                <span className="block me-1">
+                                                    <span>{MigrationClientCategory[0].Title}</span>
+                                                    <span onClick={() => removeSelectedClientCategory("Migration")} className="bg-light hreflink svg__icon--cross svg__iconbox ms-2"></span>
+                                                </span> : null}
+                                        </>
+                                        : null}
                                 </div>
-                                <div className="d-end">
-                                    <button type="button" className="btn btn-primary" onClick={saveSelectedClientCategoryData}>
-                                        OK
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className='col-sm-12'>
-                            <input type="checkbox" className="form-check-input me-1 rounded-0" defaultChecked={SearchWithDescriptionStatus} onChange={() => setSearchWithDescriptionStatus(SearchWithDescriptionStatus ? false : true)} /> <label>Include description (info-icons) in search</label>
-                            <input className="form-control my-2" type='text' placeholder={`Search ${ClientCategoryPopupSiteName} Client Category`} value={searchedKey} onChange={(e) => AutoSuggestionForClientCategory(e, "Popup")} />
-                            {SearchedClientCategoryData?.length > 0 ? (
-                                <div className="SearchTableCategoryComponent">
-                                    <ul className="list-group">
-                                        {SearchedClientCategoryData.map((item: any) => {
+                                {SelectedSiteClientCategoryData != undefined && SelectedSiteClientCategoryData.length > 0 ?
+                                    <ul className="categories-menu p-0">
+                                        {SelectedSiteClientCategoryData.map(function (item: any) {
                                             return (
-                                                <li className="list-group-item rounded-0 list-group-item-action" key={item.id} onClick={() => SelectClientCategoryFromAutoSuggestion(item, "Popup")} >
-                                                    <a>{item.newLabel}</a>
-                                                </li>
-                                            )
-                                        }
-                                        )}
-                                    </ul>
-                                </div>) : null}
-
-                            <div className="border full-width my-2 p-2 pb-1 ActivityBox">
-                                {ClientCategoryPopupSiteName == "EPS" ?
-                                    <>
-                                        {EPSClientCategory != undefined && EPSClientCategory.length > 0 ?
-                                            <span className="bg-69 p-1 ps-2">
-                                                {EPSClientCategory != undefined && EPSClientCategory.length > 0 ? EPSClientCategory[0].Title : null}
-                                                <a className=""
-                                                    onClick={() => removeSelectedClientCategory("EPS")}
-                                                >
-                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                </a>
-                                            </span>
-                                            : null}
-                                    </>
-                                    : null}
-                                {ClientCategoryPopupSiteName == "EI" ?
-                                    <>
-                                        {EIClientCategory != undefined && EIClientCategory.length > 0 ?
-                                            <span className="bg-69 p-1 ps-2">
-                                                {EIClientCategory[0].Title}
-                                                <a className=""
-                                                    onClick={() => removeSelectedClientCategory("EI")}
-                                                >
-                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                </a>
-                                            </span>
-                                            : null}
-                                    </>
-                                    : null}
-                                {ClientCategoryPopupSiteName == "Education" ?
-                                    <>
-                                        {EducationClientCategory != undefined && EducationClientCategory.length > 0 ?
-                                            <span className="bg-69 p-1 ps-2">
-                                                {EducationClientCategory[0].Title}
-                                                <a className=""
-                                                    onClick={() => removeSelectedClientCategory("Education")}
-                                                >
-                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                </a>
-                                            </span>
-                                            : null}
-                                    </>
-                                    : null}
-                                {ClientCategoryPopupSiteName == "Migration" ?
-                                    <>
-                                        {MigrationClientCategory != undefined && MigrationClientCategory.length > 0 ?
-                                            <span className="bg-69 p-1 ps-2">
-
-                                                {MigrationClientCategory[0].Title}
-                                                <a className=""
-                                                    onClick={() => removeSelectedClientCategory("Migration")}
-                                                >
-                                                    <img src={require('../../Assets/ICON/cross.svg')} width="20" className="bg-e9 border mb-1 mx-1 p-1 rounded-5" />
-                                                </a>
-
-                                            </span> : null}
-                                    </>
-                                    : null}
-
-                            </div>
-                            {SelectedSiteClientCategoryData != undefined && SelectedSiteClientCategoryData.length > 0 ?
-                                <ul className="categories-menu p-0">
-                                    {SelectedSiteClientCategoryData.map(function (item: any) {
-                                        return (
-                                            <>
-                                                <li>
-                                                    <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(item, "Popup")} >
-                                                        <a>
+                                                <>
+                                                    <li className="clientlist">
+                                                        <a className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(item, "Popup")} >
                                                             {item.Title}
                                                             {item.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                                <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                <span title="Edit" className="svg__iconbox svg__icon--info"></span>
                                                                 <div className="popover__content">
                                                                     <span>{item.Description1}</span>
                                                                 </div>
                                                             </div> : null}
                                                         </a>
-                                                    </p>
-                                                    <ul className="sub-menu clr">
-                                                        {item.Child?.map(function (child1: any) {
-                                                            return (
-                                                                <>
-                                                                    {child1.Title != null ?
-                                                                        <li>
-                                                                            <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child1, "Popup")}>
-                                                                                <a>
+                                                        <ul className="sub-menu clr">
+                                                            {item.Child?.map(function (child1: any) {
+                                                                return (
+                                                                    <>
+                                                                        {child1.Title != null ?
+                                                                            <li className="clientlist">
+
+                                                                                <a className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child1, "Popup")}>
                                                                                     {child1.Item_x0020_Cover ?
                                                                                         <img className="flag_icon"
                                                                                             style={{ height: "20px", borderRadius: "10px", border: "1px solid #000069" }}
@@ -1100,21 +1342,20 @@ const SiteCompositionComponent = (Props: any) => {
                                                                                         null}
                                                                                     {child1.Title}
                                                                                     {child1.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                                                        <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                                        <span title="Edit" className="svg__iconbox svg__icon--info"></span>
                                                                                         <div className="popover__content">
                                                                                             <span>{child1.Description1}</span>
                                                                                         </div>
                                                                                     </div> : null}
                                                                                 </a>
-                                                                            </p>
-                                                                            <ul className="sub-menu clr">
-                                                                                {child1.Child?.map(function (child2: any) {
-                                                                                    return (
-                                                                                        <>
-                                                                                            {child2.Title != null ?
-                                                                                                <li>
-                                                                                                    <p className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child2, "Popup")}>
-                                                                                                        <a>
+                                                                                <ul className="sub-menu clr">
+                                                                                    {child1.Child?.map(function (child2: any) {
+                                                                                        return (
+                                                                                            <>
+                                                                                                {child2.Title != null ?
+                                                                                                    <li>
+
+                                                                                                        <a className='mb-0 hreflink' onClick={() => SelectedClientCategoryFromDataList(child2, "Popup")}>
                                                                                                             {child2.Item_x0020_Cover ?
                                                                                                                 <img className="flag_icon"
                                                                                                                     style={{ height: "20px", borderRadius: "10px", border: "1px solid #000069" }}
@@ -1123,37 +1364,41 @@ const SiteCompositionComponent = (Props: any) => {
                                                                                                                 null}
                                                                                                             {child2.Title}
                                                                                                             {child2.Description1 ? <div className='popover__wrapper ms-1' data-bs-toggle="tooltip" data-bs-placement="auto">
-                                                                                                                <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/24/infoIcon.png" />
+                                                                                                                <span title="Edit" className="svg__iconbox svg__icon--info"></span>
                                                                                                                 <div className="popover__content">
                                                                                                                     <span>{child2.Description1}</span>
                                                                                                                 </div>
                                                                                                             </div> : null}
                                                                                                         </a>
-                                                                                                    </p>
-                                                                                                </li> : null
-                                                                                            }
-                                                                                        </>
-                                                                                    )
-                                                                                })}
-                                                                            </ul>
-                                                                        </li> : null
-                                                                    }
-                                                                </>
-                                                            )
-                                                        })}
-                                                    </ul>
-                                                </li>
-                                            </>
-                                        )
-                                    })}
-                                </ul>
-                                : null}
+
+                                                                                                    </li> : null
+                                                                                                }
+                                                                                            </>
+                                                                                        )
+                                                                                    })}
+                                                                                </ul>
+                                                                            </li> : null
+                                                                        }
+                                                                    </>
+                                                                )
+                                                            })}
+                                                        </ul>
+                                                    </li>
+                                                </>
+                                            )
+                                        })}
+                                    </ul>
+                                    : null}
+                            </div>
                         </div>
                     </div>
-
-                </div>
-            </Panel>
+                </Panel>
+            </div >
+            {EditComponentPanelStaus ?
+                <EditComponentProtfolio item={selectedComponentData} SelectD={AllListIdData} usedFor="Task-Popup" Calls={editComponentCallback} />
+                : null
+            }
         </div >
     )
 }
-export default SiteCompositionComponent;
+export default SiteCompositionComponent; 

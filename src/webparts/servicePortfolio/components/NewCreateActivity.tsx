@@ -39,7 +39,7 @@ const CreateActivity = (props: any) => {
 
     });
     const [siteType, setSiteType] = React.useState([]);
-    const [TaskTitle, setTaskTitle] = React.useState('');
+    const [TaskTitle, setTaskTitle] = React.useState(props?.selectedItem?.Title);
     const [instantCategories, setInstantCategories] = React.useState([])
     const [sendApproverMail, setSendApproverMail] = React.useState(false)
     const [taskCat, setTaskCat] = React.useState([]);
@@ -76,10 +76,10 @@ const CreateActivity = (props: any) => {
         if (props?.selectedItem?.AssignedTo?.length > 0) {
             setTaskAssignedTo(props?.selectedItem?.AssignedTo)
         }
-        if (props?.selectedItem?.ResponsibleTeam?.length > 0) {
+        if (props?.selectedItem?.ResponsibleTeam?.length > 0 || props?.selectedItem?.TeamLeader?.length>0) {
             setTaskResponsibleTeam(props?.ResponsibleTeam?.AssignedTo)
         }
-        if (props?.selectedItem?.TeamMembers?.length > 0) {
+        if (props?.selectedItem?.TeamMembers?.length > 0||props?.selectedItem?.TeamMembers?.length>0) {
             setTaskTeamMembers(props?.TeamMembers?.AssignedTo)
         }
         if (props?.selectedItem?.ClientCategory?.length > 0) {
@@ -90,6 +90,9 @@ const CreateActivity = (props: any) => {
         setSelectedItem(props?.selectedItem)
 
     }, [])
+
+
+     //   ***************** Start Callback function for  open categories  popup ************************
 
     const Call = React.useCallback((item1: any, type: any) => {
         setIsComponentPicker(false);
@@ -112,16 +115,22 @@ const CreateActivity = (props: any) => {
         // }
 
     }, []);
-    var isItemExists = function (arr: any, Id: any) {
-        var isExists = false;
-        $.each(arr, function (index: any, items: any) {
-            if (items.ID === Id) {
-                isExists = true;
-                return false;
-            }
-        });
-        return isExists;
-    };
+
+    
+     //   ***************** End  Callback function for  open categories  popup ************************
+
+    // var isItemExists = function (arr: any, Id: any) {
+    //     var isExists = false;
+    //     $.each(arr, function (index: any, items: any) {
+    //         if (items.ID === Id) {
+    //             isExists = true;
+    //             return false;
+    //         }
+    //     });
+    //     return isExists;
+    // };
+
+    // ************** start MAIN  Get smartmetadata function main function************************* 
     const GetSmartMetadata = async () => {
         SitesTypes = [];
         subCategories = [];
@@ -196,6 +205,7 @@ const CreateActivity = (props: any) => {
             })
         }
     }
+      // ************** start Get smartmetadata function End  function************************* 
     const changeTitle = (e: any) => {
         if (e.target.value.length > 56) {
             alert("Task Title is too long. Please chose a shorter name and enter the details into the task description.")
@@ -203,6 +213,8 @@ const CreateActivity = (props: any) => {
             setTaskTitle(e.target.value);
         }
     }
+
+    // *************** START  Select Tiles Function ********************************
     const setActiveTile = (item: keyof typeof save, isActiveItem: keyof typeof isActive, title: any) => {
 
         let saveItem = save;
@@ -223,7 +235,8 @@ const CreateActivity = (props: any) => {
         }
         setSave({ ...save, recentClick: isActiveItem })
     };
-
+    // *************** END   Select Tiles Function ********************************
+// ****** THIS FUNCTION IS USE FOR CATROGIES AUTO SUGGESTION ************************
     const getChilds = (item: any, items: any) => {
         let parent = JSON.parse(JSON.stringify(item))
         parent.Newlabel = `${parent?.Title}`;
@@ -239,6 +252,8 @@ const CreateActivity = (props: any) => {
             }
         });
     }
+
+    // ****** THIS FUNCTION IS USE FOR CATROGIES AUTO SUGGESTION ************************
     let getSmartMetadataItemsByTaxType = (metadataItems: any, taxType: any) => {
         var Items: any = [];
         metadataItems?.map((taxItem: any) => {
@@ -251,6 +266,8 @@ const CreateActivity = (props: any) => {
         });
         return Items;
     }
+    
+    // ****** THIS FUNCTION IS USE FOR CATROGIES AUTO SUGGESTION  END  ************************
     const onRenderCustomHeaderMain = () => {
         return (
             <>
@@ -374,10 +391,10 @@ const CreateActivity = (props: any) => {
         }
     };
 
-    //------- change priority status function End -----------
+    //**************** */ change priority status function End **************
 
-
-    //--------Edit client categroy and categrioes open popup function  -------------
+//*************Edit client categrory and categrioes open popup  fuction
+    //Edit client categroy and categrioes open popup function  
     // const EditClientCategory = (item: any) => {
     //     setIsClientPopup(true);
     //     setSharewebCategory(item);
@@ -386,13 +403,15 @@ const CreateActivity = (props: any) => {
         setIsComponentPicker(true);
         setSharewebCategory(item);
     };
-    //-------- Edit client categrory and categrioes open popup  fuction end ------------
+    //*****************Edit client categrory and categrioes open popup  fuction end************************ 
 
 
-    //-------------------- save function  start ---------------------
+    //*************save function  start********************************* 
+
+
     const saveNoteCall = () => {
         if (
-            save?.siteType == undefined
+            save?.siteType == undefined && selectedItem?.TaskType?.Title!="Workstream"
             // AllItems?.TaskType?.Title != "Workstream"
         ) {
             alert("Please select the site");
@@ -410,7 +429,23 @@ const CreateActivity = (props: any) => {
             //   }
             //   if (smartComponentData != undefined && smartComponentData.length > 0) {
             //   }
-
+            let priorityRank = 4;
+            let priority = '';
+            if (selectPriority ===''|| parseInt(selectPriority) <= 0) {
+                priority = '(2) Normal';
+            }
+            else {
+                priorityRank = parseInt(selectPriority);
+                if (priorityRank >= 8 && priorityRank <= 10) {
+                    priority = '(1) High';
+                }
+                if (priorityRank >= 4 && priorityRank <= 7) {
+                    priority = '(2) Normal';
+                }
+                if (priorityRank >= 1 && priorityRank <= 3) {
+                    priority = '(3) Low';
+                }
+            }
             var categoriesItem = "";
             var CategoryID: any = [];
             CategoriesData.map((category: any) => {
@@ -440,20 +475,50 @@ const CreateActivity = (props: any) => {
                 });
             }
             let Sitestagging: any;
+            // if (selectedItem?.Sitestagging != undefined) {
+            //     if (save?.siteType == "Shareweb") {
+            //         Sitestagging = selectedItem?.Sitestagging
+            //     } else {
+            //         var siteComp: any = {};
+            //         siteComp.SiteName = save?.siteType,
+            //             siteComp.localSiteComposition = true
+            //         siteComp.ClienTimeDescription = 100,
+            //             //   siteComp.SiteImages = ,
+            //             siteComp.Date = Moment(new Date().toLocaleString()).format("MM-DD-YYYY");
+            //         Sitestagging = JSON?.stringify([siteComp]);
+            //     }
+            // }
+
+           
             if (selectedItem?.Sitestagging != undefined) {
-                if (save?.siteType == "Shareweb") {
-                    Sitestagging = selectedItem?.Sitestagging
+                if (typeof selectedItem?.Sitestagging == "object") {
+                    if (save?.siteType == "Shareweb") {
+                        Sitestagging = JSON.stringify(selectedItem?.Sitestagging);
+                    } else {
+                        var siteComp: any = {};
+                        siteComp.SiteName = save?.siteType,
+                            siteComp.localSiteComposition = true
+                        siteComp.ClienTimeDescription = 100,
+                            //   siteComp.SiteImages = ,
+                            siteComp.Date = Moment(new Date().toLocaleString()).format("DD-MM-YYYY");
+                        Sitestagging = JSON?.stringify([siteComp]);
+                    }
+                    // clientTime = JSON.stringify(selectedItem?.ClientTime);
                 } else {
-                    var siteComp: any = {};
-                    siteComp.SiteName = save?.siteType,
-                        siteComp.localSiteComposition = true
-                    siteComp.ClienTimeDescription = 100,
-                        //   siteComp.SiteImages = ,
-                        siteComp.Date = Moment(new Date().toLocaleString()).format("MM-DD-YYYY");
-                    Sitestagging = JSON?.stringify([siteComp]);
+                    if (save?.siteType == "Shareweb") {
+                        Sitestagging = selectedItem?.Sitestagging
+                    } else {
+                        var siteComp: any = {};
+                        siteComp.SiteName = save?.siteType,
+                            siteComp.localSiteComposition = true
+                        siteComp.ClienTimeDescription = 100,
+                            //   siteComp.SiteImages = ,
+                            siteComp.Date = Moment(new Date().toLocaleString()).format("DD-MM-YYYY");
+                        Sitestagging = JSON?.stringify([siteComp]);
+                    }
+                 
                 }
             }
-
 
 
 
@@ -486,7 +551,7 @@ const CreateActivity = (props: any) => {
                 let TaskID = "";
                 let prentID = "";
                 let LetestLevelData: any = [];
-                if (site.Title == save?.siteType) {
+                if (site.Title == (save?.siteType||selectedItem?.siteType)) {
                     if (selectedItem?.NoteCall != "Task") {
                         let web = new Web(AllListId?.siteUrl);
                         let componentDetails: any = [];
@@ -522,7 +587,8 @@ const CreateActivity = (props: any) => {
                                 TaskCategoriesId: { results: CategoryID },
                                 ClientCategoryId: { results: ClientCategory },
                                 PortfolioId: selectedItem?.Id,
-                                PriorityRank: selectPriority != "" ? selectPriority : null,
+                                PriorityRank: priorityRank,
+                                Priority: priority,
                                 TaskTypeId: 1,
                                 FeedBack:
                                     FeedbackPost?.length > 0
@@ -687,7 +753,7 @@ const CreateActivity = (props: any) => {
                                     console.log(res);
                                 }
 
-                                //closeTaskStatusUpdatePoup(res);
+                          
                             });
 
 
@@ -724,11 +790,11 @@ const CreateActivity = (props: any) => {
                         let clientTime: any;
                         if (selectedItem?.ClientTime != undefined) {
                             if (typeof selectedItem?.ClientTime == "object") {
-                                if (save?.siteType == "Shareweb") {
+                                if (selectedItem?.siteType == "Shareweb") {
                                     clientTime = JSON.stringify(selectedItem?.ClientTime);
                                 } else {
                                     var siteComp: any = {};
-                                    siteComp.SiteName = save?.siteType,
+                                    siteComp.SiteName = selectedItem?.siteType,
                                         siteComp.localSiteComposition = true
                                     siteComp.ClienTimeDescription = 100,
                                         //   siteComp.SiteImages = ,
@@ -737,18 +803,18 @@ const CreateActivity = (props: any) => {
                                 }
                                 // clientTime = JSON.stringify(selectedItem?.ClientTime);
                             } else {
-                                if (save?.siteType == "Shareweb") {
+                                if (selectedItem?.siteType == "Shareweb") {
                                     clientTime = selectedItem?.ClientTime
                                 } else {
                                     var siteComp: any = {};
-                                    siteComp.SiteName = save?.siteType,
+                                    siteComp.SiteName =selectedItem?.siteType,
                                         siteComp.localSiteComposition = true
                                     siteComp.ClienTimeDescription = 100,
                                         //   siteComp.SiteImages = ,
                                         siteComp.Date = Moment(new Date().toLocaleString()).format("DD-MM-YYYY");
                                     clientTime = JSON?.stringify([siteComp]);
                                 }
-                                clientTime = selectedItem?.ClientTime
+                               
                             }
                         }
 
@@ -760,7 +826,8 @@ const CreateActivity = (props: any) => {
                             .items.add({
                                 Title: TaskTitle,
                                 Categories: categoriesItem ? categoriesItem : null,
-                                PriorityRank: selectPriority != "" ? selectPriority : null,
+                                PriorityRank: priorityRank,
+                                Priority: priority,
                                 // DueDate: date != undefined ? new Date(date).toDateString() : date,
                                 DueDate:
                                     save?.DueDate != undefined ? new Date(save.DueDate).toISOString() : null,
@@ -772,8 +839,6 @@ const CreateActivity = (props: any) => {
                                     FeedbackPost?.length > 0
                                         ? JSON.stringify(FeedbackPost)
                                         : null,
-
-                                Priority: selectedItem.Priority,
                                 AssignedToId: {
                                     results:
                                         AssignedToIds != undefined && AssignedToIds?.length > 0
@@ -933,7 +998,6 @@ const CreateActivity = (props: any) => {
                                     closeTaskStatusUpdatePoup(res);
                                 }
 
-                                // closeTaskStatusUpdatePoup(res);
                             });
                         // }
                     }
@@ -941,6 +1005,12 @@ const CreateActivity = (props: any) => {
             });
         }
     };
+
+
+    //***********************Save function End ************************
+
+    
+    //********* Start Close Poup ************* *************/
     const closeTaskStatusUpdatePoup = (res: any) => {
         if (res === "item") {
             //   setTaskStatuspopup(false);
@@ -950,7 +1020,8 @@ const CreateActivity = (props: any) => {
             props.Call(res);
         }
     };
-    //----------- save function end --------------
+
+    // **************** close popup function end **********************
 
     //Auto Suggest Categories 
     const autoSuggestionsForCategory = async (e: any) => {
@@ -974,12 +1045,15 @@ const CreateActivity = (props: any) => {
         setCategorySearchKey("");
         setIsComponentPicker(false);
         let data: any = CategoriesData;
-        CategoriesData?.map((items: any) => {
-            if (selectCategoryData[0].Id != undefined && !data?.find((obj: any) => obj?.Id == selectCategoryData[0].Id)) {
-                data?.push(selectCategoryData[0]);
-            }
-        });
-        setCategoriesData((CategoriesData: any) => [...data]);
+        if (selectCategoryData[0].Id != undefined) {
+            data?.push(selectCategoryData[0]);
+        }
+        let uniqueData:any=[];
+        data?.map((item:any)=>{if(!uniqueData.find((secItem:any)=>secItem?.Id==item?.Id)){
+            uniqueData.push(item)
+        }})
+      
+        setCategoriesData((CategoriesData: any) => [...uniqueData]);
         setSearchedCategoryData([]);
     };
     //End
@@ -1109,7 +1183,7 @@ const CreateActivity = (props: any) => {
                 </div>
 
                 <div className="modal-footer">
-                    {siteType?.length > 1 ?
+                    {siteType?.length > 1  && selectedItem?.TaskType?.Title!="Workstream"?
                         <div className='col mt-4'>
                             <h4 className="titleBorder ">Websites</h4>
                             <div className='clearfix p-0'>
@@ -1429,7 +1503,7 @@ const CreateActivity = (props: any) => {
                     <button
                         type="button"
                         className="btn btn-default m-2"
-                    // onClick={() => closeTaskStatusUpdatePoup("item")}
+                    onClick={() => closeTaskStatusUpdatePoup("item")}
                     >
                         Cancel
                     </button>
@@ -1446,7 +1520,13 @@ const CreateActivity = (props: any) => {
                     Call={Call}
                 ></Picker>
             )}
-           
+            {/* {IsClientPopup && (
+                <ClientCategoryPupup
+                    props={SharewebCategory}
+                    selectedClientCategoryData={ClientCategoriesData}
+                    Call={Call}
+                ></ClientCategoryPupup>
+            )} */}
         </>
     );
 };
