@@ -24,67 +24,113 @@ export default function InfoIconsToolTip({ Discription, row }: any) {
         visible: controlledVisible,
         onVisibleChange: setControlledVisible,
     });
+    function cleanHTML(html: any) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const paragraphs = div.querySelectorAll('p');
 
-   
+        // Filter out empty <p> tags
+        paragraphs.forEach((p) => {
+            if (p.innerText.trim() === '') {
+                p.parentNode.removeChild(p); // Remove empty <p> tags
+            }
+        });
+        const brTags = div.querySelectorAll('br');
+    if (brTags.length > 1) {
+      for (let i = brTags.length - 1; i > 0; i--) {
+        brTags[i].parentNode.removeChild(brTags[i]);
+      }
+    }
+
+        return div.innerHTML;
+    }
+    function removeHtmlAndNewline(text:any) {
+        if (text) {
+            return text.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
+        } else {
+            return ''; // or any other default value you prefer
+        }
+    }
     const handlAction = (newAction: any) => {
         if (action === "click" && newAction === "hover") return;
-        let feedback:any=[];
-         var hoverTitleShow:any
-         let hoverdata:any
-        if(row!=undefined && newAction=='click'||newAction=='hover'){
-            
-           try {
-                let addToFeedbackArray=( value:any, heading:any)=> {
+        let feedback: any = [];
+        var hoverTitleShow: any
+        let hoverdata: any
+        if (row != undefined && newAction == 'click' || newAction == 'hover') {
+
+            try {
+                let addToFeedbackArray = (value: any, heading: any) => {
+                   value=  removeHtmlAndNewline(value)
                     if (value !== undefined && value != null) {
-                      const obj = {
-                        Title: value,
-                        heading,
-                      };
-                      feedback.push(obj);
-                      hoverTitleShow = obj;
-                      setfeedbackArray(feedback);
-                      if(newAction=="hover"&&heading==="Short Description"){
-                        if(hoverTitleShow?.Title!=undefined ){
-                        hoverdata=hoverTitleShow?.Title.replace(/\n/g, "")
-                         }
-                        setshowHoverTitle(hoverdata)
+                        const obj = {
+                            Title: value,
+                            heading,
+                        };
+                        feedback.push(obj);
+                        hoverTitleShow = obj;
+                        setfeedbackArray(feedback);
+                        if (newAction == "hover" && heading === "Short Description") {
+                            if(hoverTitleShow?.Title==""){
+                                hoverTitleShow.Title="Short Description is not available in this. Please click to see other details" 
+                            }
+                            setshowHoverTitle(hoverTitleShow?.Title)
                         }
                     }
-                  }
-                  
-                  addToFeedbackArray(row?.Short_x0020_Description_x0020_On, "Short Description");
-                  addToFeedbackArray(row?.Background, "Background");
-                  addToFeedbackArray(row?.Body, "Description");
-                   addToFeedbackArray(row?.AdminNotes, "AdminNotes");
-                  addToFeedbackArray(row?.TechnicalExplanations, "Technical Explanations");
-                  addToFeedbackArray(row?.Deliverables, "Deliverables");
-                  if (row?.FeedBack !== undefined) {
+                   
+                }
+                if(row?.Short_x0020_Description_x0020_On==undefined){
+                    let   hovertitle:any;
+                if (newAction == "hover" ) {
+                    if(hoverTitleShow==undefined){
+                       hovertitle="Short Description is not available in this. Please click to see other details" 
+                    }
+                    setshowHoverTitle(hovertitle)
+                }
+            }
+                if(row?.Short_x0020_Description_x0020_On!=undefined){
+                    addToFeedbackArray(row?.Short_x0020_Description_x0020_On, "Short Description");
+                }
+                if(row?.Background!=undefined){
+                    addToFeedbackArray(row?.Background, "Background");
+                } if(row?.Body!=undefined){
+                    addToFeedbackArray(row?.Body, "Description");
+                } if(row?.AdminNotes!=undefined){
+                    addToFeedbackArray(row?.AdminNotes, "AdminNotes");
+                } if(row?.TechnicalExplanations!=undefined){
+                    addToFeedbackArray(row?.TechnicalExplanations, "Technical Explanations");
+                }
+                if(row?.Deliverables!=undefined){
+                    addToFeedbackArray(row?.Deliverables, "Deliverables");
+                }
+                if(row?.Deliverables!=undefined){
+                    addToFeedbackArray(row?.Idea, "Idea");
+                }
+                if(row?.ValueAdded!=undefined){
+                    addToFeedbackArray(row?.ValueAdded, "ValueAdded");
+                }
+               if (row?.FeedBack !== undefined) {
                     feedback = JSON.parse(row.FeedBack);
                     hoverTitleShow = feedback[0].FeedBackDescriptions[0];
+                    hoverTitleShow = {
+                        ...hoverTitleShow,
+                        Title: cleanHTML(hoverTitleShow.Title),
+                    }
                     setfeedbackArray(feedback[0].FeedBackDescriptions);
                     settaskInfo(true);
-                    if(newAction=="hover"){
-                        if(hoverTitleShow?.Title!=undefined ){
-                        hoverdata=hoverTitleShow?.Title.replace(/\n/g, "")
-                         }
-                        setshowHoverTitle(hoverdata)
-                        }
-                  }
-             
-           } catch (error) {
-            
-           }
+                    if (newAction == "hover") {
+                        setshowHoverTitle(hoverTitleShow?.Title)
+                    }
+                }
+
+            } catch (error) {
+            console.log(error)
+            }
         }
-        // if(newAction=="hover"&&(hoverTitleShow?.heading==="Short Description"||taskInfo)){
-        // if(hoverTitleShow?.Title!=undefined ){
-        // hoverdata=hoverTitleShow?.Title.replace(/\n/g, "")
-        //  }
-        // setshowHoverTitle(hoverdata)
-        // }
+
         setAction(newAction);
         setControlledVisible(true);
     };
-    
+
 
 
     const handleMouseLeave = () => {
@@ -104,10 +150,10 @@ export default function InfoIconsToolTip({ Discription, row }: any) {
         }
         return '';
     }, [action]);
-return (
+    return (
         <>
             <span ref={setTriggerRef} onClick={() => handlAction("click")} onMouseEnter={() => handlAction("hover")} onMouseLeave={() => handleMouseLeave()} title="Description" className=" svg__iconbox svg__icon--info dark"></span>
-            
+
             {action === "click" && visible && (
                 <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container p-0 m-0" })}>
 
@@ -116,8 +162,8 @@ return (
                         <button className="toolTipCross" onClick={handleCloseClick}><div className="popHoverCross">×</div></button>
                     </div>
                     <div className="toolsbox">
-                    <FeedbackGlobalInfoIcon FeedBack={feedbackArray}taskInfo={taskInfo}/>
-                            </div>
+                        <FeedbackGlobalInfoIcon FeedBack={feedbackArray} taskInfo={taskInfo} />
+                    </div>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
 
                 </div>

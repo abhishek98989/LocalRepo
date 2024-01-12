@@ -331,6 +331,12 @@ const SiteCompositionComponent = (Props: any) => {
         // setSelectedClientCategory([]);
         setSearchedKey('');
         setClientCategoryPopupStatus(true);
+        setTimeout(() => {
+            const panelMain: any = document.querySelector('.ms-Panel-main');
+            if (panelMain && SelectedTaskDetails?.PortfolioType?.Color) {
+              $('.ms-Panel-main').css('--SiteBlue', SelectedTaskDetails?.PortfolioType?.Color); // Set the desired color value here
+            }
+          }, 1000)
         BuildIndividualAllDataArray(SiteParentId, SiteName);
     }
 

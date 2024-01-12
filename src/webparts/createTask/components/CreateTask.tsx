@@ -1,5 +1,4 @@
 import * as React from 'react';
-import styles from './CreateTask.module.scss';
 import { ICreateTaskProps } from './ICreateTaskProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import CreateTaskComponent from './CreateTaskComponent';

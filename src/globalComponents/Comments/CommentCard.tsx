@@ -29,7 +29,10 @@ export interface ICommentCardProps {
   itemID?: number;
   Context?: any;
   AllListId?: any;
-
+  counter?: number;
+  onHoldCallBack?: any;
+  commentFor?:string;
+  postCommentCallBack?:any;
 }
 const sp = spfi();
 export interface ICommentCardState {
@@ -56,6 +59,8 @@ export interface ICommentCardState {
   mailReply: any;
   postButtonHide: boolean;
   topCommenterShow: boolean;
+  keyPressed: boolean;
+
 }
 export class CommentCard extends React.Component<ICommentCardProps, ICommentCardState> {
   private taskUsers: any = [];
@@ -69,8 +74,10 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
     this.params1 = new URLSearchParams(window.location.search);
     this.state = {
       Result: {},
-      listName: (this.params1.get('Site') != undefined ? this.params1.get('Site') : props?.listName),
-      itemID: (this.params1.get('taskId') != undefined ? Number(this.params1.get('taskId')) : props?.itemID),
+      // listName: (this.params1.get('Site') != undefined ? this.params1.get('Site') : props?.listName),
+      listName: (props?.listName != undefined ? props?.listName : this.params1.get('Site') != undefined ? this.params1.get('Site') : null),
+      // itemID: (this.params1.get('taskId') != undefined ? Number(this.params1.get('taskId')) : props?.itemID),
+      itemID: (props?.itemID != undefined ? props?.itemID : this.params1.get('taskId') != undefined ? Number(this.params1.get('taskId')) : null),
       listId: props.AllListId.listId,
       CommenttoPost: '',
       updateComment: false,
@@ -84,6 +91,7 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
       topCommenterShow: false,
       mailReply: { isMailReply: false, Index: null, },
       postButtonHide: false,
+      keyPressed: false,
       /*editorState:EditorState.createWithContent(
         ContentState.createFromBlockArray(
           convertFromHTML('').contentBlocks
@@ -95,7 +103,7 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
       editorValue: '',
       ChildLevel: false,
       ReplyParent: {},
-      editorChangeValue: ''
+      editorChangeValue: '',
     }
     this.GetResult();
     console.log(this.props.Context);
@@ -103,32 +111,35 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
     //   spfxContext: this.props.Context
     // });
     const sp = spfi().using(spSPFx(this.context));
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleMouseClick = this.handleMouseClick.bind(this);
+
   }
   private async GetResult() {
     let web = new Web(this.props.siteUrl);
     let taskDetails = [];
     if (this.state.listName != undefined && this.state.listName != null && this.state.listName != "") {
-      if(this.state.listName == "Master Tasks" ){
+      if (this.state.listName == "Master Tasks") {
         taskDetails = await web.lists
-        .getByTitle(this.state.listName)
-        .items
-        .getById(this.state.itemID)
-        .select("ID", "Title", "DueDate", "PortfolioType/Id","PortfolioType/Title" ,"ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime","Editor/Title", "Modified", "Comments" )
-        .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam","PortfolioType", "SharewebTaskType", "Editor")
-        .get()
-        }else{
-          taskDetails = await web.lists
           .getByTitle(this.state.listName)
           .items
           .getById(this.state.itemID)
-          .select("ID", "Title", "DueDate", "PortfolioType/Id","PortfolioType/Title" ,"ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Portfolio/PortfolioStructureID","Editor/Title", "Modified", "Comments")
-          .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam","PortfolioType", "SharewebTaskType", "Portfolio", "Editor")
+          .select("ID", "Title", "DueDate", "PortfolioType/Id", "PortfolioType/Title", "ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime", "Editor/Title", "Modified", "Comments")
+          .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam", "PortfolioType", "SharewebTaskType", "Editor")
           .get()
-      
-        }
+      } else {
+        taskDetails = await web.lists
+          .getByTitle(this.state.listName)
+          .items
+          .getById(this.state.itemID)
+          .select("ID", "Title", "DueDate", "PortfolioType/Id", "PortfolioType/Title", "ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Portfolio/PortfolioStructureID", "Editor/Title", "Modified", "Comments")
+          .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam", "PortfolioType", "SharewebTaskType", "Portfolio", "Editor")
+          .get()
+
+      }
     } else {
-      taskDetails = await web.lists.getById(this.state.listId).items.getById(this.state.itemID).select("ID", "Title", "DueDate", "PortfolioType/Id","PortfolioType/Title" , "ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title","Portfolio/PortfolioStructureID","Editor/Title", "Modified", "Comments")
-        .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam", "SharewebTaskType","Portfolio","PortfolioType", "Editor")
+      taskDetails = await web.lists.getById(this.state.listId).items.getById(this.state.itemID).select("ID", "Title", "DueDate", "PortfolioType/Id", "PortfolioType/Title", "ClientCategory/Id", "ClientCategory/Title", "Categories", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "component_x0020_link", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "SharewebTaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Portfolio/PortfolioStructureID", "Editor/Title", "Modified", "Comments")
+        .expand("TeamMembers", "Author", "ClientCategory", "ResponsibleTeam", "SharewebTaskType", "Portfolio", "PortfolioType", "Editor")
         .get()
     }
     await this.GetTaskUsers();
@@ -156,7 +167,7 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
       Comments: JSON.parse(taskDetails["Comments"]),
       FeedBack: JSON.parse(taskDetails["FeedBack"]),
       SharewebTaskType: taskDetails["SharewebTaskType"] != null ? taskDetails["SharewebTaskType"].Title : '',
-      
+
       PortfolioType: taskDetails["PortfolioType"],
       TaskUrl: `${this.props.siteUrl}/SitePages/Task-Profile.aspx?taskId=${this.state.itemID}&Site=${this.state.listName}`
     };
@@ -644,12 +655,12 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
           if (this.state?.ChildLevel == true) {
             if (this.state?.ReplyParent?.MsTeamCreated == undefined)
               this.state.ReplyParent.MsTeamCreated = ''
-              TeamMsg = `<blockquote>${this.state?.ReplyParent?.AuthorName} ${this.state?.ReplyParent?.MsTeamCreated} </br> ${this.state?.ReplyParent?.Description.replace(/<\/?[^>]+(>|$)/g, '')} </br> ${this.state?.Result?.TaskId}-${this.state?.Result?.Title}</blockquote>${txtComment}`;
+            TeamMsg = `<blockquote>${this.state?.ReplyParent?.AuthorName} ${this.state?.ReplyParent?.MsTeamCreated} </br> ${this.state?.ReplyParent?.Description.replace(/<\/?[^>]+(>|$)/g, '')} </br> <a href=${window.location.href}>${this.state?.Result?.TaskId}-${this.state?.Result?.Title}</a></blockquote>${txtComment}`;
 
-            }
+          }
           else {
-              TeamMsg = txtComment + `</br> <a href=${window.location.href}>${this.state?.Result?.TaskId}-${this.state?.Result?.Title}</a>`
-           }
+            TeamMsg = txtComment + `</br> <a href=${window.location.href}>${this.state?.Result?.TaskId}-${this.state?.Result?.Title}</a>`
+          }
           await globalCommon.SendTeamMessage(mention_To, TeamMsg, this.props.Context)
           this.SendEmail(emailprops);
           this.setState({
@@ -771,6 +782,30 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
       isCalloutVisible: false
     })
   }
+  private handleKeyDown = (e: any) => {
+    this.setState({ keyPressed: true });
+  };
+  private handleMouseClick = (e: any) => {
+    this.setState({ keyPressed: false });
+  };
+  private detectAndRenderLinks = (text: any) => {
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = text;
+    text = tempElement.textContent || tempElement.innerText || '';
+    text = text.replace(/\s+/g, ' ').trim();
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part: any, index: any) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a key={index} href={part} target="_blank" rel="noopener noreferrer">
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
   public render(): React.ReactElement<ICommentCardProps> {
 
     return (
@@ -794,11 +829,16 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                   </span>
                 })}
               </div>
+              {/* onKeyDown={this.handleKeyDown} onMouseDown={this.handleMouseClick} */}
               <span className='clintlist'>
                 <MentionsInput placeholder='Recipients Name' value={this.state?.mentionValue ? this.state?.mentionValue : ""} onChange={(e) => this.setMentionValue(e)}
                   className="form-control"
                   classNames={mentionClass}>
                   <Mention trigger="@" data={this.mentionUsers} appendSpaceOnAdd={true} />
+                  {/* {this.state.keyPressed && this.mentionUsers && this.state?.mentionValue ? 
+                    <Mention trigger="" data={this.mentionUsers} appendSpaceOnAdd={true} />:
+                    <Mention trigger="" data={[]} appendSpaceOnAdd={true} />
+                  } */}
                 </MentionsInput>
               </span>
 
@@ -823,7 +863,7 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                 <div>
                   <ul className="list-unstyled">
                     {this.state.Result["Comments"] != null && this.state.Result["Comments"].length > 0 && this.state.Result["Comments"]?.slice(0, 3)?.map((cmtData: any, i: any) => {
-                      return cmtData?.Description&&<li className="media border p-1 my-1">
+                      return cmtData?.Description && <li className="media  p-1 my-1">
 
                         <div className="media-bodyy">
                           <div className="d-flex justify-content-between align-items-center">
@@ -857,8 +897,12 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                           </div>
 
                           <div className="media-text">
-                            {cmtData.Header != '' && <h6 className="userid m-0"><a className="ng-binding">{cmtData?.Header}</a></h6>}
-                            <p className='m-0'><span dangerouslySetInnerHTML={{ __html: cmtData?.Description }}></span></p>
+                            {cmtData.Header != '' && <h6 className="userid m-0"><a className="align-top">{cmtData?.Header}</a></h6>}
+                            {/* <p className='m-0'><span dangerouslySetInnerHTML={{ __html: this.detectAndRenderLinks(cmtData?.Description) }}>
+
+                            </span></p> */}
+
+                            {this.detectAndRenderLinks(cmtData?.Description)}
                           </div>
 
                         </div>
@@ -902,9 +946,9 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                         <div className="commentMedia">
                           {cmtData?.ReplyMessages != null && cmtData?.ReplyMessages != undefined && cmtData?.ReplyMessages?.length > 0 &&
                             <div>
-                              <ul className="list-unstyled">
+                              <ul className="list-unstyled subcomment">
                                 {cmtData?.ReplyMessages != null && cmtData?.ReplyMessages?.length > 0 && cmtData?.ReplyMessages?.map((ReplyMsg: any, j: any) => {
-                                  return <li className="media border p-1 my-1">
+                                  return <li className="media  p-1 my-1">
 
                                     <div className="media-bodyy">
                                       <div className="d-flex justify-content-between align-items-center">
@@ -929,7 +973,8 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                                       </div>
                                       <div className="media-text">
                                         {/* {ReplyMsg.Header != '' && <h6 className="userid m-0"><a className="ng-binding">{ReplyMsg?.Header}</a></h6>} */}
-                                        <p className='m-0'><span dangerouslySetInnerHTML={{ __html: ReplyMsg?.Description }}></span></p>
+                                        {/* <p className='m-0'><span dangerouslySetInnerHTML={{ __html: ReplyMsg?.Description }}></span></p> */}
+                                        {this.detectAndRenderLinks(ReplyMsg?.Description)}
                                       </div>
                                     </div>
                                   </li>
@@ -959,7 +1004,6 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
 
           type={PanelType.custom}
           customWidth="500px"
-
           onRenderHeader={this.customHeaderforEditCommentpopup}
           onDismiss={(e) => this.CloseModal(e)}
         > <div className={color ? "serviepannelgreena" : ""}>
@@ -967,8 +1011,9 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
               <HtmlEditorCard editorValue={this.state.editorValue} HtmlEditorStateChange={this.HtmlEditorStateChange}></HtmlEditorCard>
             </div>
             <footer className='text-end'>
-              <button type="button" className="btn btn-default mt-2 " onClick={(e) => this.CloseModal(e)}>Cancel</button>
               <button type="button" className="btn btn-primary ms-2 mt-2" onClick={(e) => this.updateComment()} >Save</button>
+              <button type="button" className="btn btn-default mt-2 " onClick={(e) => this.CloseModal(e)}>Cancel</button>
+
             </footer>
           </div>
 
@@ -996,11 +1041,11 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                       <textarea id="txtCommentModal" onChange={(e) => this.handleInputChange(e)} className="form-control ng-pristine ng-untouched ng-empty ng-invalid ng-invalid-required ui-autocomplete-input" rows={2} ng-required="true" placeholder="Enter your comments here" ng-model="Feedback.comment"></textarea>
                       <span role="status" aria-live="polite" className="ui-helper-hidden-accessible"></span>
                     </div>
-                    <div className='text-end mt-1'> <a className=' btn btn-primary ' onClick={() => this.PostComment('txtCommentModal')} >Post</a></div>
+                    <div className='text-end mt-1'> <span className='btn btn-primary hreflink' onClick={() => this.PostComment('txtCommentModal')} >Post</span></div>
 
                   </div>
                   {this.state.Result["Comments"] != null && this.state.Result["Comments"]?.length > 0 && this.state.Result["Comments"]?.map((cmtData: any, i: any) => {
-                    return <div className="border p-1 mb-2">
+                    return <div className="p-1 mb-2">
                       <div>
                         <div className='d-flex justify-content-between align-items-center'>
                           <span className='comment-date'>
@@ -1057,7 +1102,7 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
               onDismiss={() => this.setState({
                 isCalloutVisible: false
               })} setInitialFocus>
-              <Text block variant="xLarge" className='subheading m-0 f-15'>
+              <Text block variant="xLarge" className='siteColor f-15 fw-semibold'>
                 Comment Reply
               </Text>
               <Text block variant="small">
@@ -1072,14 +1117,15 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                 <Stack
                   className='modal-footer'
                   gap={8} horizontal>
+
+                  <button className='btn btn-primary'
+                    onClick={this.SaveReplyMessageFunction}
+                  >Save</button>
                   <button className='btn btn-default'
                     onClick={() => this.setState({
                       isCalloutVisible: false
                     })}
                   >Cancel</button>
-                  <button className='btn btn-primary'
-                    onClick={this.SaveReplyMessageFunction}
-                  >Save</button>
                 </Stack>
               </FocusZone>
             </FocusTrapCallout>
@@ -1109,8 +1155,8 @@ export class CommentCard extends React.Component<ICommentCardProps, ICommentCard
                             <p style={{ margin: '4pt 0pt' }}><b><span style={{ fontSize: '10.0pt', color: 'black' }}>Portfolio:</span></b></p>
                           </td>
                           <td colSpan={2} style={{ border: 'solid #cccccc 1.0pt', background: '#fafafa', padding: '4pt' }}>
-                            <p style={{ margin: '4pt 0pt' }}>{this.state.Result["PortfolioType"] != null||this.state.Result["PortfolioType"] !=undefined &&
-                              
+                            <p style={{ margin: '4pt 0pt' }}>{this.state.Result["PortfolioType"] != null || this.state.Result["PortfolioType"] != undefined &&
+
                               <span style={{ fontSize: '10.0pt', color: 'black' }}>
                                 {this.joinObjectValues(this.state.Result["PortfolioType"])}
                               </span>

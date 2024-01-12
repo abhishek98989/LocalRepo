@@ -47,8 +47,7 @@ export default function ProjectOverview(props: any) {
     const [checkData, setcheckData] = React.useState([])
     const [showTeamMemberOnCheck, setShowTeamMemberOnCheck] = React.useState(false)
     const [isOpenEditPopup, setisOpenEditPopup] = React.useState(false);
-    const [listIsVisible, setListIsVisible] = React.useState(false);
-    const [GroupedDisplayTable, setDisplayGroupedTable] = React.useState(false);
+    const [isAddStructureOpen, setIsAddStructureOpen] = React.useState(false);
     const [IsComponent, setIsComponent] = React.useState(false);
     const [AllTaskUser, setAllTaskUser] = React.useState([]);
     const [SharewebComponent, setSharewebComponent] = React.useState('');
@@ -56,11 +55,14 @@ export default function ProjectOverview(props: any) {
     const [data, setData] = React.useState([]);
     const [flatData, setFlatData] = React.useState([]);
     const [AllTasks, setAllTasks]: any = React.useState([]);
+    const [topCompoIcon, setTopCompoIcon]: any = React.useState(false);
     const [passdata, setpassdata] = React.useState("");
     const [selectedView, setSelectedView] = React.useState("Projects");
     const [AllSiteTasks, setAllSiteTasks]: any = React.useState([]);
     const [pageLoaderActive, setPageLoader] = React.useState(false)
     const [taskTimeDetails, setTaskTimeDetails] = React.useState([]);
+    const childRef = React.useRef<any>();
+
     React.useEffect(() => {
         try {
             $("#spPageCanvasContent").removeClass();
@@ -71,10 +73,10 @@ export default function ProjectOverview(props: any) {
             isShowSiteCompostion = props?.props?.SiteCompostion != "" ? JSON.parse(props?.props?.SiteCompostion) : ""
             const params = new URLSearchParams(window.location.search);
             let query = params.get("SelectedView");
-            if(query=='ProjectsTask'){
+            if (query == 'ProjectsTask') {
                 setSelectedView('grouped')
             }
-            if(query=='TodaysTask'){
+            if (query == 'TodaysTask') {
                 setSelectedView('flat')
             }
         } catch (error: any) {
@@ -95,10 +97,11 @@ export default function ProjectOverview(props: any) {
             SmalsusLeaveCalendar: props?.props?.SmalsusLeaveCalendar,
             TaskTypeID: props?.props?.TaskTypeID
         }
+        TaskUser()
         loadTodaysLeave();
         setPageLoader(true);
         LoadAllSiteAllTasks()
-        TaskUser()
+
         GetMetaData()
 
     }, [])
@@ -264,15 +267,44 @@ export default function ProjectOverview(props: any) {
             siteConfig = [];
         }
     };
+    const findUserByName = (name: any) => {
+        const user = AllTaskUsers.filter(
+            (user: any) => user?.AssingedToUser?.Id === name
+        );
+        let Image: any;
+        if (user[0]?.Item_x0020_Cover != undefined) {
+            Image = user[0].Item_x0020_Cover.Url;
+        } else {
+            Image =
+                "https://hhhhteams.sharepoint.com/sites/HHHH/PublishingImages/Portraits/icon_user.jpg";
+        }
+        return user ? Image : null;
+    };
+
+
+
+    const callChildFunction = (items: any) => {
+        if (childRef.current) {
+            childRef.current.callChildFunction(items);
+        }
+    };
+
+
+    const projectTopIcon = (items: any) => {
+        if (childRef.current) {
+            childRef.current.projectTopIcon(items);
+        }
+    };
+
     const columns = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
             {
                 accessorKey: "",
                 placeholder: "",
-                hasCheckbox: true,
-                hasCustomExpanded: true,
-                hasExpanded: true,
-                size: 55,
+                hasCheckbox: false,
+                hasCustomExpanded: false,
+                hasExpanded: false,
+                size: 1,
                 id: 'Id',
             },
             {
@@ -298,7 +330,10 @@ export default function ProjectOverview(props: any) {
                             <span>
                                 {row?.original?.SiteIcon != undefined ?
                                     <img title={row?.original?.siteType} className="workmember" src={row?.original?.SiteIcon} /> : ''}
-                            </span> : ''
+                            </span> : row?.original?.Item_x0020_Type == "Sprint"  ?
+                            <div title={row?.original?.Item_x0020_Type}  style={{ backgroundColor: '#000066' }} className={"Dyicons me-1"}>
+                            X
+                          </div>:''
                     }</>
                 ),
                 id: "siteType",
@@ -314,7 +349,7 @@ export default function ProjectOverview(props: any) {
                     <div className='alignCenter'>
                         {row?.original?.siteType === "Project" ? <>
                             <a className='hreflink' href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${row?.original?.Id}`} data-interception="off" target="_blank">{row?.original?.Title}</a>
-                            {row?.original?.Body !== null &&  <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
+                            {row?.original?.descriptionsSearch?.length > 0 && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
                         </> : ''}
                         {row?.original?.Item_x0020_Type === "tasks" ? <>
                             <a className='hreflink'
@@ -324,7 +359,7 @@ export default function ProjectOverview(props: any) {
                             >
                                 {row?.original?.Title}
                             </a>
-                            {row?.original?.Body !== null && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span> }
+                            {row?.original?.descriptionsSearch?.length > 0 && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
 
 
                         </> : ''}
@@ -350,6 +385,9 @@ export default function ProjectOverview(props: any) {
                 placeholder: "% Complete",
                 header: "",
                 resetColumnFilters: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
                 resetSorting: false,
                 size: 55,
             },
@@ -363,18 +401,21 @@ export default function ProjectOverview(props: any) {
                 ),
                 id: 'PriorityRank',
                 placeholder: "Priority",
-                isColumnDefultSortingDesc:true,
+                isColumnDefultSortingDesc: true,
                 resetColumnFilters: false,
                 sortDescFirst: true,
                 resetSorting: false,
                 header: "",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PriorityRank == filterValue
+                },
                 size: 100,
             },
             {
                 accessorFn: (row) => row?.TeamMembersSearch,
                 cell: ({ row }) => (
                     <div >
-                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUser} pageName={'ProjectOverView'} />
+                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUsers} pageName={'ProjectOverView'} />
                     </div>
 
 
@@ -401,9 +442,9 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Due Date",
                 header: "",
                 resetColumnFilters: false,
-                filterFn: (row:any, columnId:any, filterValue:any) => {
-                    return  row?.original?.DisplayDueDate?.includes(filterValue)
-                  },
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.DisplayDueDate?.includes(filterValue)
+                },
                 resetSorting: false,
                 size: 100,
             },
@@ -417,7 +458,7 @@ export default function ProjectOverview(props: any) {
                                 callBack={CallBack}
                                 columnName="EstimatedTime"
                                 item={row?.original}
-                                TaskUsers={AllTaskUser} /> : ''
+                                TaskUsers={AllTaskUsers} /> : ''
                     }</>
                 ),
                 id: "EstimatedTime",
@@ -426,6 +467,65 @@ export default function ProjectOverview(props: any) {
                 resetSorting: false,
                 header: "",
                 size: 60,
+            },
+            {
+                accessorFn: (row) => row?.TaskCategories,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.TaskCategories && row?.original?.TaskCategories.length > 0
+                            ? row?.original?.TaskCategories.map((category: any, index: any) => (
+                                <div key={index}>{category.Title}</div>
+                            ))
+                            : ''}
+                    </span>
+                ),
+                id: 'TaskCategories',
+                placeholder: "Task Categories",
+                resetColumnFilters: false,
+                resetSorting: false,
+                header: "",
+                size: 100
+            },
+            {
+                accessorFn: (row) => row?.Created,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.Created == null ? (
+                            ""
+                        ) : (
+                            <>
+                                <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
+
+                                {row?.original?.Author != undefined ? (
+                                    <>
+                                        <a
+                                            href={`${AllListId?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${row?.original?.Author?.Id}&Name=${row?.original?.Author?.Title}`}
+                                            target="_blank"
+                                            data-interception="off"
+                                        >
+                                            <img title={row?.original?.Author?.Title} className="workmember ms-1" src={findUserByName(row?.original?.Author?.Id)} />
+                                        </a>
+                                    </>
+                                ) : (
+                                    <span className='svg__iconbox svg__icon--defaultUser grey' title={row?.original?.Author?.Title}></span>
+                                )}
+                            </>
+                        )}
+                    </span>
+                ),
+                id: 'Created',
+                resetColumnFilters: false,
+                resetSorting: false,
+                placeholder: "Created",
+                filterFn: (row: any, columnName: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.DisplayCreateDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+                header: "",
+                size: 125
             },
             {
                 accessorKey: "descriptionsSearch",
@@ -443,6 +543,7 @@ export default function ProjectOverview(props: any) {
                 size: 100,
                 id: "commentsSearch",
             },
+          
             {
 
                 cell: ({ row }) => (
@@ -515,7 +616,7 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <div  className='alignCenter'>
+                    <div className='alignCenter'>
                         {row?.original?.type == 'Category' && row?.original?.Title != undefined ? row?.original?.Title : ''}
                         {row?.original?.Item_x0020_Type == "tasks" ?
                             <span>
@@ -526,7 +627,7 @@ export default function ProjectOverview(props: any) {
                                 >
                                     {row?.original?.Title}
                                 </a>
-                                {row?.original?.Body !== null && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
+                                {row?.original?.descriptionsSearch?.length > 0 && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
                             </span> : ''}
                     </div>
 
@@ -568,7 +669,10 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Project Priority",
                 resetColumnFilters: false,
                 enableMultiSort: true,
-                isColumnDefultSortingDesc:true,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.ProjectPriority == filterValue
+                },
+                isColumnDefultSortingDesc: true,
                 resetSorting: false,
                 header: "",
                 size: 100,
@@ -587,6 +691,9 @@ export default function ProjectOverview(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 55,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
             },
             {
                 accessorFn: (row) => row?.PriorityRank,
@@ -599,7 +706,10 @@ export default function ProjectOverview(props: any) {
                 id: 'PriorityRank',
                 placeholder: "Priority",
                 resetColumnFilters: false,
-                isColumnDefultSortingDesc:true,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PriorityRank == filterValue
+                },
+                isColumnDefultSortingDesc: true,
                 enableMultiSort: true,
                 header: "",
                 size: 100,
@@ -624,7 +734,7 @@ export default function ProjectOverview(props: any) {
                 accessorFn: (row) => row?.TeamMembersSearch,
                 cell: ({ row }) => (
                     <span>
-                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUser} pageName={'ProjectOverView'} />
+                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUsers} pageName={'ProjectOverView'} />
                         {/* <ShowTaskTeamMembers  props={row?.original} TaskUsers={AllTaskUser}></ShowTaskTeamMembers> */}
                     </span>
                 ),
@@ -650,9 +760,9 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Due Date",
                 header: "",
                 resetColumnFilters: false,
-                filterFn: (row:any, columnId:any, filterValue:any) => {
-                    return  row?.original?.DisplayDueDate?.includes(filterValue)
-                  },
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.DisplayDueDate?.includes(filterValue)
+                },
                 resetSorting: false,
                 size: 100,
             },
@@ -675,6 +785,65 @@ export default function ProjectOverview(props: any) {
                 resetSorting: false,
                 header: "",
                 size: 60,
+            },
+            {
+                accessorFn: (row) => row?.TaskCategories,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.TaskCategories && row?.original?.TaskCategories.length > 0
+                            ? row?.original?.TaskCategories.map((category: any, index: any) => (
+                                <div key={index}>{category.Title}</div>
+                            ))
+                            : ''}
+                    </span>
+                ),
+                id: 'TaskCategories',
+                placeholder: "Task Categories",
+                resetColumnFilters: false,
+                resetSorting: false,
+                header: "",
+                size: 100
+            },
+            {
+                accessorFn: (row) => row?.Created,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.Created == null ? (
+                            ""
+                        ) : (
+                            <>
+                                <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
+
+                                {row?.original?.Author != undefined ? (
+                                    <>
+                                        <a
+                                            href={`${AllListId?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${row?.original?.Author?.Id}&Name=${row?.original?.Author?.Title}`}
+                                            target="_blank"
+                                            data-interception="off"
+                                        >
+                                            <img title={row?.original?.Author?.Title} className="workmember ms-1" src={findUserByName(row?.original?.Author?.Id)} />
+                                        </a>
+                                    </>
+                                ) : (
+                                    <span className='svg__iconbox svg__icon--defaultUser grey' title={row?.original?.Author?.Title}></span>
+                                )}
+                            </>
+                        )}
+                    </span>
+                ),
+                id: 'Created',
+                resetColumnFilters: false,
+                resetSorting: false,
+                placeholder: "Created",
+                filterFn: (row: any, columnName: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.DisplayCreateDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+                header: "",
+                size: 125
             },
             {
 
@@ -728,6 +897,8 @@ export default function ProjectOverview(props: any) {
                 accessorKey: "",
                 placeholder: "",
                 hasCheckbox: true,
+                hasCustomExpanded: true,
+                hasExpanded: true,
                 size: 20,
                 id: 'Id',
             },
@@ -737,7 +908,7 @@ export default function ProjectOverview(props: any) {
                 id: 'TaskID',
                 resetColumnFilters: false,
                 resetSorting: false,
-                size: 60,
+                size: 80,
                 cell: ({ row }) => (
                     <>
                         <span className='ms-1'>{row?.original?.TaskID}</span>
@@ -749,9 +920,9 @@ export default function ProjectOverview(props: any) {
             {
                 accessorFn: (row) => row?.Title,
                 cell: ({ row, getValue }) => (
-                    <div  className='alignCenter'>
+                    <div className='alignCenter'>
                         <a className='hreflink' href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${row?.original?.Id}`} data-interception="off" target="_blank">{row?.original?.Title}</a>
-                        {row?.original?.Body !== null && <span className='alignIcon  mt--5'><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
+                        {row?.original?.descriptionsSearch?.length > 0 && <span className='alignIcon  mt--5'><InfoIconsToolTip Discription={row?.original?.Body} row={row?.original} /></span>}
                     </div>
 
                 ),
@@ -774,6 +945,9 @@ export default function ProjectOverview(props: any) {
                 resetSorting: false,
                 resetColumnFilters: false,
                 size: 55,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
             },
             {
                 accessorFn: (row) => row?.PriorityRank,
@@ -787,7 +961,10 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Priority",
                 resetColumnFilters: false,
                 size: 100,
-                isColumnDefultSortingDesc:true,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PriorityRank == filterValue
+                },
+                isColumnDefultSortingDesc: true,
                 resetSorting: false,
                 header: ""
             },
@@ -800,7 +977,7 @@ export default function ProjectOverview(props: any) {
                             callBack={CallBack}
                             columnName='Team'
                             item={row?.original}
-                            TaskUsers={AllTaskUser}
+                            TaskUsers={AllTaskUsers}
                             pageName={'ProjectManagment'}
                         />
                     </span>
@@ -845,13 +1022,97 @@ export default function ProjectOverview(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 placeholder: "Due Date",
-                filterFn: (row:any, columnId:any, filterValue:any) => {
-                    return  row?.original?.DisplayDueDate?.includes(filterValue)
-                  },
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.DisplayDueDate?.includes(filterValue)
+                },
                 header: "",
                 size: 100,
             },
+            {
+                accessorFn: (row) => row?.TaskCategories,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.TaskCategories && row?.original?.TaskCategories.length > 0
+                            ? row?.original?.TaskCategories.map((category: any, index: any) => (
+                                <div key={index}>{category.Title}</div>
+                            ))
+                            : ''}
+                    </span>
+                ),
+                id: 'TaskCategories',
+                placeholder: "Task Categories",
+                resetColumnFilters: false,
+                resetSorting: false,
+                header: "",
+                size: 100
+            },
+            {
+                accessorFn: (row) => row?.Created,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.Created == null ? (
+                            ""
+                        ) : (
+                            <>
+                                <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
 
+                                {row?.original?.Author != undefined ? (
+                                    <>
+                                        <a
+                                            href={`${AllListId?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${row?.original?.Author?.Id}&Name=${row?.original?.Author?.Title}`}
+                                            target="_blank"
+                                            data-interception="off"
+                                        >
+                                            <img title={row?.original?.Author?.Title} className="workmember ms-1" src={findUserByName(row?.original?.Author?.Id)} />
+                                        </a>
+                                    </>
+                                ) : (
+                                    <span className='svg__iconbox svg__icon--defaultUser grey' title={row?.original?.Author?.Title}></span>
+                                )}
+                            </>
+                        )}
+                    </span>
+                ),
+                id: 'Created',
+                resetColumnFilters: false,
+                resetSorting: false,
+                placeholder: "Created",
+                filterFn: (row: any, columnName: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.DisplayCreateDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+                header: "",
+                size: 125
+            },
+            {
+                header: ({ table }: any) => (
+                    <>{
+                        topCompoIcon ?
+                            <span style={{ backgroundColor: `${''}` }} title="Restructure" className="Dyicons mb-1 mx-1 p-1" onClick={() => projectTopIcon(true)}>
+                                <span className="svg__iconbox svg__icon--re-structure"></span>
+                            </span>
+                            : ''
+                    }
+                    </>
+                ),
+                cell: ({ row, getValue }) => (
+                    <>
+                        {row?.original?.isRestructureActive && row?.original?.Title != "Others" && (
+                            <span className="Dyicons p-1" title="Restructure" style={{ backgroundColor: `${row?.original?.PortfolioType?.Color}` }} onClick={() => callChildFunction(row?.original)}>
+                                <span className="svg__iconbox svg__icon--re-structure"> </span>
+                            </span>
+                        )}
+                        {getValue()}
+                    </>
+                ),
+                id: "row?.original.Id",
+                canSort: false,
+                placeholder: "",
+                size: 1,
+            },
             {
 
                 cell: ({ row }) => (
@@ -925,7 +1186,7 @@ export default function ProjectOverview(props: any) {
                             >
                                 {row?.original?.Title}
                             </a>
-                            {row?.original?.Body !== null && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
+                            {row?.original?.descriptionsSearch?.length > 0 && <span className='alignIcon  mt--5 '><InfoIconsToolTip Discription={row?.original?.bodys} row={row?.original} /></span>}
 
                         </span>
                     </div>
@@ -984,7 +1245,7 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Project Priority",
                 resetColumnFilters: false,
                 enableMultiSort: true,
-                isColumnDefultSortingDesc:true,
+                isColumnDefultSortingDesc: true,
                 resetSorting: false,
                 header: "",
                 size: 100,
@@ -1003,6 +1264,9 @@ export default function ProjectOverview(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 55,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
             },
             {
                 accessorFn: (row) => row?.PriorityRank,
@@ -1016,7 +1280,10 @@ export default function ProjectOverview(props: any) {
                 placeholder: "Priority",
                 resetColumnFilters: false,
                 resetSorting: false,
-                isColumnDefultSortingDesc:true,
+                isColumnDefultSortingDesc: true,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PriorityRank == filterValue
+                },
                 sortDescFirst: true,
                 header: "",
                 size: 100,
@@ -1025,7 +1292,7 @@ export default function ProjectOverview(props: any) {
                 accessorFn: (row) => row?.TeamMembersSearch,
                 cell: ({ row }) => (
                     <span>
-                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUser} pageName={'ProjectOverView'} />
+                        <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='Team' item={row?.original} TaskUsers={AllTaskUsers} pageName={'ProjectOverView'} />
                         {/* <ShowTaskTeamMembers  props={row?.original} TaskUsers={AllTaskUser}></ShowTaskTeamMembers> */}
                     </span>
                 ),
@@ -1050,9 +1317,9 @@ export default function ProjectOverview(props: any) {
                 id: 'DisplayDueDate',
                 placeholder: "Due Date",
                 header: "",
-                filterFn: (row:any, columnId:any, filterValue:any) => {
-                    return  row?.original?.DisplayDueDate?.includes(filterValue)
-                  },
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.DisplayDueDate?.includes(filterValue)
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 100,
@@ -1076,6 +1343,65 @@ export default function ProjectOverview(props: any) {
                 resetSorting: false,
                 header: "",
                 size: 60,
+            },
+            {
+                accessorFn: (row) => row?.TaskCategories,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.TaskCategories && row?.original?.TaskCategories.length > 0
+                            ? row?.original?.TaskCategories.map((category: any, index: any) => (
+                                <div key={index}>{category.Title}</div>
+                            ))
+                            : ''}
+                    </span>
+                ),
+                id: 'TaskCategories',
+                placeholder: "Task Categories",
+                resetColumnFilters: false,
+                resetSorting: false,
+                header: "",
+                size: 100
+            },
+            {
+                accessorFn: (row) => row?.Created,
+                cell: ({ row }) => (
+                    <span>
+                        {row?.original?.Created == null ? (
+                            ""
+                        ) : (
+                            <>
+                                <span className='ms-1'>{row?.original?.DisplayCreateDate} </span>
+
+                                {row?.original?.Author != undefined ? (
+                                    <>
+                                        <a
+                                            href={`${AllListId?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${row?.original?.Author?.Id}&Name=${row?.original?.Author?.Title}`}
+                                            target="_blank"
+                                            data-interception="off"
+                                        >
+                                            <img title={row?.original?.Author?.Title} className="workmember ms-1" src={findUserByName(row?.original?.Author?.Id)} />
+                                        </a>
+                                    </>
+                                ) : (
+                                    <span className='svg__iconbox svg__icon--defaultUser grey' title={row?.original?.Author?.Title}></span>
+                                )}
+                            </>
+                        )}
+                    </span>
+                ),
+                id: 'Created',
+                resetColumnFilters: false,
+                resetSorting: false,
+                placeholder: "Created",
+                filterFn: (row: any, columnName: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.DisplayCreateDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+                header: "",
+                size: 125
             },
             {
                 cell: ({ row }) => (
@@ -1333,6 +1659,7 @@ export default function ProjectOverview(props: any) {
         setSharewebComponent(item);
         // <ComponentPortPolioPopup props={item}></ComponentPortPolioPopup>
     }
+
     const GetMasterData = async () => {
         if (AllListId?.MasterTaskListID != undefined) {
             let web = new Web(`${AllListId?.siteUrl}`);
@@ -1342,7 +1669,7 @@ export default function ProjectOverview(props: any) {
             Alltask = await web.lists.getById(AllListId?.MasterTaskListID).items
                 .select("Deliverables,TechnicalExplanations,ResponsibleTeam/Id,ResponsibleTeam/Title,PortfolioLevel,PortfolioStructureID,ValueAdded,Categories,Idea,Short_x0020_Description_x0020_On,Background,Help_x0020_Information,Short_x0020_Description_x0020__x,ComponentCategory/Id,ComponentCategory/Title,Comments,HelpDescription,FeedBack,Body,SiteCompositionSettings,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title")
                 .expand("ComponentCategory,AssignedTo,AttachmentFiles,ResponsibleTeam,Author,Editor,TeamMembers,TaskCategories,Parent")
-                .top(4999).filter("Item_x0020_Type eq 'Project'")
+                .top(4999).filter("(Item_x0020_Type eq 'Project') or (Item_x0020_Type eq 'Sprint')")
                 .getAll();
 
             // if(taskUsers.ItemType=="Project"){
@@ -1371,16 +1698,25 @@ export default function ProjectOverview(props: any) {
                         })
                     })
                 }
-                items.descriptionsSearch = items.Short_x0020_Description_x0020_On != undefined ? items?.Short_x0020_Description_x0020_On.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
+                items.subRows = Alltask?.filter((child: any) => child?.Item_x0020_Type == "Sprint" && child?.Parent?.Id == items?.Id)
+                // items?.subRows?.map((sprint: any) => {
+                //     sprint.subRows = allSitesTasks?.filter((child: any) => child?.Project?.Id == sprint?.Id && child?.IsTodaysTask == true)
+                // })
+                items.descriptionsSearch = globalCommon.portfolioSearchData(items)
                 items.commentsSearch = items?.Comments != null && items?.Comments != undefined ? items.Comments.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
                 items['TaskID'] = items?.PortfolioStructureID
                 items.DisplayDueDate = items.DueDate != null ? Moment(items.DueDate).format('DD/MM/YYYY') : ""
+                items.DisplayCreateDate = items.Created != null ? Moment(items.Created).format("DD/MM/YYYY") : "";
             })
-            Alltask = sortOnPriority(Alltask)
-            let flatDataProjects = JSON.parse(JSON.stringify(Alltask))
+            let AllProject = Alltask?.filter((item: any) => item?.Item_x0020_Type == "Project")
+
+            AllProject = sortOnPriority(AllProject)
+            let flatDataProjects = JSON.parse(JSON.stringify(AllProject))
             setFlatData(flatDataProjects);
-            Alltask.map((items: any) => {
-                items['subRows'] = [];
+            AllProject.map((items: any) => {
+                items?.subRows?.map((sprint: any) => {
+                    sprint.subRows = allSitesTasks?.filter((child: any) => child?.Project?.Id == sprint?.Id && child?.IsTodaysTask == true)
+                })
                 allSitesTasks?.map((task: any) => {
                     if (task?.IsTodaysTask == true && task?.Project?.Id == items?.Id) {
                         items['subRows'].push(task);
@@ -1388,9 +1724,9 @@ export default function ProjectOverview(props: any) {
                 })
             })
             // })
-            setAllTasks(Alltask);
+            setAllTasks(AllProject);
             setPageLoader(false);
-            setData(Alltask);
+            setData(AllProject);
         } else {
             alert('Master Task List Id Not Available')
         }
@@ -1411,7 +1747,12 @@ export default function ProjectOverview(props: any) {
 
     const callBackData = React.useCallback((elem: any, getSelectedRowModel: any, ShowingData: any) => {
         if (elem != undefined) {
-            setCheckBoxData([elem])
+            let selectedItem:any=[]
+            elem?.map((Project:any)=>{
+                selectedItem?.push(Project?.original)
+              //  Project = Project?.original
+            })
+            setCheckBoxData(selectedItem)
             setTableProperty(getSelectedRowModel?.getSelectedRowModel()?.flatRows)
         } else {
             setCheckBoxData([])
@@ -1441,10 +1782,20 @@ export default function ProjectOverview(props: any) {
 
     }, []);
 
+    const restructureCallback = React.useCallback((getData: any, topCompoIcon: any,callback:any) => {
+        setTopCompoIcon(topCompoIcon);
+       setData(getData);
+       if(callback == true){
+        GetMasterData();
+       }
 
+    }, []);
 
-    const CallBack = React.useCallback(() => {
-        GetMasterData()
+    const CallBack = React.useCallback((item:any, type:any) => {
+        setIsAddStructureOpen(false)
+        if(type=='Save'){
+            GetMasterData()
+        }
     }, [])
 
 
@@ -1482,9 +1833,9 @@ export default function ProjectOverview(props: any) {
                                 estimatedDescription += ', ' + time?.EstimatedTimeDescription
                             })
                         }
-                        items.bodys = items.Body != null && items.Body.split('<p><br></p>').join('');
-                        if (items?.Body != undefined && items?.Body != null) {
-                            items.descriptionsSearch = items?.Body.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
+                        if (items?.FeedBack != undefined) {
+
+                            items.descriptionsSearch = globalCommon?.descriptionSearchData(items)
                         }
                         items.commentsSearch = items?.Comments != null && items?.Comments != undefined ? items.Comments.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
                         items.listId = config.listId;
@@ -1635,6 +1986,9 @@ export default function ProjectOverview(props: any) {
             console.log(peopleOnLeave);
         }
     }
+    const OpenAddStructureModal = () => {
+        setIsAddStructureOpen(true);
+      }
     //End
 
 
@@ -1645,10 +1999,10 @@ export default function ProjectOverview(props: any) {
                     <div className="section-event project-overview-Table">
                         <div >
                             <div className='align-items-center d-flex justify-content-between'>
-                                    <h2 className='heading'>Project Management Overview</h2>
-                                    
-                                    {/* {showTeamMemberOnCheck === true ? <span><a className="teamIcon" onClick={() => ShowTeamFunc()}><span title="Create Teams Group" className="svg__iconbox svg__icon--team teamIcon"></span></a></span> : ''} */}
-                            
+                                <h2 className='heading'>Project Management Overview</h2>
+
+                                {/* {showTeamMemberOnCheck === true ? <span><a className="teamIcon" onClick={() => ShowTeamFunc()}><span title="Create Teams Group" className="svg__iconbox svg__icon--team teamIcon"></span></a></span> : ''} */}
+
                             </div>
                             <>
                                 <div className='ProjectOverViewRadioFlat  d-flex justify-content-between SpfxCheckRadio mb-2 mt-1'>
@@ -1668,19 +2022,24 @@ export default function ProjectOverview(props: any) {
 
                                     </dl>
                                     <div className="m-0 text-end">
-                                       <AddProject CallBack={CallBack} AllListId={AllListId} />
+                                     
                                         {currentUserData?.Title == "Deepak Trivedi" || currentUserData?.Title == "Ranu Trivedi" || currentUserData?.Title == "Abhishek Tiwari" || currentUserData?.Title == "Prashant Kumar" ?
                                             <>
                                                 <a className="hreflink  ms-1" onClick={() => { sendAllWorkingTodayTasks() }}>Share Working Todays's Task</a></>
                                             : ''}
                                     </div>
                                 </div>
-                                <div className="Alltable">
-                                    {selectedView == 'grouped' ? <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={columns} data={data} paginatedTable={false} callBackData={callBackData} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
-                                    {selectedView == 'flat' ? <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={flatView} paginatedTable={true} data={AllSiteTasks} callBackData={callBackData} pageName={"ProjectOverview"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
-                                    {selectedView == 'teamWise' ? <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={groupedUsers} paginatedTable={true} data={categoryGroup} callBackData={callBackData} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
-                                    {selectedView == 'Projects' ? <GlobalCommanTable AllListId={AllListId} headerOptions={headerOptions} paginatedTable={false} columns={column2} data={flatData} callBackData={callBackData} pageName={"ProjectOverview"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
+                                <div className="TableSection"><div className="Alltable">
+                                    <div className='wrapper'>
+                                        {selectedView == 'grouped' ? <GlobalCommanTable expandIcon={true}   headerOptions={headerOptions} AllListId={AllListId} columns={columns} multiSelect={true} data={data} paginatedTable={false} callBackData={callBackData} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
+                                        {selectedView == 'flat' ? <GlobalCommanTable expandIcon={true}   headerOptions={headerOptions} AllListId={AllListId} columns={flatView} paginatedTable={true} data={AllSiteTasks} callBackData={callBackData} pageName={"ProjectOverview"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
+                                        {selectedView == 'teamWise' ? <GlobalCommanTable expandIcon={true}   headerOptions={headerOptions} AllListId={AllListId} columns={groupedUsers} paginatedTable={true} data={categoryGroup} callBackData={callBackData} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
+                                        {selectedView == 'Projects' ? <GlobalCommanTable expandIcon={true} hideAddActivityBtn={true} ref={childRef} callChildFunction={callChildFunction} restructurebtn={true} restructureCallBack={restructureCallback}  AllListId={AllListId} headerOptions={headerOptions} paginatedTable={false}  showCreationAllButton={true}
+                                  OpenAddStructureModal={OpenAddStructureModal} AllSitesTaskData={AllSitesAllTasks} masterTaskData={MyAllData} multiSelect={true} columns={column2} data={flatData} callBackData={callBackData} pageName={"ProjectOverview"} TaskUsers={AllTaskUser} showHeader={true} /> : ''}
+                                    </div>
                                 </div>
+                                </div>
+
                             </>
                         </div>
                     </div>
@@ -1693,7 +2052,7 @@ export default function ProjectOverview(props: any) {
                 {IsComponent && <EditProjectPopup props={SharewebComponent} AllListId={AllListId} Call={Call} showProgressBar={showProgressBar}> </EditProjectPopup>}
                 {ShowTeamPopup === true ? <ShowTeamMembers props={checkData} callBack={showTaskTeamCAllBack} TaskUsers={AllTaskUser} /> : ''}
                 {openTimeEntryPopup && <TimeEntryPopup props={taskTimeDetails} CallBackTimeEntry={TimeEntryCallBack} Context={props?.props?.Context} />}
-            
+                {isAddStructureOpen && <AddProject CallBack={CallBack} items={CheckBoxData} PageName={"ProjectOverview"} AllListId={AllListId} data={data}/>}
             </div>
             {pageLoaderActive ? <PageLoader /> : ''}
         </>

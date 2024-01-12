@@ -14,22 +14,25 @@ const EditSiteComposition = (Props: any) => {
     const callBack = Props.Call;
     const SmartTotalTimeData = Props.SmartTotalTimeData;
     const selectedClientCategory: any = [];
-    const ComponentTaskCheck = Props.ComponentTaskCheck;
-    const SitesTaggingData = Props.SitesTaggingData;
     const EditData = Props.EditData;
-
     React.useEffect(() => {
         getAllSitesData();
         if (EditData.ClientCategory?.length > 0) {
             EditData.ClientCategory?.map((itemData: any) => {
-                if (itemData.siteName?.length > 2) {   
+                if (itemData.siteName?.length > 2) {
                 } else {
                     itemData.siteName = itemData.SiteName;
                 }
                 selectedClientCategory.push(itemData);
             })
         }
-       
+        setTimeout(() => {
+            const panelMain: any = document.querySelector('.ms-Panel-main');
+            if (panelMain && EditData?.PortfolioType?.Color) {
+              $('.ms-Panel-main').css('--SiteBlue', EditData?.PortfolioType?.Color); // Set the desired color value here
+            }
+          }, 1000)
+
     }, [])
 
     //  ******************  This is All Site Details Get Data Call From Backend **************
@@ -145,7 +148,7 @@ const EditSiteComposition = (Props: any) => {
         return (
             <div className={ServicesTaskCheck ? "d-flex full-width pb-1 serviepannelgreena" : "d-flex full-width pb-1"} >
                 <div className="subheading siteColor">
-                        Edit Site Composition
+                    Edit Site Composition
                 </div>
                 <Tooltip ComponentId="1626" />
             </div>
@@ -187,8 +190,8 @@ const EditSiteComposition = (Props: any) => {
                                 callBack={SiteCompositionCallBack}
                                 isServiceTask={ServicesTaskCheck}
                                 // SelectedClientCategory={EditData.ClientCategory}
-                                isPortfolioConncted={ComponentTaskCheck || ServicesTaskCheck ? true : false}
-                                SitesTaggingData={SitesTaggingData}
+                                // isPortfolioConncted={ComponentTaskCheck || ServicesTaskCheck ? true : false}
+                                // SitesTaggingData={EditData}
                                 usedFor={"Task-Profile"}
                                 // ItemId={EditData.Id}
                                 // ListId={EditData.listId}

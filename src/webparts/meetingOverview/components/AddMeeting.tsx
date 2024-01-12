@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { Web } from "sp-pnp-js";
 import * as Moment from 'moment';
 import Button from 'react-bootstrap/Button';
-const AddProject = (props: any) => {
+const AddMeeting = (props: any) => {
     const [title, settitle] = React.useState('')
     const [lgShow, setLgShow] = useState(false);
     const [editDate, setEditDate]: any = React.useState(undefined);
@@ -85,7 +85,7 @@ const AddProject = (props: any) => {
 
         return (
             <>
-                <button type="button" className='btn btn-primary mb-2' onClick={() => OpenCreateTaskPopup()}>Create Meeting</button>
+                <button type="button" className='btn btn-primary mb-2 btnCol' onClick={() => OpenCreateTaskPopup()}>Create Meeting</button>
 
                 <Panel
                     onRenderHeader={onRenderCustomHeader}
@@ -138,4 +138,4 @@ const AddProject = (props: any) => {
         )
     }
 
-    export default AddProject
+    export default AddMeeting

@@ -14,7 +14,7 @@ import "bootstrap/js/dist/tab.js";
 import * as moment from "moment";
 import { Web } from "sp-pnp-js";
 import CommentCard from "../../../globalComponents/Comments/CommentCard";
-import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
+import { SlArrowDown, SlArrowRight } from 'react-icons/sl';
 import { Editor } from "react-draft-wysiwyg";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import { map } from "lodash";
@@ -25,12 +25,12 @@ import Picker from "../../../globalComponents/EditTaskPopup/SmartMetaDataPicker"
 import { EditorState } from "draft-js";
 import HtmlEditorCard from "../../../globalComponents/HtmlEditor/HtmlEditor";
 import TeamConfigurationCard from "../../../globalComponents/TeamConfiguration/TeamConfiguration";
+import Tooltip from "../../../globalComponents/Tooltip";
 // import ImagesC from "./Image";
 import { AllOut } from "@material-ui/icons";
 import VersionHistoryPopup from "../../../globalComponents/VersionHistroy/VersionHistory";
 // import PortfolioTagging from "./PortfolioTagging"; // replace
 import ServiceComponentPortfolioPopup from "../../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup";
-import Tooltip from "../../../globalComponents/Tooltip";
 
 // % complete save on the project popup
 
@@ -112,7 +112,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
             <a onClick={handleCancel}>
               <span
                 title="cancel"
-                className="svg__iconbox svg__icon--cross "
+                className="svg__iconbox svg__icon--cross"
               ></span>
             </a>
           </span>
@@ -167,6 +167,7 @@ var BackupCat: any = [];
 let portfolioType = "";
 var CheckCategory: any = [];
 var backcatss: any = [];
+let postedData: any = {};
 var TaggedPortfolios: any = [];
 function EditProjectPopup(item: any) {
   // Id:any
@@ -245,6 +246,7 @@ function EditProjectPopup(item: any) {
     [editorState]
   );
   const setModalIsOpenToFalse = () => {
+
     EditComponentCallback();
     setModalIsOpen(false);
   };
@@ -514,12 +516,10 @@ function EditProjectPopup(item: any) {
         "Author/Id",
         "Author/Title",
         "Editor/Id",
+        "ResponsibleTeam/Id", "ResponsibleTeam/Title",
         "Editor/Title",
         "ClientCategory/Id",
-        "ClientCategory/Title",
-        "ResponsibleTeam/Title",
-        "ResponsibleTeam/Name",
-        "ResponsibleTeam/Id"
+        "ClientCategory/Title"
       )
       .expand(
         "ClientCategory",
@@ -528,8 +528,8 @@ function EditProjectPopup(item: any) {
         "Portfolios",
         "AttachmentFiles",
         "Author",
-        "ResponsibleTeam",
         "Editor",
+        "ResponsibleTeam",
         "TeamMembers",
         "SharewebComponent",
         "TaskCategories",
@@ -619,12 +619,16 @@ function EditProjectPopup(item: any) {
       }
       item.siteType = "Master Tasks";
       item.taskLeader = "None";
-      if (
-        item.AssignedTo != undefined &&
-        item.AssignedTo.results != undefined &&
-        item.AssignedTo.results.length > 0
-      )
-        item.taskLeader = getMultiUserValues(item);
+      if (item?.AssignedTo?.length > 0) {
+        setTaskAssignedTo(item?.AssignedTo);
+      }
+      if (item?.ResponsibleTeam?.length > 0) {
+        setTaskResponsibleTeam(item?.ResponsibleTeam);
+      }
+      if (item?.TeamMembers?.length > 0) {
+        setTaskTeamMembers(item?.TeamMembers);
+      }
+      item.taskLeader = getMultiUserValues(item);
       if (item.Task_x0020_Type == undefined)
         item.Task_x0020_Type = "Activity Tasks";
       if (item.DueDate != undefined) {
@@ -831,7 +835,10 @@ function EditProjectPopup(item: any) {
     console.log(componentDetails);
   };
   function EditComponentCallback() {
-    item.Call("", "EditPopup");
+    if (postedData?.Id == undefined && postedData?.ID == undefined) {
+      postedData = EditData
+    }
+    item.Call(postedData, "EditPopup");
   }
   let mentionUsers: any = [];
   //  mentionUsers = this.taskUsers.map((i:any)=>{
@@ -1025,6 +1032,7 @@ function EditProjectPopup(item: any) {
     } else {
       CheckCategory = [];
     }
+    var CategoryID: any = [];
     var categoriesItem = "";
     CategoriesData?.map((category: any) => {
       if (category.Title != undefined) {
@@ -1033,38 +1041,28 @@ function EditProjectPopup(item: any) {
             ? category.Title
             : categoriesItem + ";" + category.Title;
       }
-    });
-    var CategoryID: any = [];
-    CategoriesData?.map((category: any) => {
       if (category.Id != undefined) {
         CategoryID.push(category.Id);
       }
     });
 
-    if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
-      AssignedToIds = []
-      TaskAssignedTo.map((taskInfo) => {
-        AssignedToIds.push(taskInfo.Id);
-      });
-    } else {
-      AssignedToIds = []
-    }
-    if (TaskTeamMembers != undefined && TaskTeamMembers?.length > 0) {
-      TeamMemberIds = [];
-      TaskTeamMembers.map((taskInfo) => {
 
-        TeamMemberIds.push(taskInfo.Id);
-      });
-    } else {
-      TeamMemberIds = []
+    if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
+      TaskAssignedTo?.map((taskInfo) => {
+        AssignedToIds.push(taskInfo.Id);
+      })
     }
+
+    if (TaskTeamMembers != undefined && TaskTeamMembers?.length > 0) {
+      TaskTeamMembers?.map((taskInfo) => {
+        TeamMemberIds.push(taskInfo.Id);
+      })
+    }
+
     if (TaskResponsibleTeam != undefined && TaskResponsibleTeam?.length > 0) {
-      ResponsibleTeamIds = []
-      TaskResponsibleTeam.map((taskInfo) => {
+      TaskResponsibleTeam?.map((taskInfo) => {
         ResponsibleTeamIds.push(taskInfo.Id);
-      });
-    } else {
-      ResponsibleTeamIds = []
+      })
     }
     let selectedPortfoliosData: any[] = [];
     if (projectTaggedPortfolios !== undefined && projectTaggedPortfolios.length > 0) {
@@ -1087,98 +1085,125 @@ function EditProjectPopup(item: any) {
         (option: { rankTitle: any }) => option.rankTitle == Items.ItemRankTitle
       )[0].rank;
     let web = new Web(AllListId?.siteUrl);
+    let postData: any = {
+      Title: Items.Title,
+      ItemRank: ItemRank,
+      PriorityRank: Items.PriorityRank,
+      PortfoliosId: {
+        results:
+          selectedPortfoliosData !== undefined && selectedPortfoliosData?.length > 0
+            ? selectedPortfoliosData
+            : [],
+      },
+      DeliverableSynonyms: Items.DeliverableSynonyms,
+      StartDate: EditData.StartDate
+        ? moment(EditData.StartDate).format("MM-DD-YYYY")
+        : null,
+      DueDate: EditData.DueDate
+        ? moment(EditData.DueDate).format("MM-DD-YYYY")
+        : null,
+      CompletedDate: EditData.CompletedDate
+        ? moment(EditData.CompletedDate).format("MM-DD-YYYY")
+        : null,
+      // Categories:EditData.smartCategories != undefined && EditData.smartCategories != ''?EditData.smartCategories[0].Title:EditData.Categories,
+      Categories: categoriesItem ? categoriesItem : null,
+      TaskCategoriesId: { results: CategoryID },
+      // ClientCategoryId: { "results": RelevantPortfolioIds },
+      ServicePortfolioId:
+        RelevantPortfolioIds != "" ? RelevantPortfolioIds : null,
+      Synonyms: JSON.stringify(Items["Synonyms"]),
+      Package: Items.Package,
+      AdminStatus: Items.AdminStatus,
+      Priority: Items.Priority,
+      Mileage: Items.Mileage,
+      PercentComplete: Items?.PercentComplete ? (Items?.PercentComplete / 100) : null,
+      Status: Items?.Status ? Items?.Status : null,
+      ValueAdded: Items.ValueAdded,
+      Idea: Items.Idea,
+      Background: Items.Background,
+      AdminNotes: Items.AdminNotes,
+      ComponentLink: {
+        Description:
+          Items.ComponentLink != undefined
+            ? Items.ComponentLink
+            : null,
+        Url:
+          Items.ComponentLink != undefined
+            ? Items.ComponentLink
+            : null,
+      },
+      TechnicalExplanations:
+        PostTechnicalExplanations != undefined &&
+          PostTechnicalExplanations != ""
+          ? PostTechnicalExplanations
+          : EditData.TechnicalExplanations,
+      Deliverables:
+        PostDeliverables != undefined && PostDeliverables != ""
+          ? PostDeliverables
+          : EditData.Deliverables,
+      Short_x0020_Description_x0020_On:
+        PostShort_x0020_Description_x0020_On != undefined &&
+          PostShort_x0020_Description_x0020_On != ""
+          ? PostShort_x0020_Description_x0020_On
+          : EditData.Short_x0020_Description_x0020_On,
+      Body:
+        PostBody != undefined && PostBody != "" ? PostBody : EditData.Body,
+      AssignedToId: {
+        results:
+          AssignedToIds != undefined && AssignedToIds?.length > 0
+            ? AssignedToIds
+            : [],
+      },
+      ResponsibleTeamId: {
+        results:
+          ResponsibleTeamIds != undefined && ResponsibleTeamIds?.length > 0
+            ? ResponsibleTeamIds
+            : [],
+      },
+      TeamMembersId: {
+        results:
+          TeamMemberIds != undefined && TeamMemberIds?.length > 0
+            ? TeamMemberIds
+            : [],
+      }
+    }
     await web.lists
       .getById(AllListId?.MasterTaskListID)
       .items.getById(Items.ID)
-      .update({
-        Title: Items.Title,
-
-        ItemRank: ItemRank,
-        PriorityRank: Items.PriorityRank,
-        PortfoliosId: {
-          results:
-            selectedPortfoliosData !== undefined && selectedPortfoliosData?.length > 0
-              ? selectedPortfoliosData
-              : [],
-        },
-        DeliverableSynonyms: Items.DeliverableSynonyms,
-        StartDate: EditData.StartDate
-          ? moment(EditData.StartDate).format("MM-DD-YYYY")
-          : null,
-        DueDate: EditData.DueDate
-          ? moment(EditData.DueDate).format("MM-DD-YYYY")
-          : null,
-        CompletedDate: EditData.CompletedDate
-          ? moment(EditData.CompletedDate).format("MM-DD-YYYY")
-          : null,
-        // Categories:EditData.smartCategories != undefined && EditData.smartCategories != ''?EditData.smartCategories[0].Title:EditData.Categories,
-        Categories: categoriesItem ? categoriesItem : null,
-        SharewebCategoriesId: { results: CategoryID },
-        // ClientCategoryId: { "results": RelevantPortfolioIds },
-        ServicePortfolioId:
-          RelevantPortfolioIds != "" ? RelevantPortfolioIds : null,
-        Synonyms: JSON.stringify(Items["Synonyms"]),
-        Package: Items.Package,
-        AdminStatus: Items.AdminStatus,
-        Priority: Items.Priority,
-        Mileage: Items.Mileage,
-        PercentComplete: Items?.PercentComplete ? (Items?.PercentComplete / 100) : null,
-        Status: Items?.Status ? Items?.Status : null,
-        ValueAdded: Items.ValueAdded,
-        Idea: Items.Idea,
-        Background: Items.Background,
-        AdminNotes: Items.AdminNotes,
-        ComponentLink: {
-          Description:
-            Items.ComponentLink != undefined
-              ? Items.ComponentLink
-              : null,
-          Url:
-            Items.ComponentLink != undefined
-              ? Items.ComponentLink
-              : null,
-        },
-        TechnicalExplanations:
-          PostTechnicalExplanations != undefined &&
-            PostTechnicalExplanations != ""
-            ? PostTechnicalExplanations
-            : EditData.TechnicalExplanations,
-        Deliverables:
-          PostDeliverables != undefined && PostDeliverables != ""
-            ? PostDeliverables
-            : EditData.Deliverables,
-        Short_x0020_Description_x0020_On:
-          PostShort_x0020_Description_x0020_On != undefined &&
-            PostShort_x0020_Description_x0020_On != ""
-            ? PostShort_x0020_Description_x0020_On
-            : EditData.Short_x0020_Description_x0020_On,
-        Body:
-          PostBody != undefined && PostBody != "" ? PostBody : EditData.Body,
-        AssignedToId: {
-          results:
-            AssignedToIds != undefined && AssignedToIds?.length > 0
-              ? AssignedToIds
-              : [],
-        },
-        ResponsibleTeamId: {
-          results:
-            ResponsibleTeamIds != undefined && ResponsibleTeamIds?.length > 0
-              ? ResponsibleTeamIds
-              : [],
-        },
-        TeamMembersId: {
-          results:
-            TeamMemberIds != undefined && TeamMemberIds?.length > 0
-              ? TeamMemberIds
-              : [],
-        },
-        // PercentComplete: saveData.PercentComplete == undefined ? EditData.PercentComplete : saveData.PercentComplete,
-
-        // Categories: Items.Categories
-
-        // BasicImageInfo: JSON.stringify(UploadImage)
-      })
+      .update(postData)
       .then((res: any) => {
+        postData.DisplayDueDate = Moment(postData?.DueDate).format("DD/MM/YYYY");
+        postData.DisplayCreateDate = Moment(postData?.Created).format("DD/MM/YYYY");
+        if (postData.DueDate == 'Invalid date' || '') {
+          postData.DueDate = postData?.DueDate?.replaceAll("Invalid date", "")
+        }
+        if (postData.DisplayDueDate == "Invalid date" || "") {
+          postData.DisplayDueDate = postData.DisplayDueDate.replaceAll(
+            "Invalid date",
+            ""
+          );
+        }
+        if (postData.DisplayCreateDate == "Invalid date" || "") {
+          postData.DisplayCreateDate = postData.DisplayCreateDate.replaceAll(
+            "Invalid date",
+            ""
+          );
+        }
+        postData["TaskID"] = postData?.PortfolioStructureID;
+        postedData ={
+          ...postData,
+          TaskCategories:CategoriesData,
+          AssignedTo:TaskAssignedTo,
+          ResponsibleTeam:TaskResponsibleTeam,
+          TeamMembers:TaskTeamMembers,
+          Item_x0020_Type : EditData?.Item_x0020_Type,
+          ComponentLink: {
+            Url: Items?.ComponentLink!=undefined?Items?.ComponentLink:''
+          },
+          Body:EditData.Body,
+          taggedPortfolios: projectTaggedPortfolios
+
+        }
         console.log(res);
         TaggedPortfolios = [];
         setModalIsOpenToFalse();
@@ -1213,48 +1238,56 @@ function EditProjectPopup(item: any) {
   const DDComponentCallBack = (dt: any) => {
     setTeamConfig(dt);
     console.log(TeamConfig);
+    //  Changes
     if (dt?.AssignedTo?.length > 0) {
       let tempArray: any = [];
       dt.AssignedTo?.map((arrayData: any) => {
         if (arrayData.AssingedToUser != null) {
-          tempArray.push(arrayData.AssingedToUser);
+          tempArray.push(arrayData.AssingedToUser)
         } else {
           tempArray.push(arrayData);
         }
-      });
+      })
       setTaskAssignedTo(tempArray);
-      console.log("Team Config  assigadf=====", tempArray);
+      EditData.AssignedTo = tempArray;
     } else {
-      setTaskAssignedTo([])
+      setTaskAssignedTo([]);
+      EditData.AssignedTo = [];
     }
     if (dt?.TeamMemberUsers?.length > 0) {
       let tempArray: any = [];
       dt.TeamMemberUsers?.map((arrayData: any) => {
         if (arrayData.AssingedToUser != null) {
-          tempArray.push(arrayData.AssingedToUser);
+          tempArray.push(arrayData.AssingedToUser)
         } else {
           tempArray.push(arrayData);
         }
-      });
+      })
       setTaskTeamMembers(tempArray);
-      console.log("Team Config member=====", tempArray);
+      EditData.TeamMembers = tempArray;
     } else {
       setTaskTeamMembers([]);
+      EditData.TeamMembers = [];
     }
     if (dt?.ResponsibleTeam?.length > 0) {
       let tempArray: any = [];
       dt.ResponsibleTeam?.map((arrayData: any) => {
         if (arrayData.AssingedToUser != null) {
-          tempArray.push(arrayData.AssingedToUser);
+          tempArray.push(arrayData.AssingedToUser)
         } else {
           tempArray.push(arrayData);
         }
-      });
+      })
       setTaskResponsibleTeam(tempArray);
-      console.log("Team Config reasponsible ===== ", tempArray);
+      EditData.ResponsibleTeam = tempArray;
     } else {
       setTaskResponsibleTeam([]);
+      EditData.ResponsibleTeam = [];
     }
+
+
+    // ChangesEnd
+
   };
   const deleteCategories = (id: any) => {
     CategoriesData.map((catId, index) => {
@@ -1284,6 +1317,11 @@ function EditProjectPopup(item: any) {
                   Project
                 </a>
               </li>
+              {EditData?.Item_x0020_Type != "Project" && EditData?.Parent?.Title ?
+                <li>
+                  {" "}
+                  <a data-interception="off" href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${EditData?.Parent?.Id}`}>{EditData?.Parent?.Title}</a>{" "}
+                </li> : ''}
               <li>
                 <a>{EditData.Title}</a>
               </li>
@@ -1370,8 +1408,8 @@ function EditProjectPopup(item: any) {
       >
         {EditData != undefined && EditData.Title != undefined && (
           <div id="EditGrueneContactSearch">
-            <div className="modal-body">
-              <ul className="nav nav-tabs" id="myTab" role="tablist">
+            <div className="modal-body mb-5">
+              <ul className="fixed-Header nav nav-tabs" id="myTab" role="tablist">
                 <li className="nav-item" role="presentation">
                   <button
                     className="nav-link active"
@@ -1477,54 +1515,48 @@ function EditProjectPopup(item: any) {
                             </div>
                           </div>
 
-                          {EditData?.Item_x0020_Type == "Project" && (
                             <div className="col-sm-12 mt-2 p-0">
                               <div className="row">
                                 <div className="col-sm-6">
-                                  <label className="form-label full-width">Status</label>
-                                  <input type="text" maxLength={3} placeholder="% Complete" className="form-control px-2"
-                                    defaultValue={EditData?.PercentComplete != undefined ? Number(EditData.PercentComplete).toFixed(0) : null}
-                                    value={EditData?.PercentComplete != undefined ? Number(EditData.PercentComplete).toFixed(0) : null}
-                                    onChange={(e) => StatusAutoSuggestion(e.target.value)} />
-                                  <span className="input-group-text" title="Status Popup" onClick={() => setTaskStatusPopup(true)}>
-                                    <span title="Edit Task" className="svg__iconbox svg__icon--editBox"></span>
+                                  <div className="input-group">
+                                    <label className="form-label full-width">Status</label>
+                                    <input type="text" maxLength={3} placeholder="% Complete" className="form-control px-2"
+                                      defaultValue={EditData?.PercentComplete != undefined ? Number(EditData?.PercentComplete).toFixed(0) : null}
+                                      value={EditData?.PercentComplete != undefined ? Number(EditData?.PercentComplete).toFixed(0) : null}
+                                      onChange={(e) => StatusAutoSuggestion(e.target.value)} />
+                                    <span className="input-group-text" title="Status Popup" onClick={() => setTaskStatusPopup(true)}>
+                                      <span title="Edit Task" className="svg__iconbox svg__icon--editBox"></span>
+                                    </span>
+                                  </div>
 
-                                  </span>
                                   {PercentCompleteStatus?.length > 0 ?
-                                    <span className="full-width l-radio">
-                                      <input type='radio' className="form-check-input my-2" checked />
-                                      <label className="ps-2 pt-1">
+                                    <span className="full-width SpfxCheckRadio">
+                                      <input type='radio' className="radio" checked />
+                                      <label className="pt-1">
                                         {PercentCompleteStatus}
                                       </label>
                                     </span> : null}
 
                                 </div>
                                 <div className="col-sm-6">
-                                  <div className="TaskUsers">
+                                  <div className="input-group">
                                     <label className="form-label full-width  mx-2">
                                       Working Member
                                     </label>
-                                    {EditData.AssignedUsers?.map(
+                                    {EditData?.AssignedUsers?.map(
                                       (userDtl: any, index: any) => {
                                         return (
-                                          <a
-                                            target="_blank"
-
-                                          >
-                                            <img
-                                              style={{
-                                                width: "35px",
-                                                height: "35px",
-                                                marginLeft: "10px",
-                                                borderRadius: "50px",
-                                              }}
-                                              src={
+                                          <div className="TaskUsers">
+                                            <a target="_blank"
+                                            >
+                                              <img className="ProirityAssignedUserPhoto ms-2" src={
                                                 userDtl?.Item_x0020_Cover?.Url
                                                   ? userDtl?.Item_x0020_Cover?.Url
                                                   : "https://hhhhteams.sharepoint.com/sites/HHHH/GmBH/SiteCollectionImages/ICONS/32/icon_user.jpg"
                                               }
-                                            />
-                                          </a>
+                                              />
+                                            </a>
+                                          </div>
                                         );
                                       }
                                     )}
@@ -1532,7 +1564,7 @@ function EditProjectPopup(item: any) {
                                 </div>
                               </div>
                             </div>
-                          )}
+                          
                         </div>
                         <div className="mx-0 row mt-2">
                           <div className="col-sm-4 ps-0 ">
@@ -1613,7 +1645,7 @@ function EditProjectPopup(item: any) {
                           </div>
                         </div>
                         <div className="mx-0 row mt-2 ">
-                          <div className="col-sm-6 ps-0">
+                          {/* <div className="col-sm-6 ps-0 time-status">
                             <div className="input-group mb-2">
                               <label className="form-label  full-width">
                                 Status
@@ -1625,103 +1657,126 @@ function EditProjectPopup(item: any) {
                                 onChange={(e) => ChangeStatus(e, EditData)}
                               />
                             </div>
+                            <ul className="p-0 mt-1 mb-0">
 
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                name="NotStarted"
-                                type="radio"
-                                value="Not Started"
-                                checked={
-                                  EditData.AdminStatus === "Not Started"
-                                    ? true
-                                    : false
-                                }
-                                onChange={(e) =>
-                                  setStatus(EditData, "Not Started")
-                                }
-                              ></input>
-                              <label className="form-check-label">
-                                Not Started{" "}
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                name="NotStarted"
-                                type="radio"
-                                value="In Preparation"
-                                onChange={(e) =>
-                                  setStatus(EditData, "In Preparation")
-                                }
-                                checked={
-                                  EditData.AdminStatus === "In Preparation"
-                                    ? true
-                                    : false
-                                }
-                              ></input>
-                              <label className="form-check-label">
-                                {" "}
-                                In Preparation
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                name="NotStarted"
-                                type="radio"
-                                value="In Development"
-                                onChange={(e) =>
-                                  setStatus(EditData, "In Development")
-                                }
-                                checked={
-                                  EditData.AdminStatus === "In Development"
-                                    ? true
-                                    : false
-                                }
-                              ></input>
-                              <label className="form-check-label">
-                                {" "}
-                                In Development{" "}
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                name="NotStarted"
-                                type="radio"
-                                value="Active"
-                                onChange={(e) => setStatus(EditData, "Active")}
-                                checked={
-                                  EditData.AdminStatus === "Active"
-                                    ? true
-                                    : false
-                                }
-                              ></input>
-                              <label className="form-check-label">Active</label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                name="NotStarted"
-                                type="radio"
-                                value="Archived"
-                                onChange={(e) =>
-                                  setStatus(EditData, "Archived")
-                                }
-                                checked={
-                                  EditData.AdminStatus === "Archived"
-                                    ? true
-                                    : false
-                                }
-                              ></input>
-                              <label className="form-check-label">
-                                Archived{" "}
-                              </label>
-                            </div>
-                          </div>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="Not Started"
+                                    checked={
+                                      EditData.AdminStatus === "Not Started"
+                                        ? true
+                                        : false
+                                    }
+                                    onChange={(e) =>
+                                      setStatus(EditData, "Not Started")
+                                    }
+                                  ></input>
+                                  Not Started{" "}
+                                </label>
+
+                              </li>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="In Preparation"
+                                    onChange={(e) =>
+                                      setStatus(EditData, "In Preparation")
+                                    }
+                                    checked={
+                                      EditData.AdminStatus === "In Preparation"
+                                        ? true
+                                        : false
+                                    }
+                                  ></input>
+                                  In Preparation
+                                </label>
+                              </li>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="In Development"
+                                    onChange={(e) =>
+                                      setStatus(EditData, "In Development")
+                                    }
+                                    checked={
+                                      EditData.AdminStatus === "In Development"
+                                        ? true
+                                        : false
+                                    }
+                                  ></input>
+                                  In Development{" "}
+                                </label>
+                              </li>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="Active"
+                                    onChange={(e) => setStatus(EditData, "Active")}
+                                    checked={
+                                      EditData.AdminStatus === "Active"
+                                        ? true
+                                        : false
+                                    }
+                                  ></input>
+                                  Active</label>
+                              </li>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="Archived"
+                                    onChange={(e) =>
+                                      setStatus(EditData, "Archived")
+                                    }
+                                    checked={
+                                      EditData.AdminStatus === "Archived"
+                                        ? true
+                                        : false
+                                    }
+                                  ></input>
+
+                                  Archived{" "}
+                                </label>
+                              </li>
+                              <li className="form-check">
+                                <label className="SpfxCheckRadio">
+                                  <input
+                                    className="radio"
+                                    name="NotStarted"
+                                    type="radio"
+                                    value="Completed"
+                                    onChange={(e) =>
+                                      setStatus(EditData, "Completed")
+                                    }
+                                    checked={
+                                      EditData.AdminStatus === "Completed"
+                                        ? true
+                                        : false
+                                    }
+                                  ></input>
+
+                                  Completed{" "}
+                                </label>
+                                </li>
+                            </ul>
+                          </div> */}
                           <div className="col-sm-6 pe-0">
-                            <div className="input-group position-relative">
+                            <div className="input-group position-relative mb-2">
                               <label className="form-label  full-width">
                                 Categories{" "}
                               </label>
@@ -1794,8 +1849,7 @@ function EditProjectPopup(item: any) {
                                                     }}
                                                     target="_blank"
                                                     data-interception="off"
-                                                    href={`${item?.AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?${EditData?.Id}`}
-                                                  >
+                                                   >
                                                     {type.Title}
                                                   </a>
                                                   <img
@@ -1818,12 +1872,10 @@ function EditProjectPopup(item: any) {
                           </div>
 
                         </div>
-                        <div className="row mb-2 mt-2 ">
 
-                        </div>
                       </div>
                       <div className="col-sm-3 ">
-                        <div className="col">
+                        <div className="col time-status">
                           <div className="input-group mb-2">
                             <label className="form-label  full-width">
                               Priority
@@ -1836,52 +1888,56 @@ function EditProjectPopup(item: any) {
                               maxLength={2}
                             />
                           </div>
-
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="radioPriority"
-                              type="radio"
-                              value="(1) High"
-                              onChange={(e) => setPriority(EditData, 8)}
-                              checked={
-                                EditData.Priority === "(1) High" ? true : false
-                              }
-                            ></input>
-                            <label> High</label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="radioPriority"
-                              type="radio"
-                              value="(2) Normal"
-                              onChange={(e) => setPriority(EditData, 4)}
-                              checked={
-                                EditData.Priority === "(2) Normal"
-                                  ? true
-                                  : false
-                              }
-                            ></input>
-                            <label> Normal</label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="radioPriority"
-                              type="radio"
-                              value="(3) Low"
-                              onChange={(e) => setPriority(EditData, 1)}
-                              checked={
-                                EditData.Priority === "(3) Low" ? true : false
-                              }
-                            ></input>
-                            <label> Low</label>
-                          </div>
+                          <ul className="p-0 mt-1 mb-0">
+                            <li className="form-check">
+                              <label className="SpfxCheckRadio">
+                                <input
+                                  className="radio"
+                                  name="radioPriority"
+                                  type="radio"
+                                  value="(1) High"
+                                  onChange={(e) => setPriority(EditData, 8)}
+                                  checked={
+                                    EditData.Priority === "(1) High" ? true : false
+                                  }
+                                ></input>
+                                High</label>
+                            </li>
+                            <li className="form-check">
+                              <label className="SpfxCheckRadio">
+                                <input
+                                  className="radio"
+                                  name="radioPriority"
+                                  type="radio"
+                                  value="(2) Normal"
+                                  onChange={(e) => setPriority(EditData, 4)}
+                                  checked={
+                                    EditData.Priority === "(2) Normal"
+                                      ? true
+                                      : false
+                                  }
+                                ></input>
+                                Normal</label>
+                            </li>
+                            <li className="form-check">
+                              <label className="SpfxCheckRadio">
+                                <input
+                                  className="radio"
+                                  name="radioPriority"
+                                  type="radio"
+                                  value="(3) Low"
+                                  onChange={(e) => setPriority(EditData, 1)}
+                                  checked={
+                                    EditData.Priority === "(3) Low" ? true : false
+                                  }
+                                ></input>
+                                Low</label>
+                            </li>
+                          </ul>
                           <div className="col mt-2">
                             <div className="input-group full-width">
                               <label className="form-label full-width">
-                                Portfolios
+                                Portfolio Items
                               </label>
                               <input
                                 type="text"
@@ -1899,11 +1955,10 @@ function EditProjectPopup(item: any) {
                                     projectTaggedPortfolios?.map((com: any, index: any) => {
                                       return (
                                         <>
-                                          <span style={{ backgroundColor: com?.PortfolioType?.Color }} className="Component-container-edit-task mt-1 d-flex justify-content-between" >
-                                            <a className='light' target="_blank" href={`${AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
-                                            <a>
-                                              <span style={{ marginLeft: "6px" }} onClick={() => RemoveSelectedServiceComponent(com.Id, "Portfolios")} className="bg-light svg__icon--cross svg__iconbox"></span>
-                                            </a>
+                                          <span style={{ backgroundColor: com?.PortfolioType?.Color }} className="block w-100" >
+                                            <a className='hreflink wid90' target="_blank" href={`${AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
+                                            <span onClick={() => RemoveSelectedServiceComponent(com.Id, "Portfolios")} className="bg-light hreflink ml-auto svg__icon--cross svg__iconbox"></span>
+
                                           </span>
                                         </>
                                       )
@@ -1933,9 +1988,9 @@ function EditProjectPopup(item: any) {
                           AllListId={item?.AllListId}
                         ></CommentCard>
                       </div>
-                      <div className="col-sm-8">
+                      <div className="col-sm-12">
                         <div className="input-group mb-2">
-                          <label className="form-label  full-width">Url</label>
+                          <label className="form-label  full-width">Relevant URL</label>
                           <input
                             type="text"
                             className="form-control"
@@ -1968,9 +2023,9 @@ function EditProjectPopup(item: any) {
                                 <span className="fw-medium font-sans-serif text-900">
                                   <span className="sign">
                                     {EditData.showdes ? (
-                                      <IoMdArrowDropdown />
+                                      <SlArrowDown />
                                     ) : (
-                                      <IoMdArrowDropright />
+                                      <SlArrowRight />
                                     )}
                                   </span>{" "}
                                   Description
@@ -1983,8 +2038,9 @@ function EditProjectPopup(item: any) {
                                   className="accordion-body pt-1"
                                   id="testDiv1"
                                 >
-                                  <span className="form-check text-end">
+                                  <span className="text-end pull-right">
                                     <input
+                                      className="form-check-input"
                                       type="checkbox"
                                       defaultChecked={
                                         EditData.descriptionVerified === true
@@ -2018,7 +2074,7 @@ function EditProjectPopup(item: any) {
                   aria-labelledby="profile-tab"
                 >
                   <div className="row">
-                    <div className="col-sm-7">
+                    <div className="col-sm-12">
                       <div className="row">
                         <TeamConfigurationCard
                           AllListId={AllListId}
@@ -2027,7 +2083,7 @@ function EditProjectPopup(item: any) {
                         ></TeamConfigurationCard>
                       </div>
                       <div className="row">
-                        <section className="accordionbox">
+                        <section className="accordionbox mt-2">
                           <div className="accordion p-0  overflow-hidden">
                             <div className="card shadow-none  mb-2">
                               <div
@@ -2046,9 +2102,9 @@ function EditProjectPopup(item: any) {
                                   >
                                     <span className="sign">
                                       {EditData.showl ? (
-                                        <IoMdArrowDropdown />
+                                        <SlArrowDown />
                                       ) : (
-                                        <IoMdArrowDropright />
+                                        <SlArrowRight />
                                       )}
                                     </span>
                                     <span className="fw-medium font-sans-serif text-900">
@@ -2060,11 +2116,12 @@ function EditProjectPopup(item: any) {
                                 <div className="accordion-collapse collapse show">
                                   {EditData.showl && (
                                     <div
-                                      className="accordion-body pt-1"
+                                      className="accordion-body pt-1 p-1"
                                       id="testDiv1"
                                     >
-                                      <span className="form-check text-end">
+                                      <span className="pull-right">
                                         <input
+                                          className="form-check-input"
                                           type="checkbox"
                                           defaultChecked={
                                             EditData.BackgroundVerified === true
@@ -2106,9 +2163,9 @@ function EditProjectPopup(item: any) {
                                   >
                                     <span className="sign">
                                       {EditData.shows ? (
-                                        <IoMdArrowDropdown />
+                                        <SlArrowDown />
                                       ) : (
-                                        <IoMdArrowDropright />
+                                        <SlArrowRight />
                                       )}
                                     </span>
                                     <span className="fw-medium font-sans-serif text-900">
@@ -2120,11 +2177,12 @@ function EditProjectPopup(item: any) {
                                 <div className="accordion-collapse collapse show">
                                   {EditData.shows && (
                                     <div
-                                      className="accordion-body pt-1"
+                                      className="accordion-body pt-1 p-1"
                                       id="testDiv1"
                                     >
-                                      <span className="form-check text-end">
+                                      <span className="pull-right">
                                         <input
+                                          className="form-check-input"
                                           type="checkbox"
                                           defaultChecked={
                                             EditData.IdeaVerified === true
@@ -2166,9 +2224,9 @@ function EditProjectPopup(item: any) {
                                   >
                                     <span className="sign">
                                       {EditData.showm ? (
-                                        <IoMdArrowDropdown />
+                                        <SlArrowDown />
                                       ) : (
-                                        <IoMdArrowDropright />
+                                        <SlArrowRight />
                                       )}
                                     </span>
                                     <span className="fw-medium font-sans-serif text-900">
@@ -2180,11 +2238,12 @@ function EditProjectPopup(item: any) {
                                 <div className="accordion-collapse collapse show">
                                   {EditData.showm && (
                                     <div
-                                      className="accordion-body pt-1"
+                                      className="accordion-body pt-1 p-1"
                                       id="testDiv1"
                                     >
-                                      <span className="form-check text-end">
+                                      <span className="pull-right">
                                         <input
+                                          className="form-check-input"
                                           type="checkbox"
                                           defaultChecked={
                                             EditData.DeliverablesVerified ===
@@ -2212,60 +2271,49 @@ function EditProjectPopup(item: any) {
                         </section>
                       </div>
                     </div>
-                    <div className="col-sm-5"></div>
+                    {/* <div className="col-sm-5"></div> */}
                   </div>
                 </div>
               </div>
             </div>
 
-            <footer className="mt-2">
-              <div className="d-flex justify-content-between align-items-center">
+            <footer className="bg-f4" style={{ position: "absolute", bottom: "0", width: "100%", zIndex: "9", left:"0px" }}>
+              <div className="align-items-center d-flex justify-content-between me-3 px-4 py-2">
                 <div>
-                  <div className="text-left">
+                  <div>
                     Created{" "}
-                    <span ng-bind="EditData.Created | date:'dd/MM/yyyy'">
+                    <span className="font-weight-normal siteColor" ng-bind="EditData.Created | date:'dd/MM/yyyy'">
                       {" "}
                       {EditData.Created != null
                         ? moment(EditData.Created).format("DD/MM/YYYY MM:SS")
                         : ""}
                     </span>{" "}
                     by
-                    <span className="panel-title ps-1">
+                    <span className="font-weight-normal siteColor">
                       {EditData.Author?.Title != undefined
                         ? EditData.Author?.Title
                         : ""}
                     </span>
                   </div>
-                  <div className="text-left">
+                  <div>
                     Last modified{" "}
-                    <span>
+                    <span className="font-weight-normal siteColor">
                       {EditData.Modified != null
                         ? moment(EditData.Modified).format("DD/MM/YYYY MM:SS")
                         : ""}
                     </span>{" "}
                     by{" "}
-                    <span className="panel-title">
+                    <span className="font-weight-normal siteColor">
                       {EditData.Editor.Title != undefined
                         ? EditData.Editor.Title
                         : ""}
                     </span>
                   </div>
-                  <div className="text-left">
-                    <a onClick={() => deleteTask()}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        viewBox="0 0 48 48"
-                        fill="none"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
-                          d="M19.3584 5.28375C18.4262 5.83254 18.1984 6.45859 18.1891 8.49582L18.1837 9.66172H13.5918H9V10.8591V12.0565H10.1612H11.3225L11.3551 26.3309L11.3878 40.6052L11.6525 41.1094C11.9859 41.7441 12.5764 42.3203 13.2857 42.7028L13.8367 43H23.9388C33.9989 43 34.0431 42.9989 34.6068 42.7306C35.478 42.316 36.1367 41.6314 36.4233 40.8428C36.6697 40.1649 36.6735 39.944 36.6735 26.1055V12.0565H37.8367H39V10.8591V9.66172H34.4082H29.8163L29.8134 8.49582C29.8118 7.85452 29.7618 7.11427 29.7024 6.85084C29.5542 6.19302 29.1114 5.56596 28.5773 5.2569C28.1503 5.00999 27.9409 4.99826 23.9833 5.00015C19.9184 5.0023 19.8273 5.00784 19.3584 5.28375ZM27.4898 8.46431V9.66172H24H20.5102V8.46431V7.26691H24H27.4898V8.46431ZM34.4409 25.9527C34.4055 40.9816 34.4409 40.2167 33.7662 40.5332C33.3348 40.7355 14.6335 40.7206 14.2007 40.5176C13.4996 40.1889 13.5306 40.8675 13.5306 25.8645V12.0565H24.0021H34.4736L34.4409 25.9527ZM18.1837 26.3624V35.8786H19.3469H20.5102V26.3624V16.8461H19.3469H18.1837V26.3624ZM22.8367 26.3624V35.8786H24H25.1633V26.3624V16.8461H24H22.8367V26.3624ZM27.4898 26.3624V35.8786H28.6531H29.8163V26.3624V16.8461H28.6531H27.4898V26.3624Z"
-                          fill="#333333"
-                        />
-                      </svg>{" "}
-                      Delete this item
+                  <div>
+                    <a className="hreflink siteColor" onClick={() => deleteTask()}>
+                      <span className="alignIcon svg__iconbox hreflink mini svg__icon--trash"></span>
+                      {" "}
+                      <span> Delete this item</span>
                     </a>
                     <span>
                       {" "}
@@ -2282,21 +2330,17 @@ function EditProjectPopup(item: any) {
                   </div>
                 </div>
                 <div>
-                  <div>
+                  <div className="footer-right">
                     <span>
-                      <a
+                      <a className="mx-2 siteColor"
                         target="_blank"
                         data-interception="off"
-                        href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${EditData.Id}`}
-                      >
+                        href={`${AllListId?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${EditData.Id}`}                     >
                         <img src="https://hhhhteams.sharepoint.com/sites/HHHH/_layouts/15/images/ichtm.gif?rev=23" />{" "}
                         Go to Profile page
                       </a>
                       ||
-                      <img
-                        className="mail-width mx-2"
-                        src={`${AllListId?.siteUrl}/SiteCollectionImages/ICONS/32/icon_maill.png`}
-                      />
+      
                       <a
                         target="_blank"
                         data-interception="off"
@@ -2326,7 +2370,7 @@ function EditProjectPopup(item: any) {
                     </button>
                     <button
                       type="button"
-                      className="btn btn-default btn-default ms-1"
+                      className="btn btn-default btn-default mx-1"
                       onClick={setModalIsOpenToFalse}
                     >
                       Cancel
@@ -2385,11 +2429,7 @@ function EditProjectPopup(item: any) {
               </tbody>
             </table>
           </div>
-          {/* <footer className="float-end">
-                        <button type="button" className="btn btn-primary px-3" onClick={() => setTaskStatusPopup(false)}>
-                            OK
-                        </button>
-                    </footer> */}
+
         </div>
       </Panel>
     </>

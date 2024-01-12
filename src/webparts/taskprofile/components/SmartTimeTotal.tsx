@@ -120,7 +120,7 @@ let AllAvailableTitle: any = [];
                 newArray.map((child: any) => {
                     
                     if (child.AuthorId == items.AuthorId) {
-                        child.additionaltime2.push(items.additionaltime2[0])
+                        child.additionaltime2.unshift(items.additionaltime2[0])
                         parentfound = true;
                     }
                    
@@ -188,6 +188,9 @@ let AllAvailableTitle: any = [];
         AllTimeSpentDetails = [];
         EditData(item.props);
     }
+    const ComponentCallBack = (dt: any) => {
+       console.log(dt)
+    }
     return (
         <>
 
@@ -196,27 +199,27 @@ let AllAvailableTitle: any = [];
             {console.log(additionalTime)}
             {smartTimeTotal.toFixed(1)}
             <span className='openhoverpopup hoverimg'>
-            <span className="svg__iconbox svg__icon--clock" onClick={OpenTimeEntry}></span>
+            <span className="svg__iconbox svg__icon--clock dark" onClick={OpenTimeEntry}></span>
                <div className='hoverpopup overlay'>
                     <div className='hoverpopuptitle'>{item.props.Title}</div>
                     <div className='hoverpopupbody'>
                         <table className='table mb-0'>
-                            <tbody>
+                           { additionalTime.length > 0?<tbody>
                                 {additionalTime.length > 0 && additionalTime.map((items: any) => {
                                     return (
                                         <>
                                             <tr className='for-c0l'>
                                                 <td style={{ width: "20%" }}>
-                                                    <img style={{ width: "30px" }} src={items.AuthorImage}></img>
+                                                    <img className='workmember '  src={items?.AuthorImage != undefined && items?.AuthorImage !="" ? items?.AuthorImage:"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"}></img>
                                                 </td>
-                                                <td style={{ width: "80%" }} colSpan={2}><span className='px-2'>Total- Time</span>{items.hoverTime}</td>
+                                                <td style={{ width: "80%" }} colSpan={2}><span className='px-2'>Total Time</span>{items.hoverTime.toFixed(2)}<span className='mx-1'>{items.hoverTime>1?'hours':'hour'}</span></td>
                                             </tr>
 
                                             {items?.additionaltime2?.length > 0 && items?.additionaltime2?.map((details: any) => {
                                                 return (
                                                     <>       <tr>
                                                         <td style={{ width: "20%" }}>{details.TaskDate}</td>
-                                                        <td style={{ width: "10%" }}>{details?.TaskTime}</td>
+                                                        <td style={{ width: "10%" }}>{details?.TaskTime}<span className='mx-1'>{details?.TaskTime>1?'hours':'hour'}</span></td>
                                                         <td style={{ width: "70%" }}>{details.Description}</td>
                                                     </tr>
                                                     </>
@@ -226,11 +229,12 @@ let AllAvailableTitle: any = [];
                                     )
                                 }
                                 )}
-                            </tbody>
+                            </tbody>:<div className='p-2'><div className='noTimeEntry'>No Time Entry</div></div>}
+
                         </table>
                     </div> </div>
             </span>
-            {isTimeEntry ? <TimeEntry data={item?.props} context={item.Context} Context={item.Context} isopen={isTimeEntry} CallBackTimesheet={() => { CallBackTimesheet() }} /> : ''}
+            {isTimeEntry ? <TimeEntry data={item?.props} context={item.Context} Context={item.Context} isopen={isTimeEntry} CallBackTimesheet={() => { CallBackTimesheet() }}  parentCallback={ComponentCallBack}/> : ''}
         </>
     )
 }

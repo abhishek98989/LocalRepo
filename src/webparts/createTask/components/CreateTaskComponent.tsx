@@ -3,11 +3,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import ReactPopperTooltipSingleLevel from '../../../globalComponents/Hierarchy-Popper-tooltipSilgleLevel/Hierarchy-Popper-tooltipSingleLevel';
 import InfoIconsToolTip from "../../../globalComponents/InfoIconsToolTip/InfoIconsToolTip";
 import { Web, sp } from "sp-pnp-js";
-import pnp, { PermissionKind } from "sp-pnp-js";
+import pnp from "sp-pnp-js";
 import "@pnp/sp/sputilities";
 let feedback: any = null;
-import { IEmailProperties } from "@pnp/sp/sputilities";
-import { SPFI, spfi, SPFx as spSPFx } from "@pnp/sp";
 import EditTaskPopup from '../../../globalComponents/EditTaskPopup/EditTaskPopup';
 import * as moment from 'moment';
 import ServiceComponentPortfolioPopup from '../../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup';
@@ -15,13 +13,14 @@ import * as globalCommon from '../../../globalComponents/globalCommon';
 import GlobalCommanTable from '../../../globalComponents/GroupByReactTableComponents/GlobalCommanTable';
 import { ColumnDef } from '@tanstack/react-table';
 import InlineEditingcolumns from '../../projectmanagementOverviewTool/components/inlineEditingcolumns';
-import './style.css'
 let AllMetadata: any = []
 let siteConfig: any = []
 let AssignedToUsers: any = []
 let AllClientCategories: any = [];
 let SitesTypes: any = []
 let subCategories: any = []
+let selectedPortfolio: any = [];
+let TeamMessagearray: any = [];
 let AllComponents: any = []
 let taskUsers: any = [];
 let ClientActivityJson: any = null;
@@ -52,6 +51,7 @@ function CreateTaskComponent(props: any) {
     const [priorityRank, setpriorityRank] = React.useState([])
     const [openPortfolioType, setOpenPortfolioType] = React.useState("");
     const [taskCat, setTaskCat] = React.useState([]);
+    const [UserEmailNotify, setUserEmailNotify] = React.useState(false);
     const [IsOpenPortfolio, setIsOpenPortfolio] = React.useState(false);
     const [smartComponentData, setSmartComponentData] = React.useState([]);
     const [Timing, setTiming] = React.useState([])
@@ -62,11 +62,10 @@ function CreateTaskComponent(props: any) {
         dueDate: false,
 
     });
-    const [relevantTasks, setRelevantTasks]: any = React.useState({
-        ComponentRelevantTask: [],
-        TaskUrlRelevantTask: [],
-        PageRelevantTask: []
-    });
+    const [PageRelevantTask, setPageRelevantTask]: any = React.useState([])
+    const [TaskUrlRelevantTask, setTaskUrlRelevantTask]: any = React.useState([])
+    const [ComponentRelevantTask, setComponentRelevantTask]: any = React.useState([])
+
     const [isActiveCategory, setIsActiveCategory] = React.useState(false);
     // const [isActiveCategory, setIsActiveCategory] = React.useState({});
     const [activeCategory, setActiveCategory] = React.useState([]);
@@ -110,7 +109,7 @@ function CreateTaskComponent(props: any) {
         base_Url = AllListId?.siteUrl
         pageContext();
         setRefreshPage(!refreshPage);
-    }, [relevantTasks])
+    }, [PageRelevantTask, TaskUrlRelevantTask, ComponentRelevantTask])
 
     const GetComponents = async () => {
         let PropsObject: any = {
@@ -146,6 +145,7 @@ function CreateTaskComponent(props: any) {
                 }));
                 // setSave({ ...save, Component: DataItem });
                 setSmartComponentData(DataItem);
+                selectedPortfolio = DataItem;
                 setSearchedServiceCompnentData([]);
                 setSearchedServiceCompnentKey('');
                 // selectPortfolioType('Component');
@@ -160,7 +160,7 @@ function CreateTaskComponent(props: any) {
         let TempArray: any = [];
         if (SearchedKeyWord.length > 0) {
             if (AllComponents != undefined && AllComponents?.length > 0) {
-                AllComponents.map((AllDataItem: any) => {
+                AllComponents?.map((AllDataItem: any) => {
                     if ((AllDataItem.Path?.toLowerCase())?.includes(SearchedKeyWord.toLowerCase())) {
                         TempArray.push(AllDataItem);
                     }
@@ -256,6 +256,7 @@ function CreateTaskComponent(props: any) {
             siteUrlData = siteUrlData?.slice(1, siteUrlData?.length)
             let paramSiteUrl = siteUrlData;
             let paramComponentId = params.get('ComponentID');
+            // let paramComponentId = params.get('Component');
             let paramType = params.get('Type');
             let paramTaskType = params.get('TaskType');
             let paramServiceId = params.get('ServiceID');
@@ -270,7 +271,9 @@ function CreateTaskComponent(props: any) {
             let SDCCreatedDate = BurgerMenuData.SDCCreatedDate = params.get('CreatedDate');
             let SDCDescription = BurgerMenuData.SDCDescription = params.get('Description');
             let SDCPageUrl = BurgerMenuData.SDCTaskUrl = params.get('TaskUrl');
+            let SDCEmail = BurgerMenuData.SDCEmail = params.get('Email');
             let SDCTaskUrl = '';
+            let SDCTaskDashboard = '';
             if (SDCDescription == 'null') {
                 SDCDescription = null
             }
@@ -287,11 +290,11 @@ function CreateTaskComponent(props: any) {
                 PageName = PageName + 'aspx'
             }
             if (paramComponentId == undefined && paramType == undefined && (paramSiteUrl != undefined || SDCTaskId != undefined)) {
-                paramComponentId = "756";
+                BurgerMenuData.ComponentID = paramComponentId = "756";
                 QueryPortfolioId = '756';
             }
             else if (paramComponentId == undefined && paramServiceId == undefined && paramSiteUrl != undefined && paramType == 'Service') {
-                paramServiceId = "4497";
+                BurgerMenuData.ComponentID = paramServiceId = "4497";
                 QueryPortfolioId = '4497';
             }
             if (paramComponentId != undefined) {
@@ -301,27 +304,24 @@ function CreateTaskComponent(props: any) {
                         setComponent.push(item)
                         setSave((prev: any) => ({ ...prev, Component: setComponent }));
                         setSmartComponentData(setComponent);
+                        selectedPortfolio = setComponent
                     }
                 })
                 if (SDCCreatedBy != undefined && SDCCreatedDate != undefined && SDCTaskUrl != undefined) {
+
                     let saveValue = save;
-                    SDCTaskUrl = `https://www.shareweb.ch/site/${SDCSiteType}/Team/Pages/Manage/TaskProfile.aspx?TaskId=${SDCTaskId}`
+                    if (SDCSiteType?.toLowerCase() == 'alakdigital') {
+
+                        SDCTaskUrl = `https://www.shareweb.ch/site/EI/DigitalAdministration/Team/Pages/Manage/TaskProfile.aspx?TaskId=${SDCTaskId}`
+                        SDCTaskDashboard = `https://www.shareweb.ch/EI/DigitalAdministration/team/Pages/TeamDashboard.aspx`
+                    } else {
+                        SDCTaskUrl = `https://www.shareweb.ch/site/${SDCSiteType}/Team/Pages/Manage/TaskProfile.aspx?TaskId=${SDCTaskId}`
+                        SDCTaskDashboard = `https://www.shareweb.ch/site/${SDCSiteType}/team/Pages/TeamDashboard.aspx`
+                    }
+                    BurgerMenuData.SDCTaskUrl = SDCTaskUrl;
+                    BurgerMenuData.SDCTaskDashboard = SDCTaskDashboard;
                     let isTaskFound = false;
-                    const web = new Web(AllListId?.siteUrl);
-                    SitesTypes?.map((site: any) => {
-                        if (site?.Title?.toLowerCase() == SDCSiteType?.toLowerCase()) {
-                            const lists = web.lists.getById(site?.listId)
-                            lists.items.select('Id,Title,ComponentLink').getAll().then((data: any) => {
-                                data?.map((task: any) => {
-                                    if (task?.ComponentLink?.Url == SDCTaskUrl) {
-                                        window.open(base_Url + "/SitePages/Task-Profile.aspx?taskId=" + task?.Id + "&Site=" + site?.Title, "_self")
-                                        isTaskFound = true;
-                                    }
-                                })
-                            })
-                        }
-                    })
-                    if (!isTaskFound) {
+                    const creatSDCTas = () => {
                         let e = {
                             target: {
                                 value: SDCTaskUrl
@@ -330,19 +330,45 @@ function CreateTaskComponent(props: any) {
                         UrlPasteTitle(e);
                         saveValue.taskName = SDCTitle;
                         saveValue.taskUrl = SDCTaskUrl;
-                        if (SDCDueDate != undefined && SDCDueDate != '' && SDCDueDate != null) {
+                        if (SDCDueDate != undefined && SDCDueDate != '' && SDCDueDate != null && SDCDueDate != "null") {
                             saveValue.DueDate = SDCDueDate
                         }
                         setSave(saveValue);
 
                         feedback = [{ "Title": "FeedBackPicture16019", "FeedBackDescriptions": [{ "Title": SDCDescription?.length > 0 && SDCDescription != null ? SDCDescription : SDCTitle, "Completed": false, "isShowComment": true, "Comments": [{ "Title": `Created ${SDCCreatedDate}  By ${SDCCreatedBy}   TaskUrl-${SDCPageUrl}`, "Created": moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'), "editableItem": false, "AuthorName": loggedInUser?.Title, "AuthorImage": loggedInUser?.Item_x0020_Cover?.Url }], "Id": "11185" }], "ImageDate": "16019" }]
-                        ClientActivityJson = [{ "ClientActivityId": SDCTaskId, "ClientSite": SDCSiteType }]
+                        let ccAct = {
+                            ...BurgerMenuData,
+                            "ClientActivityId": SDCTaskId, "ClientSite": SDCSiteType
+                        }
+                        ClientActivityJson = [ccAct];
                         if (SDCPriority != undefined && SDCPriority != '' && SDCPriority != null) {
                             setActiveTile("rank", "rank", SDCPriority)
                         }
                         createTask()
-
                     }
+                    const web = new Web(AllListId?.siteUrl);
+                    SitesTypes?.map(async (site: any) => {
+                        if (site?.Title?.toLowerCase() == SDCSiteType?.toLowerCase()) {
+                            const lists = web.lists.getById(site?.listId)
+                            await lists.items.select('Id,Title,ComponentLink,component_x0020_link').getAll().then((data: any) => {
+                                data?.map((task: any, index: any) => {
+                                    if (task?.ComponentLink?.Url == SDCTaskUrl) {
+                                        window.open(base_Url + "/SitePages/Task-Profile.aspx?taskId=" + task?.Id + "&Site=" + site?.Title, "_self")
+                                        isTaskFound = true;
+                                    } else if (task?.component_x0020_link?.Url == SDCTaskUrl) {
+                                        window.open(base_Url + "/SitePages/Task-Profile.aspx?taskId=" + task?.Id + "&Site=" + site?.Title, "_self")
+                                        isTaskFound = true;
+                                    } else if (index == data?.length - 1 && !isTaskFound) {
+                                        creatSDCTas();
+                                    }
+                                })
+                                if (data?.length == 0 && !isTaskFound) {
+                                    creatSDCTas();
+                                }
+                            })
+                        }
+                    })
+
                 }
                 else if (paramTaskType == 'Bug') {
                     DirectTask = true;
@@ -405,9 +431,11 @@ function CreateTaskComponent(props: any) {
                     }
                     UrlPasteTitle(e);
                 }
-                await loadRelevantTask(paramComponentId, paramSiteUrl, PageName).then((response: any) => {
-                    setRefreshPage(!refreshPage);
-                })
+                if (paramTaskType != 'Bug' && paramTaskType != 'Design') {
+                    await loadRelevantTask(paramComponentId, paramSiteUrl, PageName).then((response: any) => {
+                        setRefreshPage(!refreshPage);
+                    })
+                }
             }
         } else if (props?.projectId != undefined && props?.projectItem != undefined) {
             AllComponents?.map((item: any) => {
@@ -416,6 +444,7 @@ function CreateTaskComponent(props: any) {
                         setComponent.push(item)
                         setSave((prev: any) => ({ ...prev, portfolioType: 'Component' }))
                         setSmartComponentData(setComponent);
+                        selectedPortfolio = setComponent
                     }
                 }
             })
@@ -427,7 +456,10 @@ function CreateTaskComponent(props: any) {
         let allData: any = [];
         let query = '';
         query = "Categories,AssignedTo/Title,AssignedTo/Name,PriorityRank,TaskType/Id,TaskType/Title,AssignedTo/Id,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,AttachmentFiles/FileName,ComponentLink/Url,FileLeafRef,TaskLevel,TaskID,TaskLevel,Title,Id,PriorityRank,PercentComplete,Company,WebpartId,StartDate,DueDate,Status,Body,WebpartId,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ParentTask/TaskID,ParentTask/Title,ParentTask/Id&$expand=AssignedTo,ParentTask,AttachmentFiles,TaskType,Portfolio,Author,Editor&$orderby=Modified desc"
-        let setRelTask = relevantTasks;
+        let PageRelevant = PageRelevantTask;
+        let TaskUrlRelevant = TaskUrlRelevantTask;
+        let ComponentRelevant = ComponentRelevantTask;
+
         const web = new Web(AllListId?.siteUrl);
         const batch = sp.createBatch();
         let count: any = 0;
@@ -467,7 +499,7 @@ function CreateTaskComponent(props: any) {
                                     item.portfolio = item.Portfolio;
                                 }
                                 if (item?.Portfolio?.Id == PortfolioId) {
-                                    setRelTask.ComponentRelevantTask.push(item);
+                                    ComponentRelevant.push(item);
                                 }
 
                                 item.TaskID = globalCommon.GetTaskId(item);
@@ -485,10 +517,10 @@ function CreateTaskComponent(props: any) {
                                 if (item.siteType != 'Offshore Tasks') {
                                     try {
                                         if (item?.ComponentLink?.Url.indexOf(UrlTask) > -1) {
-                                            setRelTask.TaskUrlRelevantTask.push(item);
+                                            TaskUrlRelevant.push(item);
                                         }
                                         if (item?.ComponentLink?.Url.indexOf(PageTask) > -1) {
-                                            setRelTask.PageRelevantTask.push(item);
+                                            PageRelevant.push(item);
                                         }
 
                                     } catch (error) {
@@ -497,9 +529,11 @@ function CreateTaskComponent(props: any) {
                                 }
                             })
                             count++;
-                            if (count == SitesTypes.length - 1) {
+                            if (count == SitesTypes.length) {
                                 console.log("inside Set Task")
-                                setRelevantTasks(setRelTask)
+                                setPageRelevantTask(PageRelevant)
+                                setTaskUrlRelevantTask(TaskUrlRelevant)
+                                setComponentRelevantTask(ComponentRelevant)
                                 setSave({ ...save, recentClick: 'PortfolioId' })
                             }
                         })
@@ -524,13 +558,13 @@ function CreateTaskComponent(props: any) {
             MetaData = await web.lists
                 .getById(ContextValue.SmartMetadataListID)
                 .items
-                .select("Id,Title,listId,siteUrl,siteName,Item_x005F_x0020_Cover,ParentID,Parent/Id,Parent/Title,EncodedAbsUrl,IsVisible,Created,Item_x0020_Cover,Modified,Description1,SortOrder,Selectable,TaxType,Created,Modified,Author/Name,Author/Title,Editor/Name,Editor/Title,AlternativeTitle")
+                .select("Id,Title,listId,siteUrl,siteName,IsSendAttentionEmail/Id,Item_x005F_x0020_Cover,ParentID,Parent/Id,Parent/Title,EncodedAbsUrl,IsVisible,Created,Item_x0020_Cover,Modified,Description1,SortOrder,Selectable,TaxType,Created,Modified,Author/Name,Author/Title,Editor/Name,Editor/Title,AlternativeTitle")
                 .top(4999)
-                .expand('Author,Editor,Parent')
+                .expand('Author,Editor,Parent,IsSendAttentionEmail')
                 .get();
             AllMetadata = MetaData;
             AllMetadata?.map((metadata: any) => {
-                if (metadata?.Title !== undefined && metadata?.Title !== 'Foundation' && metadata?.Title !== 'Master Tasks' && metadata?.Title !== 'DRR' && metadata?.Title !== 'Health' && metadata?.Title !== 'Gender' && metadata?.Title !== 'SP Online' && metadata?.TaxType == 'Sites') {
+                if (metadata?.Title !== undefined && metadata?.Title !== 'Foundation' && metadata?.Title !== 'Master Tasks' && metadata?.Title !== 'DRR' && metadata?.Title !== 'Health' && metadata?.Title !== 'Gender' && metadata?.Title !== 'SP Online' && metadata?.TaxType == 'Sites' && metadata?.listId != undefined) {
                     SitesTypes.push(metadata);
                 }
                 if (metadata?.TaxType == 'Sites') {
@@ -674,7 +708,7 @@ function CreateTaskComponent(props: any) {
         let currentUserId = loggedInUser?.AssingedToUserId
         var AssignedToIds: any[] = [];
         let MailArrayTitle: any[] = [];
-        let AssignedIds: any = [];
+        let ResponsibleIds: any = [];
         let Tasks: any = []
         if (save.taskName.length <= 0) {
             alert("Please Enter The Task Name")
@@ -702,7 +736,7 @@ function CreateTaskComponent(props: any) {
                     if (cat.toLowerCase() === 'design') {
                         AssignedToIds.push(298)
                         TeamMembersIds.push(298);
-                        TeamMembersIds.push(49);
+                        ResponsibleIds.push(49);
                         taskUsers?.map((User: any) => {
                             if (User.Title === 'Design' && burgerMenuTaskDetails.TaskType != "Design" && TeamMembersIds.length === 0 && User.AssingedToUserId != null && User.AssingedToUserId != '' && User.AssingedToUserId != undefined) {
                                 TeamMembersIds.push(User.AssingedToUserId);
@@ -741,10 +775,15 @@ function CreateTaskComponent(props: any) {
                             if (User.Title != undefined && MailName.Title != undefined && User.Title.toLowerCase().indexOf(MailName.Title.toLowerCase()) > -1 && User.ItemType != 'Group') {
                                 RecipientMail.push(User);
                             }
+                            if (MailName?.Title == 'Design' && loggedInUser?.AssingedToUserId != 49 && User?.Title == 'Robert Ungethuem') {
+                                RecipientMail.push(User);
+                            }
+
                         });
                     }
                 });
             }
+
             let selectedCC: any = [];
             let postClientTime: any;
             let siteCompositionDetails: any;
@@ -768,12 +807,12 @@ function CreateTaskComponent(props: any) {
                     })
 
                     try {
-                        if (smartComponentData !== undefined && smartComponentData.length >= 0) {
-                            $.each(smartComponentData, function (index: any, smart: any) {
+                        if (selectedPortfolio !== undefined && selectedPortfolio.length >= 0) {
+                            $.each(selectedPortfolio, function (index: any, smart: any) {
                                 selectedComponent.push(smart.Id);
                                 portfolioId = smart?.Id
                                 if (selectedSite?.Parent?.Title == "SDC Sites") {
-                                    postClientTime = JSON.parse(smart?.Sitestagging);
+
                                     siteCompositionDetails = smart?.SiteCompositionSettings;
                                     smart?.ClientCategory?.map((cc: any) => {
                                         if (cc.Id != undefined) {
@@ -788,16 +827,21 @@ function CreateTaskComponent(props: any) {
                                 }
                             })
                         }
-                        if (save?.siteType?.toLowerCase() == "shareweb" && smartComponentData?.length > 0) {
-                            postClientTime = JSON.parse(smartComponentData[0]?.Sitestagging);
-                            siteCompositionDetails = smartComponentData[0]?.SiteCompositionSettings;
+                        if (save?.siteType?.toLowerCase() == "shareweb" && selectedPortfolio?.length > 0) {
+                            try {
+                                postClientTime = JSON.parse(selectedPortfolio[0]?.Sitestagging)
+                                siteCompositionDetails = selectedPortfolio[0]?.SiteCompositionSettings;
+                            } catch (error) {
+                                console.log(error, "Error Client Time")
+                            }
                         } else {
                             var siteComp: any = {};
-                            siteComp.SiteName = save?.siteType,
-                                siteComp.localSiteComposition = true
+                            siteComp.Title = save?.siteType,
+                            siteComp.localSiteComposition = true;
+                            siteComp.SiteImages = selectedSite?.Item_x005F_x0020_Cover?.Url;
                             siteComp.ClienTimeDescription = 100,
                                 //   siteComp.SiteImages = ,
-                                siteComp.Date = moment(new Date().toLocaleString()).format("MM-DD-YYYY");
+                            siteComp.Date = moment(new Date().toLocaleString()).format("MM-DD-YYYY");
                             postClientTime = [siteComp]
                         }
 
@@ -841,7 +885,7 @@ function CreateTaskComponent(props: any) {
                         "DueDate": save.DueDate,
                         "Mileage": save.Mileage,
                         PercentComplete: 0,
-                        ResponsibleTeamId: { "results": AssignedIds },
+                        ResponsibleTeamId: { "results": ResponsibleIds },
                         PortfolioId: portfolioId,
                         TeamMembersId: { "results": TeamMembersIds },
                         // SharewebComponentId: { "results": $scope.SharewebComponent },
@@ -854,7 +898,7 @@ function CreateTaskComponent(props: any) {
                         SiteCompositionSettings: siteCompositionDetails != undefined ? siteCompositionDetails : '',
                         AssignedToId: { "results": AssignedToIds },
                         TaskTypeId: 2,
-                        ClientTime: postClientTime != undefined ? JSON.stringify(postClientTime) : '',
+                        Sitestagging: postClientTime != undefined ? JSON.stringify(postClientTime) : '',
                         ComponentLink: {
                             __metadata: { 'type': 'SP.FieldUrlValue' },
                             Description: save.taskUrl?.length > 0 ? save.taskUrl : null,
@@ -864,8 +908,8 @@ function CreateTaskComponent(props: any) {
                     };
                     if (CategoryTitle?.toLowerCase().indexOf('approval') > -1)
                         item.PercentComplete = 0;
-                    if (AssignedIds.length > 0) {
-                        var ResponsibleTeam = AssignedIds;
+                    if (ResponsibleIds.length > 0) {
+                        var ResponsibleTeam = ResponsibleIds;
                         if (!(CategoryTitle?.toLowerCase().indexOf('bug') > -1)) {
                             if (currentUserId == 23 || currentUserId == 41) {
                                 ResponsibleTeam.push(14);
@@ -892,6 +936,7 @@ function CreateTaskComponent(props: any) {
                     await web.lists.getById(selectedSite?.listId).items.add(item).then(async (data) => {
                         let newTitle = data?.data?.Title
                         let CreatedTaskID = data?.data?.Id
+                        data.data.siteType = save.siteType;
                         if (CategoryTitle?.indexOf('Immediate') > -1 || CategoryTitle?.indexOf("Email Notification") > -1) {
                             let listID = '3BBA0B9A-4A9F-4CE0-BC15-61F4F550D556'
                             var postData = {
@@ -901,36 +946,72 @@ function CreateTaskComponent(props: any) {
                                 "Site": save.siteType
                             };
                             await createTaskByListId(selectedSite?.siteUrl?.Url, listID, postData, save.siteType)
-                            await sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, undefined, 'Immediate', undefined).then((response: any) => {
+                            await globalCommon?.sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, undefined, 'Immediate', taskUsers, props?.SelectedProp?.Context).then((response: any) => {
                                 console.log(response);
                             });;
                         }
                         if (CategoryTitle?.indexOf('Immediate') < -1) {
                             setSendApproverMail(true);
                         }
-                        if (CategoryTitle?.indexOf("Approval") > -1) {
-                            setSendApproverMail(true);
-                            sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, RecipientMail, 'ApprovalMail', undefined).then((response: any) => {
-                                console.log(response);
-                            });
-                        }
+
                         if (CategoryTitle?.indexOf("Design") > -1) {
                             setSendApproverMail(true);
-                            sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, RecipientMail, 'DesignMail', undefined).then((response: any) => {
+                            globalCommon.sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, RecipientMail, 'DesignMail', taskUsers, props?.SelectedProp?.Context).then((response: any) => {
                                 console.log(response);
                             });
                         }
-                        if (RecipientMail?.length > 0) {
+                        // if (CategoryTitle?.indexOf("Approval") > -1) {
+                        //     setSendApproverMail(true);
+                        //     globalCommon.sendImmediateEmailNotifications(data?.data?.Id, selectedSite?.siteUrl?.Url, selectedSite?.listId, data?.data, RecipientMail, 'ApprovalMail', taskUsers, props?.SelectedProp?.Context).then((response: any) => {
+                        //         console.log(response);
+                        //     });
+                        // }
 
-                        }
+
                         data.data.siteUrl = selectedSite?.siteUrl?.Url;
-                        data.data.siteType = save.siteType;
+
                         data.data.listId = selectedSite?.listId;
                         // taskCreated = true;
                         createdTask.Id = data?.data?.Id
                         createdTask.siteType = save.siteType
                         data.data.SiteIcon = selectedSite?.Item_x005F_x0020_Cover?.Url;
                         createdTask.SiteIcon = selectedSite?.Item_x005F_x0020_Cover?.Url;
+                        if (UserEmailNotify) {
+
+                            if (UserEmailNotify) {
+
+                                let txtComment = `You have been tagged as Attention in the below task by ${loggedInUser?.Title}`;
+                                let TeamMsg =
+                                    txtComment +
+                                    `</br> <a href=${selectedSite?.siteUrl?.Url}>${CreatedTaskID}-${newTitle}</a>`;
+
+                                let sendUserEmail: any = [];
+                                TeamMessagearray?.map((userDtl: any) => {
+                                    taskUsers?.map((allUserItem: any) => {
+                                        if (userDtl?.IsSendAttentionEmail?.Id == allUserItem.AssingedToUserId) {
+                                            sendUserEmail.push(allUserItem.Email);
+                                        }
+                                    });
+                                });
+                                if (sendUserEmail?.length > 0) {
+                                    await globalCommon.SendTeamMessage(
+                                        sendUserEmail,
+                                        TeamMsg,
+                                        props.SelectedProp.Context
+                                    );
+                                }
+
+
+
+                            }
+
+
+
+
+
+
+                            // EmailNotificationOnTeams(data.data.siteUrl, data.data.Id, data.data.Title, save.siteType);
+                        }
                         if (props?.projectId != undefined) {
                             EditPopup(data?.data)
                             props?.callBack
@@ -1052,28 +1133,35 @@ function CreateTaskComponent(props: any) {
             // TestUrl = $scope.ComponentLink;
             var item = '';
             if (TestUrl !== undefined) {
+                if (TestUrl.toLowerCase().indexOf('.com') > -1)
+                    TestUrl = TestUrl.split('.com')[1];
+                else if (TestUrl.toLowerCase().indexOf('.ch') > -1)
+                    TestUrl = TestUrl.split('.ch')[1];
+                else if (TestUrl.toLowerCase().indexOf('.de') > -1) {
+                    TestUrl = TestUrl.split('.de');
+                    try {
+                        if (TestUrl[0]?.toLowerCase()?.indexOf('gruene-washington') > -1) {
+                            TestUrl = TestUrl[0];
+                        } else {
+                            TestUrl = TestUrl[1];
+                        }
+                    } catch (e) { }
+                }
+                let URLDataArr: any = TestUrl.split('/');
                 for (let index = 0; index < SitesTypes?.length; index++) {
                     let site = SitesTypes[index];
-                    if (TestUrl.toLowerCase().indexOf('.com') > -1)
-                        TestUrl = TestUrl.split('.com')[1];
-                    else if (TestUrl.toLowerCase().indexOf('.ch') > -1)
-                        TestUrl = TestUrl.split('.ch')[1];
-                    else if (TestUrl.toLowerCase().indexOf('.de') > -1)
-                        TestUrl = TestUrl.split('.de')[1];
-
                     let Isfound = false;
-                    if (TestUrl !== undefined && ((TestUrl?.toLowerCase()?.indexOf('/' + site?.Title?.toLowerCase())) > -1 || (site?.AlternativeTitle != null && (TestUrl?.toLowerCase()?.indexOf(site?.AlternativeTitle?.toLowerCase())) > -1))) {
+                    if (TestUrl !== undefined && URLDataArr?.find((urlItem: any) => urlItem?.toLowerCase() == site?.Title?.toLowerCase()) || (site?.AlternativeTitle != null && URLDataArr?.find((urlItem: any) => urlItem?.toLowerCase() == site?.AlternativeTitle?.toLowerCase()))) {
                         item = site.Title;
                         selectedSiteTitle = site.Title;
                         Isfound = true;
                     }
-
                     if (!Isfound) {
                         if (TestUrl !== undefined && site.AlternativeTitle != null) {
                             let sitesAlterNatives = site.AlternativeTitle.toLowerCase().split(';');
                             for (let j = 0; j < sitesAlterNatives.length; j++) {
                                 let element = sitesAlterNatives[j];
-                                if (TestUrl.toLowerCase().indexOf(element) > -1) {
+                                if (URLDataArr?.find((urlItem: any) => urlItem?.toLowerCase() == element?.toLowerCase())) {
                                     item = site.Title;
                                     selectedSiteTitle = site.Title;
                                     Isfound = true;
@@ -1137,7 +1225,11 @@ function CreateTaskComponent(props: any) {
     }
 
     const selectSubTaskCategory = (title: any, Id: any, item: any) => {
-        if (loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve all but selected items' && !IsapprovalTask) {
+        if (item?.Parent?.Title == "Attention") {
+            TeamMessagearray.push(item);
+            setUserEmailNotify(true)
+        }
+        if (loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve all but selected items' || loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve selected' && !IsapprovalTask) {
             try {
                 let selectedApprovalCat = JSON.parse(loggedInUser?.CategoriesItemsJson)
                 IsapprovalTask = selectedApprovalCat?.some((selectiveApproval: any) => selectiveApproval?.Title == title)
@@ -1162,7 +1254,7 @@ function CreateTaskComponent(props: any) {
                 item.ActiveTile = !item.ActiveTile;
                 activeCategoryArray = activeCategoryArray.filter((category: any) => category !== title);
                 TaskCategories = TaskCategories.filter((category: any) => category !== Id);
-                if (loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve all but selected items' && IsapprovalTask) {
+                if (loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve all but selected items' || loggedInUser?.IsApprovalMail?.toLowerCase() == 'approve selected' && IsapprovalTask) {
                     try {
                         let selectedApprovalCat = JSON.parse(loggedInUser?.CategoriesItemsJson)
                         IsapprovalTask = !selectedApprovalCat?.some((selectiveApproval: any) => selectiveApproval?.Title == title)
@@ -1230,7 +1322,16 @@ function CreateTaskComponent(props: any) {
         setTaskCat(TaskCategories)
 
     }
-
+    const EmailNotificationOnTeams = async (sitename: any, taskId: any, TaskTitle: any, CreateSite: any) => {
+        let TaskUrl: any = `${base_Url}/SitePages/Task-Profile.aspx?taskId=${taskId}&Site=${CreateSite}`
+        let txtComment = `You have been tagged as Attention in the below task by ${props.SelectedProp.pageContext._user.displayName}`;
+        let TeamMsg = txtComment + `</br> <a href=${TaskUrl}>${taskId}-${TaskTitle}</a>`
+        TeamMessagearray.map((mail: any) => {
+            if (mail?.EMail?.length > 0) {
+                globalCommon.SendTeamMessage([mail.EMail], TeamMsg, props.SelectedProp.Context);
+            }
+        })
+    }
 
     const inlineCallBack = React.useCallback((item: any) => {
 
@@ -1238,18 +1339,26 @@ function CreateTaskComponent(props: any) {
     const column2 = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
             {
-                accessorFn: (row) => row?.siteType,
-                cell: ({ row }) => (
-                    <span>
-                        <img className='circularImage rounded-circle' title={row?.original?.siteType} src={row?.original?.SiteIcon} />
-                    </span>
-                ),
+                accessorKey: "",
+                placeholder: "",
+                hasCheckbox: false,
+                hasCustomExpanded: false,
+                hasExpanded: false,
+                isHeaderNotAvlable: true,
+                size: 1,
+                id: 'Id',
+            },
+            , {
+                accessorFn: (row: any) => row?.siteType,
+                cell: ({ row }) => <span>
+                    <img className='circularImage rounded-circle' title={row?.original?.siteType} src={row?.original?.SiteIcon} />
+                </span>,
                 id: "Site",
                 placeholder: "Site",
                 header: "",
                 resetSorting: false,
                 resetColumnFilters: false,
-                size: 42
+                size: 60,
             },
             {
                 accessorKey: "TaskID",
@@ -1328,6 +1437,9 @@ function CreateTaskComponent(props: any) {
                     </span>
                 ),
                 placeholder: "Priority",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PriorityRank == filterValue
+                },
                 id: 'Priority',
                 header: "",
                 resetColumnFilters: false,
@@ -1350,6 +1462,13 @@ function CreateTaskComponent(props: any) {
                 resetColumnFilters: false,
                 resetSorting: false,
                 placeholder: "Due Date",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if (row?.original?.DisplayDueDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
                 header: "",
                 size: 100
             },
@@ -1369,13 +1488,16 @@ function CreateTaskComponent(props: any) {
                 ),
                 id: 'PercentComplete',
                 placeholder: "% Complete",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 header: "",
                 size: 42
             },
             {
-                accessorFn: (row) => row?.CreatedSearch,
+                accessorFn: (row) => row?.Created,
                 cell: ({ row }) => (
                     <span className='alignCenter'>
                         <span className='ms-1'>{row?.original?.CreateDate} </span>
@@ -1396,6 +1518,14 @@ function CreateTaskComponent(props: any) {
                 ),
                 id: 'Created',
                 canSort: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.CreateDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+                isColumnDefultSortingDesc: true,
                 resetColumnFilters: false,
                 resetSorting: false,
                 placeholder: "Created",
@@ -1403,7 +1533,7 @@ function CreateTaskComponent(props: any) {
                 size: 120
             },
             {
-                accessorFn: (row) => row?.ModifiedSearch,
+                accessorFn: (row) => row?.Modified,
                 cell: ({ row }) => (
                     <span className='alignCenter'>
                         <span className='ms-1'>{row?.original?.ModifiedDate} </span>
@@ -1425,6 +1555,13 @@ function CreateTaskComponent(props: any) {
                 ),
                 id: 'Modified',
                 canSort: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if (row?.original?.Editor?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.ModifiedDate?.includes(filterValue)) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 placeholder: "Modified",
@@ -1458,13 +1595,17 @@ function CreateTaskComponent(props: any) {
             isOpenEditPopup: false,
             passdata: null
         })
-        if (items) {
-            window.open(base_Url + "/SitePages/Task-Profile.aspx?taskId=" + createdTask?.Id + "&Site=" + createdTask?.siteType, "_self")
-            createdTask = {};
-        } else {
-            location.reload();
+        if (items == 'Delete' || items == "Close") {
+            if (burgerMenuTaskDetails?.TaskType == 'Bug' || burgerMenuTaskDetails?.TaskType == 'Design' && createdTask?.Id != undefined) {
+                window.open(base_Url + "/SitePages/CreateTask.aspx", "_self")
+                createdTask = {};
+            }
+        } else if (items == "Save" && createdTask?.Id != undefined) {
+            setTimeout(() => {
+                window.open(base_Url + "/SitePages/Task-Profile.aspx?taskId=" + createdTask?.Id + "&Site=" + createdTask?.siteType, "_self")
+                createdTask = {};
+            }, 1200)
         }
-
     }, [])
     const EditPopup = React.useCallback((item: any) => {
         setEditTaskPopupData({
@@ -1472,462 +1613,8 @@ function CreateTaskComponent(props: any) {
             passdata: item
         })
     }, [])
-
     // Approver Category Email 
-    const SendEmailFinal = async (to: any, subject: any, body: any) => {
-        let sp = spfi().using(spSPFx(props?.SelectedProp?.Context));
-        sp.utility.sendEmail({
-            //Body of Email  
-            Body: body,
-            //Subject of Email  
-            Subject: subject,
-            //Array of string for To of Email  
-            To: to,
-            AdditionalHeaders: {
-                "content-type": "text/html"
-            },
-        }).then(() => {
-            console.log("Email Sent!");
 
-        }).catch((err) => {
-            console.log(err.message);
-        });
-    }
-    const getData = async (url: any, listId: any, query: any) => {
-        const web = new Web(url);
-        let result;
-        try {
-            result = (await web.lists.getById(listId).items.select(query).getAll());
-        }
-        catch (error) {
-            return Promise.reject(error);
-        }
-
-        return result;
-
-    }
-    const sendImmediateEmailNotifications = async (itemId: any, siteUrl: any, listId: any, item: any, RecipientMail: any, isLoadNotification: any, rootSite: any) => {
-        await GetImmediateTaskNotificationEmails(item, isLoadNotification, rootSite)
-            .then(async (ToEmails: any) => {
-                try {
-                    if (isLoadNotification == false)
-                        ToEmails = [];
-                    if (RecipientMail?.length > 0) {
-                        if (ToEmails == undefined || isLoadNotification == 'DesignMail') {
-                            ToEmails = [];
-                        }
-                        RecipientMail.map((mail: any) => {
-                            ToEmails.push(mail?.Email);
-                        })
-                    }
-                    if (ToEmails.length > 0) {
-                        var query = '';
-                        query += "AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,ComponentLink,Categories,FeedBack,ComponentLink,FileLeafRef,Title,Id,Comments,StartDate,DueDate,Status,Body,Company,Mileage,PercentComplete,FeedBack,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,TaskCategories/Id,TaskCategories/Title,TaskType/Id,TaskType/Title,TaskID,CompletedDate,TaskLevel,TaskLevel,ParentTask/TaskID,ParentTask/Title,ParentTask/Id&$expand=AssignedTo,AttachmentFiles,ParentTask,Author,Editor,TaskCategories,TaskType,Portfolio&$filter=Id eq " + itemId;
-                        await getData(siteUrl, listId, query)
-                            .then(async (data: any) => {
-                                data?.map((item: any) => {
-                                    item.PercentageCompleted = item?.PercentComplete < 1 ? item?.PercentComplete * 100 : item?.PercentComplete;
-                                    item.PercentComplete = item?.PercentComplete < 1 ? item?.PercentComplete * 100 : item?.PercentComplete;
-                                    if (item.PercentageCompleted != undefined) {
-                                        item.PercentageCompleted = parseInt((item?.PercentageCompleted).toFixed(0));
-                                    }
-                                    if (item.PercentComplete != undefined) {
-                                        item.PercentComplete = parseInt((item?.PercentComplete).toFixed(0));
-                                    }
-                                    item.taskLeader = 'None';
-                                    if (item?.AssignedTo?.length > 0)
-                                        item.taskLeader = globalCommon.getMultiUserValues(item);
-
-                                    if (item?.PercentComplete != undefined) {
-                                        item.PercentComplete = item.PercentComplete < 1 ? item.PercentComplete * 100 : item.PercentComplete;
-                                        item.PercentComplete = parseInt((item.PercentComplete).toFixed(0));
-
-                                        item.PercentageCompleted = item.PercentComplete;
-                                    }
-                                    if (item?.siteType != undefined) {
-                                        item.siteType = item.siteType.replace(/_x0020_/g, ' ');
-                                    }
-                                })
-
-                                var UpdateItem = data[0];
-                                var siteType = save.siteType;
-                                UpdateItem.siteType = '';
-                                if (UpdateItem.siteType == '') {
-                                    if (siteType != undefined) {
-                                        siteType = siteType.replace(/_x0020_/g, '%20');
-                                    }
-                                    UpdateItem.siteType = siteType;
-                                }
-                                UpdateItem.TaskID = globalCommon.GetTaskId(UpdateItem);
-                                if (UpdateItem?.Author != undefined) {
-                                    UpdateItem.Author1 = '';
-                                    UpdateItem.Author1 = UpdateItem.Author.Title;
-                                } else
-                                    UpdateItem.Editor1 = '';
-                                if (UpdateItem?.Editor != undefined) {
-                                    UpdateItem.Editor1 = '';
-                                    UpdateItem.Editor1 = UpdateItem.Editor.Title;
-                                } else
-                                    UpdateItem.Editor1 = '';
-                                if (UpdateItem?.ComponentLink?.Url != undefined)
-                                    UpdateItem.URL = UpdateItem?.ComponentLink?.Url;
-                                else
-                                    UpdateItem.URL = '';
-
-                                if (UpdateItem?.DueDate != undefined)
-                                    UpdateItem.DueDate = moment(new Date(UpdateItem.DueDate)).format('DD/MM/YYYY')
-                                else
-                                    UpdateItem.DueDate = '';
-                                if (UpdateItem?.StartDate != undefined)
-                                    UpdateItem.StartDate = moment(new Date(UpdateItem.StartDate)).format('DD/MM/YYYY')
-                                else
-                                    UpdateItem.StartDate = '';
-                                if (UpdateItem?.CompletedDate != undefined)
-                                    UpdateItem.CompletedDate = moment(new Date(UpdateItem.CompletedDate)).format('DD/MM/YYYY')
-                                else
-                                    UpdateItem.CompletedDate = '';
-
-                                if (UpdateItem?.Created != undefined)
-                                    UpdateItem.Created = moment(new Date(UpdateItem.Created)).format('DD/MM/YYYY')
-                                else
-                                    UpdateItem.Created = '';
-                                if (UpdateItem?.Modified != undefined)
-                                    UpdateItem.Modified = moment(new Date(UpdateItem.Modified)).format('DD/MM/YYYY')
-                                else
-                                    UpdateItem.Modified = '';
-                                if (UpdateItem?.PercentComplete != undefined)
-                                    UpdateItem.PercentComplete = UpdateItem.PercentComplete;
-                                else
-                                    UpdateItem.PercentComplete = '';
-                                if (UpdateItem?.Priority != undefined)
-                                    UpdateItem.Priority = UpdateItem.Priority;
-                                else
-                                    UpdateItem.Priority = '';
-                                if (UpdateItem?.Body != undefined)
-                                    UpdateItem.Body = $.parseHTML(UpdateItem.Body)[0]?.textContent;
-                                else
-                                    UpdateItem.Body = '';
-                                if (UpdateItem?.Title != undefined)
-                                    UpdateItem.Title = UpdateItem.Title;
-                                else
-                                    UpdateItem.Title = '';
-                                UpdateItem.AssignedToTitle = '';
-                                if (UpdateItem?.AssignedTo != undefined) {
-                                    UpdateItem.AssignedTo.map((item: any) => {
-                                        UpdateItem.AssignedToTitle += item.Title + ';';
-                                    })
-                                }
-                                UpdateItem.ComponentName = '';
-                                if (UpdateItem?.Portfolio?.Id != undefined) {
-                                    UpdateItem.ComponentName += UpdateItem?.Portfolio.Title
-                                }
-                                UpdateItem.Category = '';
-                                UpdateItem.Categories = '';
-                                if (UpdateItem?.TaskCategories != undefined) {
-                                    UpdateItem.TaskCategories.map((item: any) => {
-                                        UpdateItem.Categories += item.Title + ';';
-                                        UpdateItem.Category += item.Title + ',';
-                                    })
-                                }
-                                var pos = UpdateItem?.Category?.lastIndexOf(',');
-                                UpdateItem.Category = UpdateItem?.Category?.substring(0, pos) + UpdateItem?.Category?.substring(pos + 1);
-                                var Commentdata = [];
-                                UpdateItem.AllComments = '';
-                                if (UpdateItem?.Comments != undefined) {
-                                    Commentdata = JSON.parse(UpdateItem.Comments);
-                                    Commentdata.map((comment: any) => {
-                                        UpdateItem.AllComments += '<div colspan="6" style="padding: 9px;border: 1px solid #ccc;background: #fbfbfb;color: #000;margin-top:5px;">' +
-                                            '<span>' +
-                                            '<div style="margin-bottom:5px;">' +
-                                            comment?.AuthorName +
-                                            ' - ' +
-                                            comment?.Created +
-                                            '</div>' +
-                                            comment?.Title +
-                                            '</span>' +
-                                            '</div>'
-                                    })
-                                }
-                                UpdateItem.Description = '';
-                                if (UpdateItem?.Body != undefined && UpdateItem?.Body != '')
-                                    UpdateItem.Description = UpdateItem.Body;
-                                if (UpdateItem?.FeedBack != undefined) {
-                                    try {
-                                        var Description = JSON.parse(UpdateItem?.FeedBack);
-                                        if (Description?.length > 0) {
-                                            UpdateItem.Description = '';
-                                            Description[0]?.FeedBackDescriptions?.map((description: any, index: any) => {
-                                                var index1 = index + 1;
-                                                var Comment = '';
-                                                if (description?.Comments?.length > 0) {
-                                                    description.Comments.map((val: any) => {
-                                                        Comment += '<div colspan="6" style="padding: 9px;border: 1px solid #ccc;background: #fbfbfb;color: #000;margin-top:5px;">' +
-                                                            '<span>' +
-                                                            '<div style="margin-bottom:5px;">' +
-                                                            val?.AuthorName +
-                                                            ' - ' +
-                                                            val?.Created +
-                                                            '</div>' +
-                                                            val?.Title +
-                                                            '</span>' +
-                                                            '</div>'
-
-                                                    })
-
-                                                }
-                                                UpdateItem.Description += '<tr><td colspan="1" style="background: #f4f4f4;text - align: left;padding: 10px 5px 10px 5px;color: #6F6F6F;font - family: arial;font - size: 14px;font - weight: bold;border - bottom: 2px solid #fff;border - right: 2px solid #fff;background-color: #fbfbfb;font-size: 13px;flex-basis: 27px !important;border: 1px solid #ccc;"><span>' + index1 + '</span>' +
-                                                    '</td>' +
-                                                    '<td colspan="11" style="background: #f4f4f4;text - align: left;padding: 10px 5px 10px 5px;color: #6F6F6F;font - family: arial;font - size: 14px;font - weight: bold;border - bottom: 2px solid #fff;border - right: 2px solid #fff;background-color: #fbfbfb;flex-basis: 100%;background-color: #fff;font-weight: normal;font-size: 13px;color: #000;margin-left: 2px;border: 1px solid #ccc;">' +
-                                                    '<span>' +
-                                                    description?.Title +
-                                                    '</span>' +
-                                                    Comment +
-                                                    '</td>' +
-                                                    '</tr>';
-                                                if (description?.Subtext?.length > 0) {
-                                                    description.Subtext.map((Childdescription: any, Childindex: any) => {
-                                                        var Childindex1 = Childindex + 1;
-                                                        var ChildComment = '';
-                                                        if (Childdescription?.Comments?.length > 0) {
-                                                            description.Comments.map((Childval: any) => {
-                                                                ChildComment += '<div colspan="6" style="padding: 9px;border: 1px solid #ccc;background: #fbfbfb;color: #000;margin-top:5px;">' +
-                                                                    '<span>' +
-                                                                    '<div style="margin-bottom:5px;">' +
-                                                                    Childval?.AuthorName +
-                                                                    ' - ' +
-                                                                    Childval?.Created +
-                                                                    '</div>' +
-                                                                    Childval?.Title +
-                                                                    '</span>' +
-                                                                    '</div>'
-
-                                                            })
-
-                                                        }
-                                                        UpdateItem.Description += '<tr><td colspan="1" style="background: #f4f4f4;text - align: left;padding: 10px 5px 10px 5px;color: #6F6F6F;font - family: arial;font - size: 14px;font - weight: bold;border - bottom: 2px solid #fff;border - right: 2px solid #fff;background-color: #fbfbfb;font-size: 13px;flex-basis: 27px !important;border: 1px solid #ccc;"><span>' + index1 + '.' + Childindex1 + '</span>' +
-                                                            '</td>' +
-                                                            '<td colspan="11" style="background: #f4f4f4;text - align: left;padding: 10px 5px 10px 5px;color: #6F6F6F;font - family: arial;font - size: 14px;font - weight: bold;border - bottom: 2px solid #fff;border - right: 2px solid #fff;background-color: #fbfbfb;flex-basis: 100%;background-color: #fff;font-weight: normal;font-size: 13px;color: #000;margin-left: 2px;border: 1px solid #ccc;">' +
-                                                            '<span>' +
-                                                            Childdescription?.Title +
-                                                            '</span>' +
-                                                            ChildComment +
-                                                            '</td>' +
-                                                            '</tr>';
-                                                    });
-
-                                                }
-                                            });
-                                        }
-                                        //$scope.AdditionalTimeSpent.push(item.AdditionalTime[0]);
-                                    } catch (e) {
-                                        console.log(e)
-                                    }
-
-                                }
-                                let pageContent = await pageContext()
-                                var siteUrl = pageContent?.SiteFullUrl + '/sp';
-                                var Name = '';
-                                var OtherDetails = '';
-                                let Subject: any = '';
-                                var TaskDescriptionStart = '';
-                                var NoOfApprovalTask = '';
-                                var TaskDescription = '';
-                                var ApprovalRejectionComments = '';
-                                var TaskComments = '';
-                                var TaskDashBoardURl = '';
-                                var ApprovalDashboard = '';
-                                var TaskDashBoardTitle = '';
-                                var ApprovalDashboardTitle = '';
-                                var CC: any[] = [];
-                                if (item == undefined) {
-                                    //Subject = "[" + siteType + "-Task] " + UpdateItem.Title + "(" + UpdateItem.Category + ")";
-                                    Subject = "[" + siteType + " - " + UpdateItem?.Category + " (" + UpdateItem?.PercentComplete + "%)] " + UpdateItem?.Title + "";
-                                }
-
-                                if (Subject == undefined || Subject == '') {
-                                    if (UpdateItem?.PercentComplete != undefined && UpdateItem?.PercentComplete != '' && UpdateItem?.PercentComplete != 1 && UpdateItem?.Category != undefined && UpdateItem?.Category != '' && UpdateItem?.Category.toLowerCase('approval') > -1)
-                                        item.CategoriesType = item?.Category?.replace('Approval,', '')
-                                    Subject = "[" + siteType + " - " + UpdateItem?.Category + " (" + UpdateItem?.PercentComplete + "%)] " + UpdateItem?.Title + "";
-                                }
-                                if (UpdateItem?.PercentComplete != 1) {
-                                    Subject = Subject?.replaceAll('Approval,', '')
-                                    Subject = Subject?.replaceAll('Normal Approval,', '')
-                                    Subject = Subject?.replaceAll('Normal Approval', '')
-                                    Subject = Subject?.replaceAll('Quick Approval,', '')
-                                    Subject = Subject?.replaceAll('Quick Approval', '')
-                                    Subject = Subject?.replaceAll('Complex Approval,', '')
-                                    Subject = Subject?.replaceAll('Complex Approval', '')
-                                    Subject = Subject?.replaceAll(',,', ',')
-                                }
-                                if (UpdateItem?.PercentComplete == 1 && UpdateItem?.Category?.toLowerCase()?.indexOf('approval') > -1) {
-                                    //Subject = Subject.replaceAll('Approval,', '')
-                                    //if (Subject.indexOf('Normal Approval') <= -1 && Subject.indexOf('Quick Approval') <= -1 && Subject.indexOf('Complex Approval') <= -1)
-                                    //    Subject = Subject.replaceAll('Approval', '')
-                                    //Subject = Subject.replaceAll(',,', ',')
-                                    Subject = "[" + siteType + " - " + "Approval" + "] " + UpdateItem?.Title + "";
-                                    if (UpdateItem?.Category?.toLowerCase()?.indexOf('email notification') > -1 && UpdateItem?.Category?.toLowerCase().indexOf('immediate') > -1) {
-                                        Subject = "[" + siteType + " - " + "Approval,Email notification,Immediate" + "] " + UpdateItem?.Title + "";
-                                    }
-                                    else if (UpdateItem?.Category?.toLowerCase()?.indexOf('email notification') > -1) {
-                                        Subject = "[" + siteType + " - " + "Approval,Email notification" + "] " + UpdateItem?.Title + "";
-                                    }
-                                    else if (UpdateItem?.Category?.toLowerCase()?.indexOf('immediate') > -1) {
-                                        Subject = "[" + siteType + " - " + "Approval,Immediate" + "] " + UpdateItem?.Title + "";
-                                    }
-                                }
-                                var body =
-                                    '<div>' +
-                                    '</div>' +
-                                    '<div style="margin-top:4px">' +
-                                    TaskDescriptionStart +
-                                    '</div>' +
-                                    '<div style="margin-top:6px">' +
-                                    TaskDescription +
-                                    '</div>'
-                                    + '<div style="margin-top:10px">' +
-                                    NoOfApprovalTask +
-                                    '</div>'
-                                    + '<div style="margin-top:10px;">' +
-                                    '<a style="padding-right: 17px;" href =' + TaskDashBoardURl + '>' + TaskDashBoardTitle + '</a>' +
-                                    '<a href =' + ApprovalDashboard + '>' + ApprovalDashboardTitle + '</a>' +
-                                    '</div>'
-                                    + '<div style="margin-top:15px">' +
-                                    '<a href =' + siteUrl + '/SitePages/Task-Profile.aspx?taskId=' + UpdateItem?.Id + '&Site=' + siteType + '>' +
-                                    UpdateItem?.Title + '</a>' +
-                                    '</div>' +
-                                    '<table style="width:100%">' +
-                                    '<tbody>' +
-                                    '<td style="width:70%;vertical-align: top;">' +
-                                    '<table style="width:99%;">' +
-                                    '<tbody>' +
-                                    '<tr>'
-                                    + '<tr><td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Task Id:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.TaskID + '</span></td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Component:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.ComponentName + '</span> </td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Priority:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.Priority + '</span> </td>' +
-                                    '</tr>' +
-                                    '<tr><td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Start Date:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.StartDate + '</span></td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Completion Date:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.CompletedDate + '</span> </td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Due Date:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.DueDate + '</span> </td>' +
-                                    '</tr>' +
-                                    '<tr><td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Team Members:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.AssignedToTitle + '</span></td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Created By:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.Author1 + '</span> </td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Created:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.Created + '</span> </td>' +
-                                    '</tr>' +
-                                    '<tr><td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Categories:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.Categories + '</span></td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">Status:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.Status + '</span> </td>' +
-                                    '<td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">% Complete:</b></td><td colspan="2" style="border: 1px solid #ccc;background: #fafafa;"> <span style="font-size: 13px; margin-left:13px" >' +
-                                    UpdateItem?.PercentComplete + '%</span> </td>' +
-                                    '</tr>' +
-                                    '<tr><td style="border: 1px solid #ccc;background: #f4f4f4;"><b style="font-size: 13px;">URL:</b> </td><td colspan="7" style="border: 1px solid #ccc;background: #fafafa;"><span style="font-size: 13px; margin-left:13px">' +
-                                    UpdateItem?.URL + '</span> </td>' +
-                                    '</tr>' +
-                                    ApprovalRejectionComments +
-                                    '</tr> ' +
-                                    '</tr>' +
-                                    '</tr>' +
-                                    '<tr>' +
-                                    '</tbody>' +
-                                    '</table>' +
-                                    '<table style="width:99%;margin-top: 10px;">' +
-                                    '<tbody>' +
-                                    '<tr>' + UpdateItem?.Description + '</tr>' +
-                                    '</tbody>' +
-                                    '</table>' +
-                                    '</td>' +
-                                    '<td style="width:22%">' +
-                                    '<table style="border:1px solid #ddd;border-radius:4px;margin-bottom:25%;width:100%">' +
-                                    '<tbody>' +
-                                    '<tr>' +
-                                    '<td style="color:#333; background-color:#f5f5f5;border-bottom:1px solid #ddd">Comments:' + '</td>' +
-                                    '</tr>' +
-                                    '<tr>' +
-                                    '<td>' + UpdateItem?.AllComments + '</td>' +
-                                    '</tr>' +
-                                    '</tbody>' +
-                                    '</table>' +
-                                    '</td>' +
-                                    '</tr>' +
-                                    '</tbody>' +
-                                    '</table>' +
-                                    '</td>' +
-                                    '</tr>' +
-                                    '</tbody>' +
-                                    '</table>';
-                                if (CC.length > 1)
-                                    CC.splice(1, 1);
-                                //'<tr><td colspan="7" style="background: #f4f4f4;text - align: left;padding: 10px 5px 10px 5px;color: #6F6F6F;font - family: arial;font - size: 14px;font - weight: bold;border - bottom: 2px solid #fff;border - right: 2px solid #fff;background-color: #fbfbfb;flex-basis: 100%;background-color: #fff;font-weight: normal;font-size: 13px;color: #000;margin-left: 2px;border: 1px solid #ccc;">' + UpdateItem.Description + '</td></tr>' +
-
-                                var from = '',
-                                    to = ToEmails,
-                                    cc = CC,
-                                    body = body,
-                                    subject = Subject,
-                                    ReplyTo = "deepak@hochhuth-consulting.de";
-                                // sendEmail(from, to, body, subject, ReplyTo, cc);
-                                SendEmailFinal(to, subject, body)
-                            }, function (error) {
-                                console.log(error);
-                            })
-                    }
-                } catch (error) {
-                    console.log(error)
-                }
-            },
-
-                function (error) { });
-    }
-    const GetImmediateTaskNotificationEmails = async (item: any, isLoadNotification: any, rootsite: any) => {
-        var isLoadNotification = isLoadNotification;
-        var CurrentItem = item;
-        var Allmail: any[] = [];
-        try {
-            if (taskUsers?.length > 0) {
-                var Allusers = taskUsers
-                if (item != undefined && isLoadNotification != undefined && isLoadNotification != '' && isLoadNotification == 'ApprovalMail') {
-                    Allusers.map((user: any) => {
-                        if (CurrentItem?.AuthorId == user?.AssingedToUserId) {
-                            if (user?.Approver?.length > 0)
-                                user.Approver.map((approver: any) => {
-                                    Allmail.push(approver?.Name?.split('|')[2]);
-                                })
-                        }
-                    })
-                } else if (item != undefined && isLoadNotification != undefined && isLoadNotification != '' && isLoadNotification == 'Immediate') {
-                    Allusers.map((user: any) => {
-                        if (user?.IsTaskNotifications == true) {
-                            if (user?.AssingedToUser?.EMail != undefined)
-                                Allmail.push(user?.AssingedToUser?.EMail);
-                        }
-                    })
-                }
-
-
-                if (Allmail == undefined || Allmail.length == 0 && isLoadNotification == 'ApprovalMail')
-                    alert("User has no Approver to send an email");
-
-
-            } else {
-
-                if (isLoadNotification == 'ApprovalMail')
-                    alert("User has no Approver to send an email");
-            }
-            return Allmail;
-        } catch (error) {
-            console.log(error)
-        }
-
-    }
     const changeTitle = (e: any) => {
         if (e.target.value.length > 56) {
             alert("Task Title is too long. Please chose a shorter name and enter the details into the task description.")
@@ -1938,22 +1625,13 @@ function CreateTaskComponent(props: any) {
             }));
         }
     }
-
     const callBackData = (a: any) => {
         console.log();
     }
-
     return (
         <>  <div className={save.portfolioType == "Service" ? "serviepannelgreena" : ''}>
             <div className='creatTaskPage'>
                 <div className='generalInfo'>
-                    {/* {props?.projectId == undefined ?
-                        <div className='heading d-flex justify-content-between align-items-center'>
-                            <h2>Create Task </h2>
-                            <span className='text-end fs-6'>
-                             <a data-interception="off" className=' text-end pull-right' target='_blank' href={oldTaskIrl} style={{ cursor: "pointer", fontSize: "14px" }}>Old Create Task</a>
-                             </span>
-                        </div>  : ''} */}
                     <div>
                         {props?.projectId == undefined ?
                             <h4 className="titleBorder">General Information</h4> : ''}
@@ -1993,7 +1671,7 @@ function CreateTaskComponent(props: any) {
                                                     <div className="block d-flex justify-content-between pt-1 px-2" style={{ width: "95%" }}>
                                                         <a style={{ color: "#fff !important" }} data-interception="off" target="_blank" href={`${base_Url}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
                                                         <a>
-                                                            <span title="Remove Component" onClick={() => setSmartComponentData([])}
+                                                            <span title="Remove Component" onClick={() => { setSmartComponentData([]), selectedPortfolio = [] }}
                                                                 style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--cross hreflink mx-2"></span>
                                                         </a>
                                                     </div>
@@ -2001,9 +1679,9 @@ function CreateTaskComponent(props: any) {
                                             )
                                         }) : null}
                                         <span className="input-group-text">
-                                            <span onClick={(e) => EditPortfolio(save, 'Component')} style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--edit"></span>
+                                            <span onClick={(e) => EditPortfolio(save, 'Component')} style={{ backgroundColor: 'white' }} className="svg__iconbox svg__icon--editBox dark"></span>
                                             {/* <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
-                                        onClick={(e) => EditComponent(save, 'Component')} /> */}
+                                            onClick={(e) => EditComponent(save, 'Component')} /> */}
                                         </span>
                                     </div> : ''
                             }
@@ -2020,66 +1698,57 @@ function CreateTaskComponent(props: any) {
 
                 </div>
 
-                {burgerMenuTaskDetails?.Siteurl != undefined && burgerMenuTaskDetails?.ComponentID != undefined ?
+                {burgerMenuTaskDetails?.ComponentID != undefined ?
                     <div className={refreshPage != true ? 'mt-2' : 'mt-2'}>
                         <ul className="nav nav-tabs" id="myTab" role="tablist">
-                            {burgerMenuTaskDetails?.Siteurl != undefined ?
-                                <button className="nav-link active" id="URL-Tasks" data-bs-toggle="tab" data-bs-target="#URLTasks" type="button" role="tab" aria-controls="URLTasks" aria-selected="true">
-                                    URL TASKS {("(" + (relevantTasks?.TaskUrlRelevantTask?.length > 0 ? relevantTasks?.TaskUrlRelevantTask?.length : 0) + ')')}
-                                </button> : ''}
-                            {burgerMenuTaskDetails?.Siteurl != undefined ?
-                                <button className="nav-link " id="Page-Tasks" data-bs-toggle="tab" data-bs-target="#PageTasks" type="button" role="tab" aria-controls="PageTasks" aria-selected="true">
-                                    PAGE TASKS {("(" + (relevantTasks?.PageRelevantTask?.length > 0 ? relevantTasks?.PageRelevantTask?.length : 0) + ')')}
-                                </button> : ''}
-                            {burgerMenuTaskDetails?.ComponentID != undefined ?
-                                <button className="nav-link " id="Component-Tasks" data-bs-toggle="tab" data-bs-target="#ComponentTasks" type="button" role="tab" aria-controls="ComponentTasks" aria-selected="false">
-                                    COMPONENT TASKS {("(" + (relevantTasks?.ComponentRelevantTask?.length > 0 ? relevantTasks?.ComponentRelevantTask?.length : 0) + ')')} </button>
-                                : ''}
+                            <button className="nav-link active" id="URL-Tasks" data-bs-toggle="tab" data-bs-target="#URLTasks" type="button" role="tab" aria-controls="URLTasks" aria-selected="true">
+                                URL TASKS {("(" + (TaskUrlRelevantTask?.length > 0 ? TaskUrlRelevantTask?.length : 0) + ')')}
+                            </button>
+
+                            <button className="nav-link " id="Page-Tasks" data-bs-toggle="tab" data-bs-target="#PageTasks" type="button" role="tab" aria-controls="PageTasks" aria-selected="true">
+                                PAGE TASKS {("(" + (PageRelevantTask?.length > 0 ? PageRelevantTask?.length : 0) + ')')}
+                            </button>
+
+                            <button className="nav-link " id="Component-Tasks" data-bs-toggle="tab" data-bs-target="#ComponentTasks" type="button" role="tab" aria-controls="ComponentTasks" aria-selected="false">
+                                COMPONENT TASKS {("(" + (ComponentRelevantTask?.length > 0 ? ComponentRelevantTask?.length : 0) + ')')} </button>
+
                         </ul>
                         <div className="border border-top-0 clearfix p-2 tab-content " id="myTabContent">
-                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable mx-height p-0 show active" id="URLTasks" role="tabpanel" aria-labelledby="URLTasks">
-                                {relevantTasks?.TaskUrlRelevantTask?.length > 0 ?
+                            <div className="tab-pane Alltable p-0 show active" style={{ maxHeight: "300px", overflow: 'hidden' }} id="URLTasks" role="tabpanel" aria-labelledby="URLTasks">
+                                {TaskUrlRelevantTask?.length > 0 ?
                                     <>
-                                        <div className={relevantTasks?.TaskUrlRelevantTask?.length > 0 ? 'fxhg' : ''}>
-                                            {/* ?ComponentID=1682&Siteurl=https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/TaskDashboard.aspx */}
-                                            <GlobalCommanTable columns={column2} data={relevantTasks?.TaskUrlRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
-                                            {/* <GlobalCommanTable AllListId={ContextValue} callBackData={callBackData} columns={columns} data={relevantTasks?.TaskUrlRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
-                                            {/* <DataGrid rows={relevantTasks?.TaskUrlRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
+                                        <div className={TaskUrlRelevantTask?.length > 0 ? 'fxhg' : ''}>
+                                            <GlobalCommanTable wrapperHeight="100%" columns={column2} data={TaskUrlRelevantTask} callBackData={callBackData} />
                                         </div>
                                     </> : <div className='text-center full-width'>
                                         <span>No Tasks Available</span>
                                     </div>
                                 }
-                            </div> : ''}
-                            {burgerMenuTaskDetails?.Siteurl != undefined ? <div className="tab-pane Alltable p-0 mx-height" id="PageTasks" role="tabpanel" aria-labelledby="PageTasks">
-                                {relevantTasks?.PageRelevantTask?.length > 0 ?
+                            </div>
+                            <div className="tab-pane Alltable p-0 " style={{ maxHeight: "300px", overflow: 'hidden' }} id="PageTasks" role="tabpanel" aria-labelledby="PageTasks">
+                                {PageRelevantTask?.length > 0 ?
                                     <>
-                                        <div className={relevantTasks?.PageRelevantTask?.length > 0 ? 'fxhg' : ''}>
-                                            <GlobalCommanTable columns={column2} data={relevantTasks?.PageRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
-                                            {/* <GlobalCommanTable AllListId={ContextValue} columns={columns} data={relevantTasks?.PageRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
-                                            {/* <DataGrid rows={relevantTasks?.PageRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
+                                        <div className={PageRelevantTask?.length > 0 ? 'fxhg' : ''}>
+                                            <GlobalCommanTable wrapperHeight="100%" columns={column2} data={PageRelevantTask} callBackData={callBackData} />
                                         </div>
                                     </> : <div className='text-center full-width'>
                                         <span>No Tasks Available</span>
                                     </div>
                                 }
-                            </div> : ''}
-                            {burgerMenuTaskDetails?.ComponentID != undefined ?
-                                <div className="tab-pane Alltable mx-height p-0" id="ComponentTasks" role="tabpanel" aria-labelledby="ComponentTasks">
+                            </div>
+                            <div className="tab-pane Alltable p-0" style={{ maxHeight: "300px", overflow: 'hidden' }} id="ComponentTasks" role="tabpanel" aria-labelledby="ComponentTasks">
 
-                                    {relevantTasks?.ComponentRelevantTask?.length > 0 ?
-                                        <>
-                                            <div className={relevantTasks?.ComponentRelevantTask?.length > 0 ? 'fxhg' : ''}>
-                                                <GlobalCommanTable columns={column2} data={relevantTasks?.ComponentRelevantTask} pageSize={100} showPagination={true} callBackData={callBackData} />
-                                                {/* <GlobalCommanTable AllListId={ContextValue} columns={columns} data={relevantTasks?.ComponentRelevantTask} TaskUsers={taskUsers} showHeader={true} fixedWidth={true} showingAllPortFolioCount={true} showCreationAllButton={true} /> */}
-                                                {/* <DataGrid rows={relevantTasks?.ComponentRelevantTask} columns={columns} getRowId={(row: any) => row.TaskID} /> */}
-                                            </div>
-                                        </> : <div className='text-center full-width'>
-                                            <span>No Tasks Available</span>
+                                {ComponentRelevantTask?.length > 0 ?
+                                    <>
+                                        <div className={ComponentRelevantTask?.length > 0 ? 'fxhg' : ''}>
+                                            <GlobalCommanTable wrapperHeight="100%" columns={column2} data={ComponentRelevantTask} callBackData={callBackData} />
                                         </div>
-                                    }
+                                    </> : <div className='text-center full-width'>
+                                        <span>No Tasks Available</span>
+                                    </div>
+                                }
 
-                                </div> : ''}
+                            </div>
                         </div>
                     </div>
                     : ''}
@@ -2089,7 +1758,7 @@ function CreateTaskComponent(props: any) {
 
 
                 {/*---------------- Sites -------------
-            -------------------------------*/}
+                -------------------------------*/}
                 {siteType?.length > 1 ?
                     <div className='col mt-4'>
                         <h4 className="titleBorder ">Websites</h4>
@@ -2123,7 +1792,7 @@ function CreateTaskComponent(props: any) {
                 {props?.projectId == undefined ? <>
                     <div className="clearfix"></div>
                     {/*---- Task Categories ---------
-            -------------------------------*/}
+                -------------------------------*/}
                     <div className="col" >
                         {TaskTypes?.map((Task: any) => {
                             return (
@@ -2167,7 +1836,7 @@ function CreateTaskComponent(props: any) {
                     </div>
                     <div className="clearfix"></div>
                     {/*-----Time --------
-            -------------------------------*/}
+                -------------------------------*/}
 
                     <div className='col mt-4 clearfix'>
                         <h4 className="titleBorder">Time</h4>
@@ -2181,7 +1850,7 @@ function CreateTaskComponent(props: any) {
                     </div>
                     <div className="clearfix"></div>
                     {/*-----Due date --------
-            -------------------------------*/}
+                -------------------------------*/}
                     <div className='col mt-4'>
                         <h4 className="titleBorder ">Due Date</h4>
                         <div className="taskcatgoryPannel">
@@ -2220,7 +1889,7 @@ function CreateTaskComponent(props: any) {
                         groupedData={groupedComponentData}
                     />
                 }
-                {editTaskPopupData.isOpenEditPopup ? <EditTaskPopup context={props?.SelectedProp.Context}
+                {editTaskPopupData.isOpenEditPopup ? <EditTaskPopup context={props?.SelectedProp.Context} SDCTaskDetails={burgerMenuTaskDetails}
                     sendApproverMail={sendApproverMail} AllListId={AllListId} Items={editTaskPopupData.passdata} Call={CallBack} /> : ''}
             </div>
         </div>

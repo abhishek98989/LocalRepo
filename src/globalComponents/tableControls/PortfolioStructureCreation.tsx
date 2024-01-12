@@ -5,7 +5,9 @@ import TeamConfigurationCard from '../../webparts/EditPopupFiles/TeamConfigurati
 import { arraysEqual, Panel, PanelType } from 'office-ui-fabric-react';
 import { GlobalConstants } from '../LocalCommon';
 import * as globalCommon from '../globalCommon';
+import {myContextValue} from '../globalCommon';
 import ListGroup from 'react-bootstrap/ListGroup';
+import moment from 'moment';
 export interface IStructureCreationProps {
     CreatOpen: (item: any) => void;
     Close: (item: any) => void;
@@ -41,6 +43,7 @@ export interface IStructureCreationState {
 
 const dragItem: any = {}
 export class PortfolioStructureCreationCard extends React.Component<IStructureCreationProps, IStructureCreationState> {
+    static contextType = myContextValue;
     constructor(props: IStructureCreationProps) {
         super(props);
         this.state = {
@@ -106,13 +109,13 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
     // }
     private CheckPortfolioType = (item: any) => {
-       // if (item?.Title === 'Service') {
-            this.setState({ PortfolioTypeId: item.Id });
-            this.setState({
-                PortfolioType: item?.Title +' Portfolio',
-                defaultPortfolioType: item.Title
-            })
-       // }
+        // if (item?.Title === 'Service') {
+        this.setState({ PortfolioTypeId: item.Id });
+        this.setState({
+            PortfolioType: item?.Title + ' Portfolio',
+            defaultPortfolioType: item.Title
+        })
+        // }
         // if (item?.Title === 'Component') {
         //     this.setState({ PortfolioTypeId: item.Id });
         //     this.setState({
@@ -241,6 +244,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
     private Portfolio_x0020_Type = 'Component';
     private CreateOpenType = '';
     private IconUrl = '';
+    private GetportfoliofeatureIdCount = 0;
 
     CreateFolder = async (Type: any) => {
 
@@ -282,13 +286,15 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
             "PortfolioTypeId": this.state.PortfolioTypeId
         }
         let web = new Web(this.state.PropValue.siteUrl);
-        const i = await web.lists
+        const i : any = await web.lists
             .getById(this.state.PropValue.MasterTaskListID)
             .items
             .add(postdata);
 
         console.log(i);
-
+        i.data["Created"] =new Date();
+        i.data["serverCreatedDate"] = new Date(i.data?.Created).setHours(0, 0, 0, 0)
+        i.data["DisplayCreateDate"] = moment(i.data.Created).format("DD/MM/YYYY");
         if (this.state.PortfolioTypeArray != undefined && this.state.PortfolioTypeArray.length > 0) {
             this.state.PortfolioTypeArray.forEach((type: any) => {
                 if (this.state.PortfolioTypeId === type.Id)
@@ -299,6 +305,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
             this.setState({
                 isModalOpen: false
             })
+            i['CreateOpenType'] = 'CreatePopup';
             //self.OpenEditPopup(self.CreatedItem[0]);
             this.props.CreatOpen(i);
         } else {
@@ -310,8 +317,10 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
     }
 
     LoadPortfolioitemParentId = async (ItemType: any, isloadEssentialDeatils: any, item: any) => {
-        if (ItemType == undefined)
+        if (ItemType == undefined) {
             this.GetportfolioIdCount = 0;
+            this.GetportfoliofeatureIdCount = 0;
+        }
 
         let ItemTypes = (this.state.ChildItemTitle != undefined && this.state.ChildItemTitle.length > 0) ? this.state.ChildItemTitle[0].MasterItemsType : undefined;
         if (ItemType == undefined) {
@@ -326,14 +335,12 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
             else if (this.state.SelectedItem != null || this.state.SelectedItem == undefined) {
                 ItemTypes = this.state.defaultPortfolioType;
             }
-        } else ItemTypes = (this.state.ChildItemTitle != undefined && this.state.ChildItemTitle.length > 0) ? this.state.ChildItemTitle[0].MasterItemsType : 'Component';
+        } else {
+            ItemTypes = (this.state.ChildItemTitle != undefined && this.state.ChildItemTitle.length > 0) ? ItemType : 'Component';
+        }
         let filter = ''
         if (ItemTypes == this.state.defaultPortfolioType) {
             filter = "Item_x0020_Type eq 'Component'"
-            // if (this.props?.PortfolioType != undefined && this.props?.PortfolioType?.toLowerCase().indexOf('portfolio') > -1)
-            //     filter = "Item_x0020_Type eq 'Component'"
-            // else
-            //     filter = "PortfolioType/Id eq '" + this.state.PortfolioTypeId + "'";// "Item_x0020_Type eq '" + ItemTypes + "'"
         }
         else {
             filter = "Parent/Id eq '" + this.state.SelectedItem.Id + "' and Item_x0020_Type eq '" + ItemTypes + "'"
@@ -350,23 +357,39 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
             .orderBy("PortfolioLevel", false)
             .top(1)
             .get()
-
-        this.GetportfolioIdCount++;
+        if (ItemType === 'SubComponent')
+            this.GetportfolioIdCount++;
+        if (ItemType === 'Feature')
+            this.GetportfoliofeatureIdCount++;
         this.PortfolioStructureIDs = '';
         if (results.length == 0) {
             this.NextLevel = 1;
-            if (item != undefined && this.GetportfolioIdCount <= 1)
+            if (item != undefined && this.GetportfolioIdCount <= 1 && ItemType === 'SubComponent') {
                 item.NextLevel = this.NextLevel;
-            else if (item != undefined && this.GetportfolioIdCount > 1)
-                item.NextLevel = this.GetportfolioIdCount;
+            }
+            else if (item != undefined && this.GetportfolioIdCount > 1 && ItemType === 'SubComponent')
+                item.NextLevel = this.NextLevel + (this.GetportfolioIdCount -1) ;
+            if (item != undefined && this.GetportfoliofeatureIdCount <= 1 && ItemType === 'Feature') {
+                item.NextLevel = this.NextLevel;
+            }
+            else if (item != undefined && this.GetportfoliofeatureIdCount > 1 && ItemType === 'Feature')
+                item.NextLevel = this.NextLevel + (this.GetportfoliofeatureIdCount -1);
 
         }
         else {
             this.NextLevel = results[0].PortfolioLevel + 1;
-            if (item != undefined && this.GetportfolioIdCount <= 1)
-                item.NextLevel = this.NextLevel;
-            else if (item != undefined && this.GetportfolioIdCount > 1)
-                item.NextLevel = this.NextLevel + (this.GetportfolioIdCount - 1);
+            if (ItemType === 'SubComponent') {
+                if (item != undefined && this.GetportfolioIdCount <= 1)
+                    item.NextLevel = this.NextLevel;
+                else if (item != undefined && this.GetportfolioIdCount > 1)
+                    item.NextLevel = this.NextLevel + (this.GetportfolioIdCount -1);
+            }
+            if (ItemType === 'Feature') {
+                if (item != undefined && this.GetportfoliofeatureIdCount <= 1)
+                    item.NextLevel = this.NextLevel;
+                else if (item != undefined && this.GetportfoliofeatureIdCount > 1)
+                    item.NextLevel = this.NextLevel + (this.GetportfoliofeatureIdCount -1);
+            }
         }
 
         if (this.state.SelectedItem != undefined && this.state.SelectedItem.PortfolioStructureID != undefined && ItemTypes != undefined) {
@@ -455,7 +478,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
         this.GetportfolioIdCount = 0;
         for (let index = 0; index < self.ChildItemTitle.length; index++) {
             let item = self.ChildItemTitle[index];
-            await self.LoadPortfolioitemParentId(item.MasterItemsType, isloadEssentialDeatils, item)
+            await self.LoadPortfolioitemParentId(item.MasterItemsType, isloadEssentialDeatils, item);
 
         }
         //self.ChildItemTitle.forEach(async function (item:any, index:any) {
@@ -463,8 +486,10 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
         //});
 
 
-        if (self.ChildItemTitle.length == self.GetportfolioIdCount) {
-            let AddedCount = 0;
+        //  if (self.ChildItemTitle.length == self.GetportfolioIdCount) {
+        let AddedCount = 0;
+        const isTitleEmpty = self?.ChildItemTitle?.some((obj:any) => !obj.Title || obj.Title.trim() === '');
+        if(!isTitleEmpty){
             self.ChildItemTitle.forEach(async function (item: any) {
                 //item.Title = self.state.textTitle
                 if (item.Title != undefined && item.Title != '') {
@@ -477,24 +502,24 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                             })
                         }
                         if (self.state.TeamConfig.TeamMemberUsers != undefined && self.state.TeamConfig.TeamMemberUsers.length > 0) {
-
+    
                             self.state.TeamConfig.TeamMemberUsers.forEach(function (TeamMember: any) {
                                 self.TeamMembersIds.push(TeamMember.AssingedToUserId);
                             })
                         }
                     }
                     let ClientCategoryIds: any = []
-                    if (self.state.SelectedItem != undefined && self.state.SelectedItem.ClientCategory != undefined ) {
-                        if(  self.state.SelectedItem?.ClientCategory?.length>0){
+                    if (self.state.SelectedItem != undefined && self.state.SelectedItem.ClientCategory != undefined) {
+                        if (self.state.SelectedItem?.ClientCategory?.length > 0) {
                             self.state.SelectedItem?.ClientCategory?.forEach(function (clientCategory: any) {
                                 ClientCategoryIds.push(clientCategory.Id);
                             })
-                        }else{
+                        } else {
                             self.state.SelectedItem?.ClientCategory?.results?.forEach(function (clientCategory: any) {
                                 ClientCategoryIds.push(clientCategory.Id);
                             })
                         }
-                       
+    
                     }
                     let AssignedToIds: any = []
                     let TeamMembersIds: any = []
@@ -522,7 +547,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                     }
                     if (self?.state?.SelectedItem?.PortfolioType != undefined) {
                         postdata.PortfolioTypeId = self?.state?.SelectedItem?.PortfolioType?.Id;
-
+    
                     }
                     if (self.state.SelectedItem.Sitestagging != undefined) {
                         let siteComposition = JSON.parse(self.state.SelectedItem.Sitestagging);
@@ -559,11 +584,11 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                     if (self.state.SelectedItem.FolderId != undefined) {
                         postdata.FolderId = self.state.SelectedItem.FolderId;
                     }
-                    if (self.state.SelectedItem?.Portfolio != undefined && self.state.SelectedItem?.Portfolio != undefined && self.state.SelectedItem?.Portfolio?.Title !=undefined) {
-                       
-                        postdata.PortfolioId =self.state.SelectedItem?.Portfolio?.Id;
+                    if (self.state.SelectedItem?.Portfolio != undefined && self.state.SelectedItem?.Portfolio != undefined && self.state.SelectedItem?.Portfolio?.Title != undefined) {
+    
+                        postdata.PortfolioId = self.state.SelectedItem?.Portfolio?.Id;
                     }
-
+    
                     let web = new Web(self.state.PropValue.siteUrl);
                     const i = await web.lists
                         .getById(self.state.PropValue.MasterTaskListID)
@@ -571,6 +596,10 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                         .add(postdata);
                     console.log(i);
                     i.data['siteType'] = 'Master Tasks';
+                    i.data["Created"] =new Date();
+                    i.data["serverCreatedDate"] = new Date(i.data?.Created).setHours(0, 0, 0, 0)
+                    i.data["DisplayCreateDate"] = moment(i.data.Created).format("DD/MM/YYYY");
+                    i.data['descriptionsSearch'] = i.data?.Short_x0020_Description_x0020_On;
                     if (self.state.PortfolioTypeArray != undefined && self.state.PortfolioTypeArray.length > 0) {
                         self.state.PortfolioTypeArray.forEach((type: any) => {
                             if (self.state.PortfolioTypeId === type.Id)
@@ -593,9 +622,13 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                     //self['SelectedItem'] =SelectedItem;
                     self.props.Close(self);
                 }
-
+    
             });
+        }else{
+            alert('Please, Enter the Title !')
         }
+      
+        //  }
 
 
 
@@ -680,20 +713,23 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
                     {this.state.OpenModal == 'Component' &&
                         <div >
-                            <div className='row'>
-                                <div className="col form-group">
-                                    <div className="d-flex">
-                                        <label className='full-width'>Title</label>
-                                        {(this.props.PortfolioType === "" || this.props.PortfolioType === undefined) && <div className="mx-auto  col-auto mb-1">{this.state.PortfolioTypeArray != undefined && this.state.PortfolioTypeArray?.length > 0 && this.state.PortfolioTypeArray?.map((item: any) => {
-                                            return (
-                                                <label className='SpfxCheckRadio me-1'><input className='radio' defaultChecked={this.state.defaultPortfolioType.toLowerCase() === item.Title.toLowerCase()} name='PortfolioType'  type='radio'  onClick={() => this.CheckPortfolioType(item)} ></input> {item.Title}</label>
-                                            )
-                                        }
-                                        )}
+                            <div>
+                                <div className='mb-3 mt-2'>
+                                    <label className='full-width form-label fw-semibold'>Select type of component</label>
+                                    {(this.props.PortfolioType === "" || this.props.PortfolioType === undefined) && <div className="mx-auto col-auto mb-1">{this.state.PortfolioTypeArray != undefined && this.state.PortfolioTypeArray?.length > 0 && this.state.PortfolioTypeArray?.map((item: any) => {
+                                        return (
+                                            <label className='SpfxCheckRadio'><input className='radio' defaultChecked={this.state.defaultPortfolioType.toLowerCase() === item.Title.toLowerCase()} name='PortfolioType' type='radio' onClick={() => this.CheckPortfolioType(item)} ></input> {item.Title}</label>
+                                        )
+                                    }
+                                    )}
 
-                                        </div>}
+                                    </div>}</div>
+                                <div>
+                                    <div className="mt-2">
+                                        <label className='full-width fw-semibold'>Title</label>
+
                                     </div>
-                                    <div className="col">
+                                    <div className="col input-group">
                                         <input className="form-control full_width" type="text" value={this.state.textTitle} onChange={(e) => this.handleInputChange(e)}
                                             placeholder="Enter Component Title..." ng-required="true" />
                                         <div className="dropdown">
@@ -744,9 +780,9 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                             <footer className={(this.state.defaultPortfolioType == 'Service' || this.state.defaultPortfolioType == 'Service Portfolio') ? "serviepannelgreena text-end  mt-2" : "text-end  mt-2"}>
                                 <button type="button" className="btn btn-primary me-1" onClick={() => this.CreateFolder('CreatePopup')}
                                 >
-                                    Create & Open Popup
+                                    Create & Open
                                 </button>
-                                <button type="button" className="btn btn-primary" onClick={() => this.CreateFolder('Create')}
+                                <button type="button" className="btn btn-default" onClick={() => this.CreateFolder('Create')}
                                 >
                                     Create
                                 </button>
@@ -768,8 +804,8 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                             return <>
 
                                                 <div>
-                                                    <div className='card mb-2 mt-2 p-0 rounded-0'>
-                                                        <div className='card-header p-1'>
+                                                    <div className='mt-2'>
+                                                        <div>
                                                             <h6 className='my-0 fw-normal'>
                                                                 {
                                                                     this.state.ChildItemTitle.length > 1 ?
@@ -781,9 +817,9 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                                                         : ''}
                                                             </h6>
                                                         </div>
-                                                        <div className="card-body">
+                                                        <div className='mt-2'>
                                                             <div className='d-flex justify-content-between align-items-center mb-0'>
-                                                                <label className='mb-1'>
+                                                                <label className='mb-1 alignCenter'>
                                                                     {
                                                                         (item.MasterItemsType == 'SubComponent') ?
                                                                             <span className="Dyicons ">S</span>
@@ -792,31 +828,29 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
 
                                                                     }
-                                                                    <span className='ms-1'><strong>Title</strong> </span> </label>
+                                                                    <span className='ms-1 fw-semibold'>Title</span> </label>
 
                                                                 {this.state.SelectedItem.Item_x0020_Type == 'Component' &&
                                                                     <>
                                                                         <div>
-                                                                            <span className='me-2 SpfxCheckRadio'>
+                                                                            <span className='SpfxCheckRadio'>
                                                                                 <input
-                                                                                className='radio'
+                                                                                    className='radio'
                                                                                     type="radio"
                                                                                     value="SubComponent"
                                                                                     checked={item.MasterItemsType === 'SubComponent'}
                                                                                     onChange={(e) => this.handleTypeChange(e, index)}
                                                                                 />
-                                                                                <label className='ms-1'>SubComponent</label>
+                                                                                SubComponent
                                                                             </span>
-                                                                            <span className='SpfxCheckRadio'>
+                                                                            <span className='SpfxCheckRadio me-0'>
                                                                                 <input
-                                                                                className='radio'
+                                                                                    className='radio'
                                                                                     type="radio"
                                                                                     value="Feature"
                                                                                     checked={item.MasterItemsType === 'Feature'}
                                                                                     onChange={(e) => this.handleTypeChange(e, index)}
-                                                                                />
-
-                                                                                <label className='ms-1'>  Feature</label>
+                                                                                />Feature
 
                                                                             </span>
                                                                         </div>
@@ -824,18 +858,16 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                                                 }
                                                             </div>
                                                             <div className="d-flex">
-
-                                                                <div className="col ">
+                                                                <div className="col input-group">
                                                                     <input className="form-control full_width mb-10" type="text" value={this.state.ChildItemTitle[index].Title} onChange={(e) => this.handleChildItemInput(e, index)}
                                                                         placeholder="Enter Child Item Title" ng-required="true" />
                                                                 </div>
-
                                                             </div>
                                                             <div className="row mt-3">
                                                                 {item.Child.length > 0 &&
                                                                     <div ng-repeat="items in item.Child">
-                                                                        <label className="  titleclrgreen "><strong>Short
-                                                                            Description</strong> </label>
+                                                                        <label className="fw-semibold  titleclrgreen ">Short
+                                                                            Description </label>
                                                                         <div className="col">
                                                                             <textarea className='full-width' rows={4}
                                                                                 value={this.state.ChildItemTitle[index].Child[0].Short_x0020_Description_x0020_On} onChange={(e) => this.handleChildItemSD(e, index)}></textarea>
@@ -862,18 +894,19 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                 </div>
                                 <footer className={(this.state.defaultPortfolioType == 'Service' || this.state.defaultPortfolioType == 'Service Portfolio') ? "serviepannelgreena text-end  mt-2" : "text-end  mt-2"}>
                                     <a className="me-1" onClick={() => this.addNewTextField()} ng-click="addNewTextField()">
-                                        <img className="icon-sites-img"
-                                            src="https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/Add-New.png" />
+                                        {/* <img className="icon-sites-img"
+                                            src="https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/Add-New.png" /> */}
+                                        <span className="svg__iconbox svg__icon--Plus mini alignIcon"></span>
                                         Add more child items
                                     </a>
 
                                     {this.state.ChildItemTitle.length == 1 &&
                                         <button type="button" className="btn btn-primary me-1" onClick={() => this.createChildItemsnew('CreatePopup')}>
-                                            Create & Open Popup
+                                            Create & Open
                                         </button>
                                     }
 
-                                    <button type="button" className="btn btn-primary" onClick={() => this.createChildItems('Create')} >
+                                    <button type="button" className="btn btn-default" onClick={() => this.createChildItems('Create')} >
                                         Create
                                     </button>
 

@@ -7,12 +7,14 @@ import "froala-editor/css/froala_editor.pkgd.min.css";
 import Froala from "react-froala-wysiwyg";
 
 const defaultContent = "";
+let CallBackFunction:any ;
 let FileName:any;
+
 export interface ITeamConfigurationProps {
     callBack: (dt: any,FileName:any) => void;
 }
 
-const froalaEditorConfig: any= {
+const froalaEditorConfig = {
     heightMin: 230,
     heightMax: 500,
     // width:250,
@@ -47,13 +49,14 @@ const froalaEditorConfig: any= {
                 reader.onloadend = function () {
                     var base64String: any = reader.result;
                     console.log('Base64 String - ', base64String);
-                    ImageRawData = base64String.substring(base64String.indexOf(', ') + 1)
-                   
+                    runThis(base64String);
                 }
-                // if (ImageRawData.length > 0) {
-                //     this.imageArrayUpdateFunction(ImageRawData);
-                // }
-
+                const runThis = (data: any) => {
+                    if(data != undefined){
+                        CallBackFunction(data,FileName);
+                    }
+                }
+                
             }
             editor.popups.hideAll();
             return false;
@@ -63,6 +66,7 @@ const froalaEditorConfig: any= {
 
 export default class App extends React.Component<ITeamConfigurationProps> {
     public render(): React.ReactElement<{}> {
+        CallBackFunction = this.props.callBack;
         return (
             <div className="Florar-Editor-Image-Upload-Container" id="uploadImageFroalaEditor">
                 <Froala
@@ -79,27 +83,17 @@ export default class App extends React.Component<ITeamConfigurationProps> {
         let edData = model;
         let imgArray = model.split("=")
         let ArrayImage: any = [];
-        if(imgArray.length>8){
-            imgArray?.map((data: any, index: any) => {
-               if (index == 1) {
-                ArrayImage.push(data)
+        imgArray?.map((data: any, index: any) => {
+            if (imgArray?.length > 8) {
+                if (index == 1 && data.length > 1000) {
+                    ArrayImage.push(data)
+                }
+                if (index == 2 && data.length > 1000) {
+                    ArrayImage.push(data)
+                }
             }
-               
-    
-            })
-        }
-        
-      
-        if(ArrayImage.length>0){
-         this.imageArrayUpdateFunction(ArrayImage);
-        }
-       
+        })
+        let elem = document.createElement("img");
+        elem.innerHTML = edData;
     };
-
-    private imageArrayUpdateFunction = (ImageData: any) => {
-        let tempArray = ImageData.toString();
-        let data1 = tempArray.split('"')
-        this.props.callBack(data1[1],FileName);
-    }
-
 }

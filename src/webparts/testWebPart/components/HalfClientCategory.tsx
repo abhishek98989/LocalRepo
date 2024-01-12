@@ -1,8 +1,10 @@
 import React from 'react'
+import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import {
     ColumnDef,
 } from "@tanstack/react-table";
 import PageLoader from '../../../globalComponents/pageLoader';
+import Sitecomposition from "../../../globalComponents/SiteComposition";
 import ShowClintCatogory from '../../../globalComponents/ShowClintCatogory';
 import { Web } from "sp-pnp-js";
 import * as Moment from 'moment';
@@ -15,13 +17,15 @@ import GlobalCommanTable from "../../../globalComponents/GroupByReactTableCompon
 import InfoIconsToolTip from '../../../globalComponents/InfoIconsToolTip/InfoIconsToolTip';
 import ReactPopperTooltipSingleLevel from '../../../globalComponents/Hierarchy-Popper-tooltipSilgleLevel/Hierarchy-Popper-tooltipSingleLevel';
 import EditSiteComposition from '../../../globalComponents/EditTaskPopup/EditSiteComposition';
-
+import TeamSmartFilter from '../../../globalComponents/SmartFilterGolobalBomponents/TeamSmartFilter';
+import Loader from "react-loader";
 var siteConfig: any = []
 var AllTaskUsers: any = []
 var Idd: number;
 let AllMasterTaskItems: any = [];
 var allSitesTasks: any = [];
 var AllListId: any = {};
+let typeData: any = [];
 var currentUserId: '';
 var currentUser: any = [];
 let headerOptions: any = {
@@ -34,7 +38,10 @@ var isShowTimeEntry: any = "";
 var AllMetadata: any = [];
 let BackUpAllCCTask: any = [];
 var isShowSiteCompostion: any = "";
+let ProjectData: any = [];
+let portfolioColor: any = "#000069";
 const HalfClientCategory = (props: any) => {
+    const rerender = React.useReducer(() => ({}), {})[1]
     const [pageLoaderActive, setPageLoader] = React.useState(false)
     const [protectedView, setProtectedView] = React.useState(false)
     const [AllTaskUser, setAllTaskUser] = React.useState([]);
@@ -49,6 +56,16 @@ const HalfClientCategory = (props: any) => {
     const [passdata, setpassdata] = React.useState("");
     const [selectedItem, setSelectedItem]: any = React.useState(null);
     const [currentUserData, setCurrentUserData]: any = React.useState({});
+    const [smartAllFilterData, setAllSmartFilterData] = React.useState([])
+    const [smartTimeTotalFunction, setSmartTimeTotalFunction] = React.useState(null);
+    const [filterCounters, setFilterCounters] = React.useState(false);
+    const [loaded, setLoaded] = React.useState(false);
+    const [portfolioTypeDataItem, setPortFolioTypeIcon] = React.useState([]);
+    const [AllSiteTasksData, setAllSiteTasksData]: any = React.useState([]);
+    const [taskTypeData, setTaskTypeData] = React.useState([])
+    const [taskTypeDataItem, setTaskTypeDataItem] = React.useState([]);
+    const [AllMasterTasksData, setAllMasterTasksData]: any = React.useState([]);
+    const [portfolioTypeConfrigration, setPortfolioTypeConfrigration] = React.useState<any>([{ Title: 'Component', Suffix: 'C', Level: 1 }, { Title: 'SubComponent', Suffix: 'S', Level: 2 }, { Title: 'Feature', Suffix: 'F', Level: 3 }]);
     React.useEffect(() => {
         try {
             $("#spPageCanvasContent").removeClass();
@@ -69,12 +86,16 @@ const HalfClientCategory = (props: any) => {
             DocumentsListID: props?.props?.DocumentsListID,
             SmartInformationListID: props?.props?.SmartInformationListID,
             AdminConfigrationListID: props?.props?.AdminConfigrationListID,
+            PortFolioTypeID: props?.props?.PortFolioTypeID,
+            TaskTypeID: props?.props?.TaskTypeID,
             siteUrl: props?.props?.siteUrl,
             isShowTimeEntry: isShowTimeEntry,
             isShowSiteCompostion: isShowSiteCompostion
         }
         TaskUser()
         GetMetaData()
+        getTaskType()
+        findPortFolioIconsAndPortfolio()
 
     }, [])
 
@@ -177,17 +198,20 @@ const HalfClientCategory = (props: any) => {
             return '';
         }
     }
+    const sortAccordingSite = (data: any, key: any) => {
+        return data?.sort((a: any, b: any) => {
+            const orderA = siteSortOrder[a[key]?.toLowerCase()] || Infinity;
+            const orderB = siteSortOrder[b[key]?.toLowerCase()] || Infinity;
+            return orderA - orderB;
+        });
+    }
     function siteCompositionDetails(jsonStr: any): any {
         let totalPercent: number = 0;
         let result: string[] = [];
         try {
             const data = JSON.parse(jsonStr);
             if (data?.length > 0) {
-                const sortedData = data?.sort((a: any, b: any) => {
-                    const orderA = siteSortOrder[a?.Title?.toLowerCase()] || Infinity;
-                    const orderB = siteSortOrder[b?.Title?.toLowerCase()] || Infinity;
-                    return orderA - orderB;
-                });
+                const sortedData = sortAccordingSite(data, 'Title')
                 sortedData?.forEach((site: any, index: number) => {
                     if (site?.SiteName || site?.Title) {
                         let parsedValue: number = parseFloat(site?.ClienTimeDescription || '0');
@@ -224,7 +248,11 @@ const HalfClientCategory = (props: any) => {
     };
 
     const LoadAllSiteTasks = function () {
+        typeData?.map((type: any) => {
+            type[type.Title + 'number'] = 0;
+        })
         allSitesTasks = [];
+        let taskTypeCount = JSON.parse(JSON.stringify(typeData));
         setPageLoader(true);
         if (siteConfig?.length > 0) {
             try {
@@ -236,8 +264,8 @@ const HalfClientCategory = (props: any) => {
                     smartmeta = await web.lists
                         .getById(config.listId)
                         .items
-                        .select("Id,Title,PriorityRank,Project/PriorityRank,Portfolio/PortfolioStructureID,Project/Id,Project/Title,workingThisWeek,ParentTask/TaskID,ParentTask/Title,ParentTask/Id,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,SiteCompositionSettings,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
-                        .expand('AssignedTo,Project,Author,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ParentTask,ClientCategory')
+                        .select("ID", "Title", "ClientCategory/Id", "Portfolio/PortfolioStructureID", "TaskID", "ParentTask/TaskID", "ParentTask/Title", "ParentTask/Id", "ClientCategory/Title", "EstimatedTimeDescription", 'ClientCategory', "Comments", "DueDate", "ClientActivityJson", "EstimatedTime", "Approver/Id", "Approver/Title", "ParentTask/Id", "ParentTask/Title", "FeedBack", "workingThisWeek", "IsTodaysTask", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Body", "PriorityRank", "Created", "Author/Title", "Author/Id", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Portfolio/Id", "Portfolio/Title", "Modified")
+                        .expand("TeamMembers", "Approver", "ParentTask", "ClientCategory", "AssignedTo", "TaskCategories", "Author", "ResponsibleTeam", "ParentTask", "TaskType", "Portfolio")
                         .top(4999)
                         .get();
                     arraycount++;
@@ -249,12 +277,22 @@ const HalfClientCategory = (props: any) => {
                             items.AllTeamMember = [];
                             items.siteType = config.Title;
                             items.ClientCatTitle = [];
-
-
-                            items.bodys = items.Body != null && items.Body.split('<p><br></p>').join('');
+                            items.descriptionsSearch = globalCommon.descriptionSearchData(items);
                             items.listId = config.listId;
                             items.siteUrl = config.siteUrl.Url;
                             items.PercentComplete = (items.PercentComplete * 100).toFixed(0);
+                            if (items.PercentComplete != undefined && items.PercentComplete != '' && items.PercentComplete != null) {
+                                items.percentCompleteValue = parseInt(items?.PercentComplete);
+                            }
+                            if (items?.DueDate != null && items?.DueDate != undefined) {
+                                items.serverDueDate = new Date(items?.DueDate).setHours(0, 0, 0, 0)
+                            }
+                            if (items?.Modified != null && items?.Modified != undefined) {
+                                items.serverModifiedDate = new Date(items?.Modified).setHours(0, 0, 0, 0)
+                            }
+                            if (items?.Created != null && items?.Created != undefined) {
+                                items.serverCreatedDate = new Date(items?.Created).setHours(0, 0, 0, 0)
+                            }
                             items.DisplayDueDate =
                                 items.DueDate != null
                                     ? Moment(items.DueDate).format("DD/MM/YYYY")
@@ -278,7 +316,6 @@ const HalfClientCategory = (props: any) => {
                                 items["ProjectTitle"] = '';
                                 items["ProjectPriority"] = 0;
                             }
-
                             items.TeamMembersSearch = "";
                             items.AssignedToIds = [];
                             if (items.AssignedTo != undefined) {
@@ -298,6 +335,7 @@ const HalfClientCategory = (props: any) => {
                                 items?.ClientCategory?.map((dataCat: any) => {
                                     const matchingItem = AllMetadata?.find((elem: any) => elem?.Id === dataCat?.Id);
                                     if (matchingItem) {
+                                        dataCat.siteName = matchingItem?.siteName
                                         const titles = [];
                                         if (matchingItem?.Parent == null) {
                                             titles.push(matchingItem?.Title);     // No parent, push the title directly
@@ -312,6 +350,7 @@ const HalfClientCategory = (props: any) => {
                                         dataCat.Color_x0020_Tag = matchingItem.Color_x0020_Tag;
                                     }
                                 });
+                                items.ClientCategory = sortAccordingSite(items.ClientCategory, 'siteName')
                             }
                             if (items?.ClientCatTitle?.length > 0) {
                                 items.CCSearch = items?.ClientCatTitle?.join(' ; ');
@@ -348,8 +387,15 @@ const HalfClientCategory = (props: any) => {
                                 if (items?.SiteCompositionSettings != undefined) {
                                     items.compositionType = siteCompositionType(items?.SiteCompositionSettings);
                                     items.isProtectedItem = itemProtected(items?.SiteCompositionSettings)
+                                    if (items.isProtectedItem) {
+                                        items.isProtectedValue = 'Protected'
+                                    } else {
+                                        items.isProtectedValue = ''
+                                    }
+
                                 } else {
                                     items.compositionType = '';
+                                    items.isProtectedValue = '';
                                     items.isProtectedItem = false;
                                 }
                                 if (items?.ClientTime != undefined) {
@@ -361,6 +407,17 @@ const HalfClientCategory = (props: any) => {
                                     items.siteCompositionSearch = ' ';
                                     items.siteCompositionTotal = ' ';
                                 }
+                                taskTypeCount?.map((type: any) => {
+                                    if (items?.TaskType?.Title === type?.Title) {
+                                        type[type.Title + 'number'] += 1;
+                                        type[type.Title + 'filterNumber'] += 1;
+                                    }
+                                })
+                                typeData?.map((type: any) => {
+                                    if (items?.TaskType?.Title === type?.Title) {
+                                        type[type.Title + 'number'] += 1;
+                                    }
+                                })
                             } catch (error) {
 
                             }
@@ -375,6 +432,8 @@ const HalfClientCategory = (props: any) => {
                         })
                         console.log(BackUpAllCCTask)
                         setAllSiteTasks(BackUpAllCCTask);
+                        setAllSiteTasksData(BackUpAllCCTask);
+                        setTaskTypeDataItem(taskTypeCount)
                         setPageLoader(false);
                         GetMasterData();
                         allSitesTasks = BackUpAllCCTask;
@@ -390,6 +449,10 @@ const HalfClientCategory = (props: any) => {
         }
     };
     const GetMasterData = async () => {
+        let portFoliotypeCount = JSON.parse(JSON.stringify(portfolioTypeDataItem?.map((taskLevelcount: any) => {
+            taskLevelcount[taskLevelcount.Title + 'filterNumber'] = 0; return taskLevelcount
+        }
+        )))
         setPageLoader(true);
         AllCSFMasterTasks = [];
         if (AllListId?.MasterTaskListID != undefined) {
@@ -399,34 +462,52 @@ const HalfClientCategory = (props: any) => {
             AllMasterTaskItems = [];
             // var AllUsers: any = []
             AllMasterTaskItems = await web.lists.getById(AllListId?.MasterTaskListID).items
-                .select("Deliverables,PortfolioStructureID,ClientCategory/Id,ClientCategory/Title,TechnicalExplanations,ValueAdded,Categories,Idea,Short_x0020_Description_x0020_On,Background,Help_x0020_Information,Short_x0020_Description_x0020__x,ComponentCategory/Id,ComponentCategory/Title,Comments,HelpDescription,FeedBack,Body,SiteCompositionSettings,ClientTime,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title")
+                .select("Deliverables,PortfolioStructureID,ClientCategory/Id,ClientCategory/Title,TechnicalExplanations,ValueAdded,Categories,Idea,Short_x0020_Description_x0020_On,Background,Help_x0020_Information,Short_x0020_Description_x0020__x,ComponentCategory/Id,ComponentCategory/Title,Comments,HelpDescription,Body,SiteCompositionSettings,ClientTime,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,PortfolioType/Id,PortfolioType/Color,PortfolioType/IdRange,PortfolioType/Title")
                 .filter("Item_x0020_Type ne 'Project'")
-                .expand("ComponentCategory,ClientCategory,AssignedTo,AttachmentFiles,Author,Editor,TeamMembers,TaskCategories,Parent").top(4999).getAll();
+                .expand("ComponentCategory,ClientCategory,AssignedTo,AttachmentFiles,Author,Editor,TeamMembers,TaskCategories,Parent,PortfolioType").top(4999).getAll();
 
+            ProjectData = AllMasterTaskItems?.filter((projectItem: any) => projectItem.Item_x0020_Type === "Project")
             AllMasterTaskItems.map((items: any) => {
                 if (items?.ClientCategory?.length > 0 || items?.SiteCompositionSettings != undefined || items?.Sitestagging != undefined) {
                     items.ShowTeamsIcon = false
                     items.PercentComplete = (items.PercentComplete * 100).toFixed(0);
+                    if (items.PercentComplete != undefined && items.PercentComplete != '' && items.PercentComplete != null) {
+                        items.percentCompleteValue = parseInt(items?.PercentComplete);
+                    }
+                    if (items?.DueDate != null && items?.DueDate != undefined) {
+                        items.serverDueDate = new Date(items?.DueDate).setHours(0, 0, 0, 0)
+                    }
+                    if (items?.Modified != null && items?.Modified != undefined) {
+                        items.serverModifiedDate = new Date(items?.Modified).setHours(0, 0, 0, 0)
+                    }
+                    if (items?.Created != null && items?.Created != undefined) {
+                        items.serverCreatedDate = new Date(items?.Created).setHours(0, 0, 0, 0)
+                    }
                     items.siteUrl = AllListId?.siteUrl;
                     items.listId = AllListId?.MasterTaskListID;
                     items.ClientCatTitle = [];
-                    items?.ClientCategory?.map((dataCat: any) => {
-                        const matchingItem = AllMetadata?.find((elem: any) => elem?.Id === dataCat?.Id);
-                        if (matchingItem) {
-                            const titles = [];
-                            if (matchingItem?.Parent == null) {
-                                titles.push(matchingItem?.Title);     // No parent, push the title directly
-                            } else {
-                                const parentTitles = getParentTitles(matchingItem?.Parent?.Id);     // Has parent, get the parent titles recursively
-                                titles.push(...parentTitles, matchingItem?.Title);
+                    if (items?.ClientCategory?.length > 0) {
+                        items?.ClientCategory?.map((dataCat: any) => {
+                            const matchingItem = AllMetadata?.find((elem: any) => elem?.Id === dataCat?.Id);
+                            if (matchingItem) {
+                                dataCat.siteName = matchingItem?.siteName
+                                const titles = [];
+                                if (matchingItem?.Parent == null) {
+                                    titles.push(matchingItem?.Title);     // No parent, push the title directly
+                                } else {
+                                    const parentTitles = getParentTitles(matchingItem?.Parent?.Id);     // Has parent, get the parent titles recursively
+                                    titles.push(...parentTitles, matchingItem?.Title);
+                                }
+                                if (titles?.length > 0) {
+                                    dataCat.Titles = titles?.join(' > ');
+                                    items.ClientCatTitle.push(dataCat.Titles)
+                                }  // Set the titles array to the dataCat
+                                dataCat.Color_x0020_Tag = matchingItem.Color_x0020_Tag;
                             }
-                            if (titles?.length > 0) {
-                                dataCat.Titles = titles?.join(' > ');
-                                items.ClientCatTitle.push(dataCat.Titles)
-                            }  // Set the titles array to the dataCat
-                            dataCat.Color_x0020_Tag = matchingItem.Color_x0020_Tag;
-                        }
-                    });
+                        });
+                        items.ClientCategory = sortAccordingSite(items.ClientCategory, 'siteName')
+                    }
+
                     if (items?.ClientCatTitle?.length > 0) {
                         items.CCSearch = items?.ClientCatTitle?.join(' ; ');
                     } else {
@@ -458,11 +539,18 @@ const HalfClientCategory = (props: any) => {
                     items.siteType = 'Master Tasks';
                     items.DisplayDueDate = items.DueDate != null ? Moment(items.DueDate).format('DD/MM/YYYY') : "";
                     try {
+                        items.descriptionsSearch = globalCommon.portfolioSearchData(items)
                         if (items?.SiteCompositionSettings != undefined) {
                             items.compositionType = siteCompositionType(items?.SiteCompositionSettings);
                             items.isProtectedItem = itemProtected(items?.SiteCompositionSettings)
+                            if (items.isProtectedItem) {
+                                items.isProtectedValue = 'Protected'
+                            } else {
+                                items.isProtectedValue = ''
+                            }
                         } else {
                             items.compositionType = '';
+                            items.isProtectedValue = ''
                             items.isProtectedItem = false;
                         }
                         if (items?.Sitestagging != undefined) {
@@ -474,6 +562,13 @@ const HalfClientCategory = (props: any) => {
                             items.siteCompositionSearch = ' ';
                             items.siteCompositionTotal = ' ';
                         }
+                        if (items?.PortfolioType?.Id != undefined && items?.TaskType === undefined) {
+                            portFoliotypeCount?.map((type: any) => {
+                                if (items?.Item_x0020_Type === type?.Title && items.PortfolioType != undefined) {
+                                    type[type.Title + 'filterNumber'] += 1;
+                                }
+                            })
+                        }
                     } catch (error) {
 
                     }
@@ -481,14 +576,18 @@ const HalfClientCategory = (props: any) => {
                 }
             })
             setPageLoader(false);
+            setPortFolioTypeIcon(portFoliotypeCount);
             setAllMasterTasks(AllCSFMasterTasks)
+            setAllMasterTasksData(AllCSFMasterTasks)
             //  console.log(AllCSFMasterTasks);
 
         } else {
             alert('Master Task List Id Not Available')
         }
 
-    }
+    };
+
+
     const getComponentasString = function (results: any) {
         var component = "";
         $.each(results, function (cmp: any) {
@@ -499,7 +598,7 @@ const HalfClientCategory = (props: any) => {
 
     const editTaskCallBack = React.useCallback((item: any) => {
         setisOpenEditPopup(false);
-        CallBack(item)
+        TaskSiteComp(item)
     }, []);
     const EditPopup = React.useCallback((item: any) => {
         setisOpenEditPopup(true);
@@ -515,12 +614,111 @@ const HalfClientCategory = (props: any) => {
 
         setIsComponent(false);
     };
-    const CallBack = (item: any) => {
-        if (item == 'SiteComp') {
-            setEditSiteCompositionStatus(false);
-            setSelectedItem(null)
+    const TaskSiteComp = (saveType: any) => {
+        if (saveType == "Save") {
+            LoadAllSiteTasks();
+        }
+        setEditSiteCompositionStatus(false);
+        setSelectedItem(null)
+    }
+    const MasterSiteComp = (saveType: any) => {
+        if (saveType == "Save") {
+            LoadAllSiteTasks();
+        }
+        setEditSiteCompositionMaster(false);
+        setSelectedItem(null)
+    }
+    ////////////////////////////////////////// Smart filter Part//////////////////////
+    React.useEffect(() => {
+        if (AllSiteTasks.length > 0 && AllMasterTasks.length > 0) {
+            setFilterCounters(true);
+        }
+    }, [AllSiteTasks.length > 0 && AllMasterTasks.length > 0])
+
+
+
+    const smartFiltercallBackData = React.useCallback((filterData, updatedSmartFilter, smartTimeTotal, flatView) => {
+        if (filterData.length > 0 && smartTimeTotal) {
+            let filterDataBackup = JSON.parse(JSON.stringify(filterData));
+            setAllSmartFilterData(filterDataBackup);
+            setSmartTimeTotalFunction(() => smartTimeTotal);
+        } else if (filterData.length === 0) {
+            setAllSiteTasks([]);
+            setAllMasterTasks([]);
+            setLoaded(true);
+        }
+    }, []);
+
+    React.useEffect(() => {
+        let taskTypeCount = JSON.parse(JSON.stringify(typeData));
+        let portFoliotypeCount = JSON.parse(JSON.stringify(portfolioTypeDataItem?.map((taskLevelcount: any) => {
+            taskLevelcount[taskLevelcount.Title + 'filterNumber'] = 0; return taskLevelcount
+        }
+        )))
+
+        if (smartAllFilterData?.length > 0) {
+
+            let findAllProtFolioData = smartAllFilterData?.filter((elem: any) => {
+                if (elem?.PortfolioType?.Id != undefined && elem?.TaskType === undefined) {
+                    portFoliotypeCount?.map((type: any) => {
+                        if (elem?.Item_x0020_Type === type?.Title && elem.PortfolioType != undefined) {
+                            type[type.Title + 'filterNumber'] += 1;
+                        }
+                    })
+                    return elem
+                }
+            });
+            let findAllTaskData = smartAllFilterData?.filter((elem: any) => {
+                if (elem?.PortfolioType?.Id === undefined && elem?.TaskType != undefined) {
+                    taskTypeCount?.map((type: any) => {
+                        if (elem?.TaskType?.Title === type?.Title) {
+                            type[type.Title + 'filterNumber'] += 1;
+                        }
+                    })
+                    return elem
+                }
+            });
+            setTaskTypeDataItem(taskTypeCount)
+            setPortFolioTypeIcon(portFoliotypeCount);
+            setAllSiteTasks(findAllTaskData);
+            setAllMasterTasks(findAllProtFolioData);
+            setLoaded(true);
+        }
+    }, [smartAllFilterData]);
+
+
+    const countComponentLevel = (countTaskAWTLevel: any, afterFilter: any) => {
+        if (countTaskAWTLevel?.length > 0 && afterFilter === true) {
+            countTaskAWTLevel?.map((result: any) => {
+                portfolioTypeDataItem?.map((type: any) => {
+                    if (result?.Item_x0020_Type === type.Title && result.PortfolioType != undefined) {
+                        type[type.Title + 'filterNumber'] += 1;
+                    }
+                })
+            })
         }
     }
+    const countTaskAWTLevel = (countTaskAWTLevel: any, afterFilter: any) => {
+        if (countTaskAWTLevel.length > 0 && afterFilter !== true) {
+            countTaskAWTLevel?.map((result: any) => {
+                taskTypeDataItem?.map((type: any) => {
+                    if (result?.TaskType?.Title === type.Title) {
+                        type[type.Title + 'number'] += 1;
+                    }
+                });
+            });
+        } else if (countTaskAWTLevel?.length > 0 && afterFilter === true) {
+            countTaskAWTLevel?.map((result: any) => {
+                taskTypeDataItem?.map((type: any) => {
+                    if (result?.TaskType?.Title === type.Title) {
+                        type[type.Title + 'filterNumber'] += 1;
+                    }
+                });
+            });
+        }
+    };
+
+    ////////////////////////////////////////// Smart filter Part End//////////////////////
 
     const columns = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
@@ -528,7 +726,7 @@ const HalfClientCategory = (props: any) => {
                 accessorKey: "",
                 placeholder: "",
                 hasCheckbox: true,
-                size: 20,
+                size: 25,
                 id: 'Id',
             },
             {
@@ -536,7 +734,7 @@ const HalfClientCategory = (props: any) => {
                 placeholder: "Id",
                 resetColumnFilters: false,
                 resetSorting: false,
-                size: 70,
+                size: 120,
                 cell: ({ row, getValue }) => (
                     <span className="d-flex">
                         <ReactPopperTooltipSingleLevel ShareWebId={row?.original?.TaskID} row={row?.original} singleLevel={true} masterTaskData={AllMasterTaskItems} AllSitesTaskData={allSitesTasks} AllListId={AllListId} />
@@ -574,13 +772,16 @@ const HalfClientCategory = (props: any) => {
                             >
                                 {row?.original?.Title}
                             </a>
-                            <span className="alignIcon">
-                                {" "}
-                                <InfoIconsToolTip
-                                    Discription={row?.original?.bodys}
-                                    row={row?.original}
-                                />{" "}
-                            </span>
+                            {row?.original?.descriptionsSearch?.length > 0 ? (
+                                <span className="alignIcon">
+                                    <InfoIconsToolTip
+                                        Discription={row?.original?.bodys}
+                                        row={row?.original}
+                                    />
+                                </span>
+                            ) : (
+                                ""
+                            )}
 
                         </span> : ''}
                     </>
@@ -596,13 +797,16 @@ const HalfClientCategory = (props: any) => {
                 accessorFn: (row) => row?.PercentComplete,
                 cell: ({ row, getValue }) => (
 
-                    <InlineEditingcolumns AllListId={AllListId} callBack={CallBack} columnName='PercentComplete' TaskUsers={AllTaskUser} item={row?.original} pageName={'ProjectOverView'} />
+                    <InlineEditingcolumns AllListId={AllListId} callBack={TaskSiteComp} columnName='PercentComplete' TaskUsers={AllTaskUser} item={row?.original} pageName={'ProjectOverView'} />
 
 
                 ),
                 id: "PercentComplete",
                 placeholder: "% Complete",
                 header: "",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 55,
@@ -635,6 +839,9 @@ const HalfClientCategory = (props: any) => {
                 placeholder: "Composition Total",
                 header: "",
                 resetColumnFilters: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.siteCompositionTotal == filterValue
+                },
                 resetSorting: false,
                 size: 60,
             },
@@ -657,6 +864,18 @@ const HalfClientCategory = (props: any) => {
                 ),
                 id: 'Type',
                 placeholder: "Composition Type",
+                header: "",
+                resetColumnFilters: false,
+                resetSorting: false,
+                size: 100,
+            },
+            {
+                accessorFn: (row) => row?.isProtectedValue,
+                cell: ({ row }) => (
+                    <span>{row?.original?.isProtectedValue}</span>
+                ),
+                id: 'Type',
+                placeholder: "Protected",
                 header: "",
                 resetColumnFilters: false,
                 resetSorting: false,
@@ -723,7 +942,7 @@ const HalfClientCategory = (props: any) => {
                 accessorKey: "",
                 placeholder: "",
                 hasCheckbox: true,
-                size: 20,
+                size: 25,
                 id: 'Id',
             },
             {
@@ -731,7 +950,7 @@ const HalfClientCategory = (props: any) => {
                 placeholder: "Id",
                 resetColumnFilters: false,
                 resetSorting: false,
-                size: 70,
+                size: 95,
                 cell: ({ row, getValue }) => (
                     <span className="d-flex">
                         <ReactPopperTooltipSingleLevel ShareWebId={row?.original?.TaskID} row={row?.original} singleLevel={true} masterTaskData={AllMasterTaskItems} AllSitesTaskData={allSitesTasks} AllListId={AllListId} />
@@ -753,14 +972,15 @@ const HalfClientCategory = (props: any) => {
                                 {row?.original?.Title}
                             </a>
 
-                            {row?.original?.Body !== null && (
+                            {row?.original?.descriptionsSearch?.length > 0 ? (
                                 <span className="alignIcon">
-                                    {" "}
                                     <InfoIconsToolTip
                                         Discription={row?.original?.bodys}
                                         row={row?.original}
-                                    />{" "}
+                                    />
                                 </span>
+                            ) : (
+                                ""
                             )}
                         </span>
                     </>
@@ -799,6 +1019,9 @@ const HalfClientCategory = (props: any) => {
                 id: 'siteCompositionTotal',
                 placeholder: "Composition Total",
                 header: "",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.siteCompositionTotal == filterValue
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 60,
@@ -834,6 +1057,18 @@ const HalfClientCategory = (props: any) => {
                 ),
                 id: 'compositionType',
                 placeholder: "Composition Type",
+                header: "",
+                resetColumnFilters: false,
+                resetSorting: false,
+                size: 100,
+            },
+            {
+                accessorFn: (row) => row?.isProtectedValue,
+                cell: ({ row }) => (
+                    <span>{row?.original?.isProtectedValue}</span>
+                ),
+                id: 'Type',
+                placeholder: "Protected",
                 header: "",
                 resetColumnFilters: false,
                 resetSorting: false,
@@ -891,21 +1126,123 @@ const HalfClientCategory = (props: any) => {
                 size: 35,
             }
         ],
-        [AllCSFMasterTasks]
+        [AllMasterTasks]
     );
     const filterProtectedView = (checked: any) => {
         if (!checked) {
+            AllCSFMasterTasks = AllMasterTasks;
+            BackUpAllCCTask = AllSiteTasks;
             setAllMasterTasks(AllCSFMasterTasks?.filter((item: any) => item?.isProtectedItem == true))
             setAllSiteTasks(BackUpAllCCTask?.filter((item: any) => item?.isProtectedItem == true))
             setProtectedView(!checked)
         } else {
-            setAllMasterTasks(AllCSFMasterTasks)
-            setAllSiteTasks(BackUpAllCCTask)
+            setAllMasterTasks(AllCSFMasterTasks);
+            setAllSiteTasks(BackUpAllCCTask);
             setProtectedView(!checked)
         }
     }
+    const findPortFolioIconsAndPortfolio = async () => {
+        try {
+            let newarray: any = [];
+            const ItemTypeColumn = "Item Type";
+            console.log("Fetching portfolio icons...");
+            const field = await new Web(AllListId.siteUrl)
+                .lists.getById(AllListId?.MasterTaskListID)
+                .fields.getByTitle(ItemTypeColumn)
+                .get();
+            console.log("Data fetched successfully:", field?.Choices);
+
+            if (field?.Choices?.length > 0 && field?.Choices != undefined) {
+                field?.Choices?.forEach((obj: any) => {
+                    if (obj != undefined) {
+                        let Item: any = {};
+                        Item.Title = obj;
+                        Item[obj + 'number'] = 0;
+                        Item[obj + 'filterNumber'] = 0;
+                        Item[obj + 'numberCopy'] = 0;
+                        newarray.push(Item);
+                    }
+                })
+                if (newarray.length > 0) {
+                    newarray = newarray.filter((findShowPort: any) => {
+                        let match = portfolioTypeConfrigration.find((config: any) => findShowPort.Title === config.Title);
+                        if (match) {
+                            findShowPort.Level = match?.Level;
+                            findShowPort.Suffix = match?.Suffix;
+                            return true
+                        }
+                        return false
+                    });
+                }
+                console.log("Portfolio icons retrieved:", newarray);
+                setPortFolioTypeIcon(newarray);
+            }
+        } catch (error) {
+            console.error("Error fetching portfolio icons:", error);
+        }
+    };
+    const getTaskType = async () => {
+        let web = new Web(AllListId.siteUrl);
+        let taskTypeData = [];
+        typeData = [];
+        taskTypeData = await web.lists
+            .getById(AllListId.TaskTypeID)
+            .items.select(
+                'Id',
+                'Level',
+                'Title',
+                'SortOrder',
+            )
+            .get();
+        setTaskTypeData(taskTypeData);
+        if (taskTypeData?.length > 0 && taskTypeData != undefined) {
+            taskTypeData?.forEach((obj: any) => {
+                if (obj != undefined) {
+                    let Item: any = {};
+                    Item.Title = obj.Title;
+                    Item.SortOrder = obj.SortOrder;
+                    Item[obj.Title + 'number'] = 0;
+                    Item[obj.Title + 'filterNumber'] = 0;
+                    Item[obj.Title + 'numberCopy'] = 0;
+                    typeData.push(Item);
+                }
+            })
+            console.log("Task Type retrieved:", typeData);
+            typeData = typeData.sort((elem1: any, elem2: any) => elem1.SortOrder - elem2.SortOrder);
+            let setTypeData = JSON.parse(JSON.stringify(typeData))
+            setTaskTypeDataItem(setTypeData);
+            rerender()
+        }
+    };
     return (
         <div className='TaskView-Any-CC'>
+
+
+            <Loader loaded={loaded} lines={13} length={20} width={10} radius={30} corners={1} rotate={0} direction={1}
+                color={"#000069"}
+                speed={2}
+                trail={60}
+                shadow={false}
+                hwaccel={false}
+                className="spinner"
+                zIndex={2e9}
+                top="28%"
+                left="50%"
+                scale={1.0}
+                loadedClassName="loadedContent"
+            />
+
+
+            <section className="ContentSection smartFilterSection">
+                <div className="col-sm-12 clearfix">
+                    <h2 className="d-flex justify-content-between align-items-center siteColor  serviceColor_Active">
+                        Client Category Verification Tool
+                    </h2>
+                </div>
+                <div className="togglecontent mt-1">
+                    {filterCounters == true ? <TeamSmartFilter ProjectData={ProjectData} setLoaded={setLoaded} AllSiteTasksData={AllSiteTasksData} AllMasterTasksData={AllMasterTasksData} ContextValue={AllListId} smartFiltercallBackData={smartFiltercallBackData} portfolioColor={portfolioColor} /> : ''}
+                </div>
+            </section>
             <div className='ProjectOverViewRadioFlat  d-flex justify-content-between'>
                 <dl className='alignCenter gap-2 mb-0'>
                     <dt className='form-check l-radio'>
@@ -919,15 +1256,14 @@ const HalfClientCategory = (props: any) => {
                     </dt>
 
                 </dl>
-
             </div>
             <div className="Alltable p-2">
                 {selectedView == 'MasterTask' ? <div>
-                    <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={columnsMaster} data={AllMasterTasks} showPagination={true} callBackData={CallBack} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} />
+                    <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={columnsMaster} data={AllMasterTasks} portfolioTypeData={portfolioTypeDataItem} showingAllPortFolioCount={true} showPagination={true} callBackData={TaskSiteComp} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} />
 
                 </div> : ''}
                 {selectedView == 'AllSiteTasks' ? <div>
-                    <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={columns} data={AllSiteTasks} showPagination={true} callBackData={CallBack} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} />
+                    <GlobalCommanTable headerOptions={headerOptions} AllListId={AllListId} columns={columns} data={AllSiteTasks} showPagination={true} callBackData={TaskSiteComp} taskTypeDataItem={taskTypeDataItem} showingAllPortFolioCount={true} pageName={"ProjectOverviewGrouped"} TaskUsers={AllTaskUser} showHeader={true} />
 
 
                 </div> : ''}
@@ -946,12 +1282,12 @@ const HalfClientCategory = (props: any) => {
                     {" "}
                 </EditInstituton>
             )}
-            {EditSiteCompositionStatus ? <EditSiteComposition EditData={selectedItem} context={props?.props?.Context} AllListId={AllListId} Call={() => { CallBack('SiteComp') }} /> : ''}
+            {EditSiteCompositionStatus ? <EditSiteComposition EditData={selectedItem} context={props?.props?.Context} AllListId={AllListId} Call={TaskSiteComp} /> : ''}
             {EditSiteCompositionMaster ?
-                <EditComponentProtfolio item={selectedItem} SelectD={AllListId} usedFor="Task-Popup" Calls={() => { CallBack('SiteComp') }} />
+                <Sitecomposition props={selectedItem} isDirectPopup={EditSiteCompositionMaster} callback={MasterSiteComp} sitedata={AllListId} />
                 : null
             }
-            {pageLoaderActive ? <PageLoader /> : ''}
+            {/* {pageLoaderActive ? <PageLoader /> : ''} */}
         </div>
     )
 }
