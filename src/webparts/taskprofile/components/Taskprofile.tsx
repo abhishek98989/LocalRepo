@@ -332,14 +332,14 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
       tempEstimatedArrayData = [];
     }
-    if(taskDetails?.Sitestagging!=undefined){
-      try{
+    if (taskDetails?.Sitestagging != undefined) {
+      try {
         let parsedSiteTagging = JSON.parse(taskDetails?.Sitestagging)
-        parsedSiteTagging?.map((site:any)=>{
-          site.SiteImages= this.GetSiteIcon(site?.Title)
+        parsedSiteTagging?.map((site: any) => {
+          site.SiteImages = this.GetSiteIcon(site?.Title)
         })
         taskDetails.Sitestagging = JSON.stringify(parsedSiteTagging)
-      }catch(e){
+      } catch (e) {
 
       }
     }
@@ -351,9 +351,10 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     }
 
     let portfolio: any = [];
+    
     if (taskDetails?.Portfolio != undefined) {
 
-      portfolio = this.masterTaskData.filter((item: any) => item.Id == taskDetails?.Portfolio?.Id)
+      portfolio = this.masterTaskData.filter((item: any) => item?.Id == taskDetails?.Portfolio?.Id)
 
       if (portfolio?.length > 0 && portfolio[0]?.PortfolioType?.Color != undefined) {
         document?.documentElement?.style?.setProperty('--SiteBlue', portfolio[0]?.PortfolioType?.Color);
@@ -422,7 +423,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       EstimatedTimeDescriptionArray: tempEstimatedArrayData,
       TotalEstimatedTime: TotalEstimatedTime,
 
-      Portfolio: portfolio != undefined && portfolio.length > 0 ? portfolio[0] : undefined,
+      Portfolio: portfolio != undefined && portfolio.length > 0 ? portfolio[0] : taskDetails?.Portfolio,
       PortfolioType: portfolio != undefined && portfolio.length > 0 ? portfolio[0]?.PortfolioType : undefined,
       Creation: taskDetails["Created"],
       Modified: taskDetails["Modified"],
@@ -500,18 +501,18 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     }
   }
   private GetAllImages(BasicImageInfo: any, AttachmentFiles: any, Attachments: any) {
-        if (BasicImageInfo?.length > 0) {
-            BasicImageInfo?.forEach(function (item: any) {
-              if (item?.ImageUrl != undefined && item?.ImageUrl != "") {
-                item.ImageUrl = item?.ImageUrl?.replace(
-                  "https://www.hochhuth-consulting.de",
-                  "https://hhhhteams.sharepoint.com/sites/HHHH"
-                );
-              }
-            })
-            return BasicImageInfo
-          }
- }
+    if (BasicImageInfo?.length > 0) {
+      BasicImageInfo?.forEach(function (item: any) {
+        if (item?.ImageUrl != undefined && item?.ImageUrl != "") {
+          item.ImageUrl = item?.ImageUrl?.replace(
+            "https://www.hochhuth-consulting.de",
+            "https://hhhhteams.sharepoint.com/sites/HHHH"
+          );
+        }
+      })
+      return BasicImageInfo
+    }
+  }
 
   private async GetTaskUsers(taskDetails: any) {
     let web = new Web(this.props?.siteUrl);
@@ -585,7 +586,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       ClientTimeArray?.map((item: any) => {
         array2?.map((items: any) => {
           if ((item?.SiteName == items?.SiteName) || (item?.Title == items?.SiteName)) {
-            item.SiteImages= this?.GetSiteIcon(items?.SiteName)
+            item.SiteImages = this?.GetSiteIcon(items?.SiteName)
             if (item.ClientCategory == undefined) {
               item.ClientCategory = [];
               item.ClientCategory.push(items);
@@ -597,9 +598,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
         })
       })
-    }else{
+    } else {
       ClientTimeArray?.map((item: any) => {
-        item.SiteImages= this?.GetSiteIcon(item?.SiteName!=undefined?item?.SiteName:item?.Title)
+        item.SiteImages = this?.GetSiteIcon(item?.SiteName != undefined ? item?.SiteName : item?.Title)
       })
 
     }
@@ -1604,32 +1605,32 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       }
     }));
   };
-  private TaskProfilePriorityCallback=(priorityValue:any)=>{
+  private TaskProfilePriorityCallback = (priorityValue: any) => {
     console.log("TaskProfilePriorityCallback")
-    let resultData=this.state.Result;
-    resultData.PriorityRank=Number(priorityValue);
-    resultData. SmartPriority=""
-   
+    let resultData = this.state.Result;
+    resultData.PriorityRank = Number(priorityValue);
+    resultData.SmartPriority = ""
+
     this.setState((prevState) => ({
       Result: {
         ...prevState.Result,
-        PriorityRank:Number(priorityValue),
-        ["SmartPriority"]:  globalCommon?.calculateSmartPriority(resultData),  
+        PriorityRank: Number(priorityValue),
+        ["SmartPriority"]: globalCommon?.calculateSmartPriority(resultData),
       }
     }));
-   
+
   }
 
   private inlineCallBack = (item: any) => {
-    let resultData=this.state.Result;
-    resultData.Categories=item?.Categories;
-    resultData.SmartPriority=""
-    resultData.TaskCategories=item?.TaskCategories
+    let resultData = this.state.Result;
+    resultData.Categories = item?.Categories;
+    resultData.SmartPriority = ""
+    resultData.TaskCategories = item?.TaskCategories
     this.setState((prevState) => ({
       Result: {
         ...prevState.Result,
         Categories: item?.Categories,
-        ["SmartPriority"]:  globalCommon?.calculateSmartPriority(resultData),  
+        ["SmartPriority"]: globalCommon?.calculateSmartPriority(resultData),
 
       }
     }));
@@ -1725,14 +1726,14 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
           dataUpdate = {
             ProjectId: DataItem[0]?.Id
           }
-          let resultData=this.state.Result;
-          resultData.Project=DataItem[0]
-          resultData.SmartPriority=""
+          let resultData = this.state.Result;
+          resultData.Project = DataItem[0]
+          resultData.SmartPriority = ""
           this.setState((prevState) => ({
             Result: {
               ...prevState.Result,
-             ["SmartPriority"]: globalCommon?.calculateSmartPriority(resultData),  
-      
+              ["SmartPriority"]: globalCommon?.calculateSmartPriority(resultData),
+
             }
           }));
           this?.updateProjectComponentServices(dataUpdate)
@@ -1784,7 +1785,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
 
     return (
-      <myContextValue.Provider value={{ ...myContextValue, FunctionCall: this.contextCall, keyDoc: this.state.keydoc, FileDirRef: this.state.FileDirRef, user:this?.taskUsers }}>
+      <myContextValue.Provider value={{ ...myContextValue, FunctionCall: this.contextCall, keyDoc: this.state.keydoc, FileDirRef: this.state.FileDirRef, user: this?.taskUsers }}>
         <div>
           <section className='ContentSection'> {this.state.breadCrumData != undefined &&
             <div className='row'>
@@ -2046,7 +2047,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                 ? this.state.Result?.PriorityRank
                                 : ""
                             }
-                            TaskProfilePriorityCallback={(priorityValue: any) =>this.TaskProfilePriorityCallback(priorityValue)}
+                            TaskProfilePriorityCallback={(priorityValue: any) => this.TaskProfilePriorityCallback(priorityValue)}
                             onChange={this.handleFieldChange("Priority")}
                             type=""
                             web={AllListId?.siteUrl}
@@ -2193,7 +2194,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                 }
                               </div>
                             </div>
-                            <div className="spxdropdown-menu ps-2 py-1 border-top-0" style={{zIndex:0}}>
+                            <div className="spxdropdown-menu ps-2 py-1 border-top-0" style={{ zIndex: 0 }}>
                               <span>Total Estimated Time : </span><span className="mx-1">{this.state.Result?.TotalEstimatedTime > 1 ? this.state.Result?.TotalEstimatedTime + " hours" : this.state.Result?.TotalEstimatedTime + " hour"} </span>
                             </div>
                           </div>
