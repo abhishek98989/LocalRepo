@@ -1,10 +1,11 @@
 import React from 'react'
-import { Web } from "sp-pnp-js";
+import { Web, sp } from "sp-pnp-js";
 import * as Moment from 'moment';
 import {
     ColumnDef,
 } from "@tanstack/react-table";
 import AddMeeting from './AddMeeting';
+import * as globalcomman from "../../../globalComponents/globalCommon"
 import InlineEditingcolumns from '../../projectmanagementOverviewTool/components/inlineEditingcolumns';
 import InfoIconsToolTip from '../../../globalComponents/InfoIconsToolTip/InfoIconsToolTip';
 import GlobalCommanTable, { IndeterminateCheckbox } from "../../../globalComponents/GroupByReactTableComponents/GlobalCommanTable";
@@ -54,6 +55,7 @@ const MeetingOverviewMain = (props: any) => {
         }
         TaskUser()
         GetMasterData()
+        loadAllSiteTask()
 
     }, [])
     const TaskUser = async () => {
@@ -133,6 +135,81 @@ const MeetingOverviewMain = (props: any) => {
         return Array.sort((a: any, b: any) => {
             return a?.PortfolioLevel - b?.PortfolioLevel;
         })
+    }
+
+    const loadAllSiteTask = async ()=>{
+        AllSitesAllTasks = await globalcomman?.loadAllSiteTasks(AllListId,undefined);
+        return AllSitesAllTasks
+    }
+    const updateItems = async () => {
+
+        try {
+            var siteName = 'KathaBeck';
+            console.log(siteName);
+            let taskToUpdate:any=[];
+            let itemsToUpdate: any = AllSitesAllTasks?.filter((item: any) => item?.siteType == siteName);
+            let Activities = itemsToUpdate?.filter((task:any)=>{ if(task?.TaskType?.Title=='Activities'){
+                return true
+            }})
+            Activities = sortOnCreated(Activities)
+            Activities?.map((act:any,actIndex:any)=>{
+                    let actLevel = actIndex+1;
+                    act.TaskLevel = actLevel;
+                    act.Shareweb_x0020_ID= `A${actLevel}`;
+                    taskToUpdate.push(act)
+                    let workStream = itemsToUpdate?.filter((task:any)=>{ if(task?.TaskType?.Title=="Workstream" && task?.ParentTask?.Id==act?.Id){
+                        return true
+                    }})
+                    workStream = sortOnCreated(workStream);
+                    workStream?.map((workstream:any,workIndex:any)=>{
+                        let workLevel = workIndex+1;
+                        workstream.TaskLevel = workIndex;
+                        workstream.Shareweb_x0020_ID= `A${actLevel}-W${workLevel}`;
+                        taskToUpdate?.push(workstream)
+                })
+            })
+           // let itemsToUpdate = MasterListData.filter((item: any) => item?.Id == siteName);
+           //let itemsToUpdate = MasterListData;
+            if (taskToUpdate.length > 0) {
+                const batchSize = 150; // Adjust the batch size as needed
+                const batches = Math.ceil(taskToUpdate.length / batchSize);
+
+                for (let i = 0; i < batches; i++) {
+                    const batchItems = taskToUpdate.slice(i * batchSize, (i + 1) * batchSize);
+                    await batchUpdateTaskList(batchItems);
+                }
+
+                console.log("Batch update completed successfully.");
+            } else {
+                console.log("No items to update.");
+            }
+        } catch (error) {
+            console.error("Error updating items:", error);
+        }
+    }
+    const sortOnCreated = (Array: any) => {
+        Array.sort((a: any, b: any) => new Date(b?.Created).getTime() - new Date(a?.Created).getTime());
+        return Array;
+    }
+
+    const batchUpdateTaskList = async (itemsToUpdate: any[]): Promise<void> => {
+        const web = new Web(AllListId?.siteUrl);
+        const batch = sp.createBatch();
+
+        itemsToUpdate.forEach((item: any) => {
+            console.log('Updating ', item?.Shareweb_x0020_ID)
+            let postdata = {
+                TaskID: item?.Shareweb_x0020_ID,
+                TaskLevel: item?.TaskLevel,
+            }
+            try {
+                web.lists.getById(item?.listId).items.getById(item?.Id).inBatch(batch).update(postdata);
+
+            } catch (error) {
+                console.log(error)
+            }
+        });
+        await batch.execute();
     }
     const CallBack = React.useCallback(() => {
         GetMasterData()
@@ -283,6 +360,7 @@ const MeetingOverviewMain = (props: any) => {
                         <div className='header-section justify-content-between row'>
                             <div className="col-sm-8">
                                 <h2 style={{ color: "#000066", fontWeight: "600" }}>Meeting Overview</h2>
+                                <h4 onClick={()=>updateItems()}>Update Task Structure </h4>
                             </div>
                             <div className="col-sm-4 text-end">
                                 <AddMeeting CallBack={CallBack} AllListId={AllListId} />
