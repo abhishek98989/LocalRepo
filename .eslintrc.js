@@ -16,6 +16,8 @@ module.exports = {
         '@rushstack/no-new-null': 1,
         // Require Jest module mocking APIs to be called before any other statements in their code block. https://www.npmjs.com/package/@rushstack/eslint-plugin
         '@rushstack/hoist-jest-mock': 1,
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/rule-name": "off",
         // Require regular expressions to be constructed from string constants rather than dynamically building strings at runtime. https://www.npmjs.com/package/@rushstack/eslint-plugin-security
         '@rushstack/security/no-unsafe-regexp': 1,
         // STANDARDIZED BY:   @typescript-eslint\eslint-plugin\dist\configs\recommended.json
@@ -346,7 +348,10 @@ module.exports = {
         '**/test/*.ts',
         '**/test/*.tsx'
       ],
-      rules: {}
+      rules: {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/rule-name": "off"
+      }
     }
   ]
 };

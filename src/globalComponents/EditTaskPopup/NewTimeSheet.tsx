@@ -11,13 +11,11 @@ const NewTameSheetComponent = (props: any) => {
         setTeamConfig(dt)
         console.log(TeamConfig)
         console.log(TeamConfig)
-        props?.TeamConfigDataCallBack(dt);
+        props?.TeamConfigDataCallBack(dt,"TeamConfiguration");
     }
-    // var itemInfo = {
-    //     siteURL: TeamConfigInfo?.siteUrl,
-    //     listName: TeamConfigInfo?.listName,
-    //     itemID: TeamConfigInfo?.Id
-    // }
+    const ComponentCallBack = (dt: any) => {
+        props?.TeamConfigDataCallBack(dt, "TimeSheet");
+    }
     return (
         <div>
             <div>
@@ -25,7 +23,7 @@ const NewTameSheetComponent = (props: any) => {
                 </TeamConfigurationCard>
             </div>
             <div>
-                {AllListIdData.isShowTimeEntry ? <TimeEntryPopup props={TeamConfigInfo} Context={props.props.context} /> : null}
+                {AllListIdData.isShowTimeEntry ? <TimeEntryPopup props={TeamConfigInfo} Context={props.props.context} parentCallback={ComponentCallBack}/> : null}
             </div>
         </div>
     )

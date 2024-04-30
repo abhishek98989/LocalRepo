@@ -1,218 +1,257 @@
 import * as React from "react";
-import { Web } from "sp-pnp-js";
-import * as globalCommon from "../globalComponents/globalCommon";
-import { GlobalConstants } from "../globalComponents/LocalCommon";
-// import teamsImg from '../Assets/ICON/Teams-Logo.png'; 
-var siteUrl = ''
+import { usePopperTooltip } from "react-popper-tooltip";
+import "react-popper-tooltip/dist/styles.css";
+var siteUrl = '';
 function ShowTaskTeamMembers(item: any) {
-  //siteUrl= item.SelectedProp?.SelectedProp?.siteUrl
-  siteUrl = item.props?.siteUrl
+  siteUrl = item.props?.siteUrl != undefined ? item?.props?.siteUrl : item?.Context?.siteurl;
   const [Display, setDisplay] = React.useState("none");
-  const [ItemNew, setItemMember] = React.useState<any>({});
+  const [taskData, settaskData] = React.useState<any>();
+  const [key, setKey] = React.useState(0);
+  const [LeadCount, setLeadCount] = React.useState(0);
+  const [controlledVisible, setControlledVisible] = React.useState(false);
+
+  const {
+    getArrowProps,
+    getTooltipProps,
+    setTooltipRef,
+    setTriggerRef,
+    visible,
+} = usePopperTooltip({
+    trigger: null,
+    interactive: true,
+    closeOnOutsideClick: false,
+    placement: "auto",
+    visible: controlledVisible,
+    onVisibleChange: setControlledVisible,
+});
   let TaskUsers: any = [];
-  const Item = item.props;
-  const handleSuffixHover = (item: any) => {
-    setDisplay("block");
-    //  setTeamMember((TeamMember: any) => (...TeamMember: any));
-  };
+  TaskUsers = item?.TaskUsers;
+  let CompleteTeamMembers: any = [];
   React.useEffect(() => {
-    let emailarray: any = [];
-    TaskUsers = item.TaskUsers;
-    console.log(Response);
-    // let AllTeamsMails:any ;
-    Item.AllTeamMembers = [];
-    Item.allMembersEmail = [];
-    Item.TeamLeaderUserTitle = "";
-    Item.TeamLeader = [];
-    Item.Display = "none";
-    if (Item.AssignedTo != undefined && Item.AssignedTo.length > 0) {
-      Item.AssignedTo.forEach((Assig: any) => {
-        if (Assig.Id != undefined) {
-          TaskUsers.forEach((users: any) => {
-            if (
-              Assig.Id != undefined &&
-              users.AssingedToUser != undefined &&
-              Assig.Id === users.AssingedToUser.Id
-            ) {
-              users.ItemCover = users.Item_x0020_Cover?.Url;
-              if (users.Email != null) {
-                emailarray.push(users.Email);
-              }
-              Item.AllTeamMembers.push(users);
-              Item.TeamLeaderUserTitle += users.Title + ";";
-            }
-          });
-        }
-      });
+    if (item?.props != undefined) {
+      let itemDetails={
+        ...item?.props
+      }
+      let taskDetails=item?.props;
+    try{
+     taskDetails = JSON.parse(JSON.stringify(itemDetails));
+    }catch(e){
+      // console.log('Team error',e)
     }
-    if (
-      Item.TeamMembers != undefined &&
-      Item.TeamMembers != undefined &&
-      Item.TeamMembers.length > 0
-    ) {
-      Item.TeamMembers.forEach((Assig: any) => {
-        if (Assig.Id != undefined) {
-          TaskUsers.forEach((users: any) => {
-            if (
-              Assig.Id != undefined &&
-              users.AssingedToUser != undefined &&
-              Assig.Id == users.AssingedToUser.Id
-            ) {
-              users.ItemCover = users.Item_x0020_Cover?.Url;
-              if (users.Email != null) {
-                emailarray.push(users.Email);
+      let LeadCount =0;
+      if(taskDetails["ResponsibleTeam"] != undefined&&taskDetails["ResponsibleTeam"].length > 0){
+        taskDetails["ResponsibleTeam"]=GetUserObjectFromCollection(taskDetails["ResponsibleTeam"]);
+        LeadCount=taskDetails["ResponsibleTeam"].length;
+      }
+      // GetUserObjectFromCollection
+      // const LeadCount = taskDetails["ResponsibleTeam"] != undefined && taskDetails["ResponsibleTeam"].length > 0 ? taskDetails["ResponsibleTeam"].length : 0;
+      setLeadCount(LeadCount);
+      if (taskDetails["ResponsibleTeam"] != undefined) {
+        taskDetails["ResponsibleTeam"]?.map((item: any, index: any) => {
+          if (taskDetails?.AssignedTo != undefined) {
+            for (let i = 0; i < taskDetails?.AssignedTo?.length; i++) {
+              if (item.Id == taskDetails?.AssignedTo[i]?.Id) {
+                item.workingMember = true;
+                taskDetails?.AssignedTo?.splice(i, true);
+                i--;
               }
-              Item.AllTeamMembers.push(users);
-              Item.TeamLeaderUserTitle += users.Title + ";";
             }
-          });
-        }
-      });
-    }
-    if (
-      Item.ResponsibleTeam != undefined &&
-      Item.ResponsibleTeam != undefined &&
-      Item.ResponsibleTeam.length > 0
-    ) {
-      Item.ResponsibleTeam.forEach((Assig: any) => {
-        if (Assig.Id != undefined) {
-          TaskUsers.forEach((users: any) => {
-            if (
-              Assig.Id != undefined && users.AssingedToUser != undefined && Assig.Id == users.AssingedToUser.Id
-            ) {
-              users.ItemCover = users.Item_x0020_Cover?.Url;
-              if (users.Email != null) {
-                emailarray.push(users.Email);
+          }
+          CompleteTeamMembers.push(item);
+        });
+      }
+      if (taskDetails["AssignedTo"] != undefined) {
+        taskDetails["AssignedTo"]?.map((item: any, index: any) => {
+          if (taskDetails?.TeamMembers != undefined) {
+            for (let i = 0; i < taskDetails?.TeamMembers?.length; i++) {
+              if (item.Id == taskDetails?.TeamMembers[i]?.Id) {
+                item.workingMember = true;
+                taskDetails?.TeamMembers?.splice(i, true);
+                i--;
               }
-              Item.TeamLeader.push(users);
-              Item.TeamLeaderUserTitle += users.Title + ";";
             }
-          });
-        }
+          }
+          item.workingMember = true;          
+          CompleteTeamMembers.push(item);
+        });
+      }
+      if (taskDetails?.TeamMembers != undefined) {
+        taskDetails["TeamMembers"]?.map((item: any, index: any) => {
+        
+          CompleteTeamMembers.push(item);
+        });
+      }
+      // Remove duplicate items
+      CompleteTeamMembers = CompleteTeamMembers.filter((item: any, index: any) => {
+        return CompleteTeamMembers.indexOf(item) === index;
       });
+      if(CompleteTeamMembers?.length>0){
+        CompleteTeamMembers= GetUserObjectFromCollection(CompleteTeamMembers)
+      }
+
+      // Check if there are more than 3 members
+      if (CompleteTeamMembers.length > 3) {
+        // If there is no lead, show the first 2 members and the rest in a tooltip
+        // if (LeadCount === 0) {
+        //   taskDetails.TeamMembersFlat = GetUserObjectFromCollection(CompleteTeamMembers.toSpliced(1));
+        //   taskDetails.TeamMembersTip = GetUserObjectFromCollection(CompleteTeamMembers.slice(1));
+        // } else if (LeadCount === 1) {
+        //   // If there is a lead, show the lead and the first member and the rest in a tooltip
+        taskDetails.TeamMembersFlat = CompleteTeamMembers?.toSpliced(2);
+        taskDetails.TeamMembersTip = CompleteTeamMembers?.slice(2);
+        // }
+      } else {
+        // If there are less than or equal to 3 members, show all of them
+        taskDetails.TeamMembersFlat = CompleteTeamMembers;
+        taskDetails.TeamMembersTip = [];
+      }
+
+      settaskData(taskDetails);
     }
-    Item.allMembersEmail = emailarray.join();
-    setItemMember(Item);
-  }, []);
+    setKey((prevKey) => prevKey + 1);
+  }, [item]);
 
+  const GetUserObjectFromCollection = (UsersValues: any) => {
+    let userDeatails: any = [];
+    UsersValues?.map((item: any) => {
+      let workingToday=item?.workingMember!=undefined?item?.workingMember:false;
+      item = TaskUsers?.find((User: any) => User?.AssingedToUser?.Id == item?.Id)
+      if(item?.Id!=undefined){
+        userDeatails.push({
+          'Id': item?.AssingedToUser.Id,
+          'Name': item?.Email,
+          'Suffix': item?.Suffix,
+          'Title': item?.Title,
+          'userImage': item?.Item_x0020_Cover?.Url,
+          "workingMember": workingToday
+        });
+      }
+      
+    })
 
-  const handleuffixLeave = (item: any) => {
-    setDisplay("none");
-
-    //  setTeamMember((TeamMember: any) => (...TeamMember: any));
+    setKey((prevKey) => prevKey + 1);
+    return userDeatails;
   };
 
+  const handleSuffixHover = () => {
+    //e.preventDefault();
+    setDisplay("block");
+    setControlledVisible(true)
+  };
+
+  const handleSuffixLeave = () => {
+    setDisplay("none");
+    setControlledVisible(false)
+  };
 
   return (
     <>
-      <div className='full-width'>
-        {ItemNew?.TeamLeader?.length > 0 || ItemNew?.AllTeamMembers?.length > 0 ? (
-          <div className="d-flex align-items-center">
-            &nbsp;
-            {ItemNew["TeamLeader"] != null && ItemNew["TeamLeader"].length > 0
-              ? ItemNew["TeamLeader"].map((rcData: any, i: any) => {
-                return (
-                  <>
-                    <span className="user_Member_img alignCenter">
-                      <a className="alignCenter"
-                        href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.AssingedToUserId}&Name=${rcData.Title}`}
+      <div className="d-flex align-items-center full-width">
+        {/* {LeadCount === 0 ?
+          <div className="user_Member_img">
+            <span className="workmember d-flex clearfix"></span>
+            <span className="workmember bg-fxdark"></span>
+          </div> :
+         
+        } */}
+        <div key={key} className="alignCenter">
+          {taskData?.TeamMembersFlat != null &&
+            taskData?.TeamMembersFlat?.length > 0 && 
+            taskData?.TeamMembersFlat?.map((rcData: any, i: any) => {
+              return (
+                <a style={{marginRight:"4px"}} href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.Id}&Name=${rcData?.Title}`}
+                  target="_blank"
+                  className={i == (LeadCount - 1) && i != 3 ? "teamLeader-IconEnd alignCenter" : 'alignCenter'}
+                  data-interception="off"
+                  title={rcData?.Title}
+                >
+                  {rcData.userImage != null && (
+                    <img
+                      className={rcData?.workingMember ? "suffix_Usericon activeimg" : "suffix_Usericon"}
+                      src={rcData?.userImage}
+                    />
+                  )}
+                  {rcData.userImage == null && (
+                    <span
+                      className={
+                        rcData?.workingMember
+                          ? "suffix_Usericon activeimg"
+                          : "suffix_Usericon "
+                      }
+                    >
+                      {rcData?.Suffix}
+                    </span>
+                  )}
+                </a>
+              );
+            })}
+        </div>
+        {taskData?.TeamMembersTip != null &&
+          taskData?.TeamMembersTip?.length > 0 && (
+            <div
+              className="hover-text user_Member_img_suffix2 alignCenter" 
+              ref={setTriggerRef}
+              onMouseOver={(e) => handleSuffixHover()}
+              onMouseLeave={(e) => handleSuffixLeave()}
+            >
+              +{taskData?.TeamMembersTip?.length}
+              {visible && (<span
+                ref={setTooltipRef}
+                {...getTooltipProps({ className: "tooltip-container" })}
+              >
+                <div key={key}
+                >
+                  {taskData?.TeamMembersTip?.map((rcData: any, i: any) => (
+                    <div
+                      key={i}
+                      className="mb-1 team_Members_Item"
+                      style={{ position: "relative" }}
+                    >
+                      <div 
+                      >
+                        <a
+                        href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.Id}&Name=${rcData?.Title}`}
                         target="_blank"
                         data-interception="off"
-                        title={rcData.Title}
+                        style={{
+                          position: "relative",
+                          display: "inline-block",
+                        }}
                       >
-                        <img className="workmember" src={rcData.ItemCover}></img>
+                        {rcData.userImage != null && (
+                          <img
+                            className={
+                              rcData?.workingMember
+                                ? "suffix_Usericon activeimg"
+                                : "suffix_Usericon"
+                            }
+                            src={rcData?.userImage}
+                            alt={rcData?.Title}
+                          />
+                        )}
+                        {rcData.userImage == null && (
+                          <span
+                            className={
+                              rcData?.workingMember
+                                ? "suffix_Usericon activeimg"
+                                : "suffix_Usericon"
+                            }
+                          >
+                            {rcData?.Suffix}
+                          </span>
+                        )}
+                        <span className="mx-2">{rcData?.Title}</span>
                       </a>
-                    </span>
-                  </>
-                );
-              })
-              : <span>&nbsp;</span>}
-            {/* {Item["TeamLeader"] != null && Item["TeamLeader"].length > 0 &&
-                                                                                                                     <div></div>
-                                                                                                                 } */}
-
-            {ItemNew["AllTeamMembers"] != null &&
-              ItemNew["AllTeamMembers"].length > 0 ? (
-              <a className="alignCenter"
-                href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${ItemNew["AllTeamMembers"][0].AssingedToUserId}&Name=${ItemNew["AllTeamMembers"][0].Title}`}
-                target="_blank"
-                data-interception="off"
-                title={ItemNew["AllTeamMembers"][0].Title}
-              >
-                <img
-                  className="workmember activeimg"
-                  src={ItemNew["AllTeamMembers"][0].ItemCover}
-                ></img>
-              </a>
-
-            ) : (
-              " "
-            )}
-            {ItemNew["AllTeamMembers"] != null &&
-              ItemNew["AllTeamMembers"].length > 1 ? (
-              <div
-                className="position-relative user_Member_img_suffix2 ms-1"
-                onMouseOver={(e) => handleSuffixHover(ItemNew)}
-                onMouseLeave={(e) => handleuffixLeave(ItemNew)}
-              >
-                +{ItemNew?.AllTeamMembers?.slice(1)?.length}
-                <span
-                  className="tooltiptext"
-                  style={{ display: Display, padding: "10px" }}
-                >
-                  <div>
-                    {ItemNew["AllTeamMembers"]
-                      .slice(1)
-                      .map((rcData: any, i: any) => {
-                        return (
-                          <>
-                            <span
-                              className="team_Members_Item"
-                              style={{ padding: "2px" }}
-                            >
-                              <span>
-                                <a
-                                  href={`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${rcData?.AssingedToUserId}&Name=${rcData.Title}`}
-                                  target="_blank"
-                                  data-interception="off"
-                                >
-                                  <img
-                                    className={`workmember ${rcData.activeimg2}`}
-                                    src={rcData.ItemCover}
-                                  ></img>
-                                </a>
-                              </span>
-                              <div className="mx-2">{rcData.Title}</div>
-                            </span>
-                          </>
-                        );
-                      })}
-                  </div>
-                </span>
-              </div>
-            ) : (
-              ""
-            )}
-            {/* {item?.ShowTeamsIcon != false ? <div>
-              {ItemNew?.allMembersEmail != null ? (
-                <span style={{ marginLeft: '5px' }} >
-                  <a
-                    href={`https://teams.microsoft.com/l/chat/0/0?users=${ItemNew?.allMembersEmail}`}
-                    target="_blank"
-                  >
-                   <span className="svg__iconbox svg__icon--team"></span>
-                  </a>
-                </span>
-              ) : (
-                ""
-              )}
-            </div>:''} */}
-          </div>
-        ) : (
-          ""
-        )}
+                    </div>
+                    </div>
+                  ))}
+                </div>
+              </span>)}
+            </div>
+          )}
       </div>
     </>
   );
 }
+
 export default ShowTaskTeamMembers;

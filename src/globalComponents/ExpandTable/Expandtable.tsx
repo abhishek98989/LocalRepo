@@ -12,9 +12,21 @@ const ExpndTable = (props: any) => {
 
   const showExpended = function (prope: any) {
     $('#spPageCanvasContent').removeClass();
-    $('#spPageCanvasContent').addClass(prope)
+    $('#spPageCanvasContent').addClass(prope)       
     props.prop(prope)
   }
+
+  React.useEffect(() => {
+    const spPageCanvasContentDiv = document.getElementById('spPageCanvasContent');
+
+    if (spPageCanvasContentDiv) {
+      const seventhChild = spPageCanvasContentDiv.querySelector(':scope > div > div > div > div > div > div > div');
+
+      if (seventhChild) {
+        seventhChild.id = 'increasePageWidth';
+      }
+    }
+  }, []);
 
   return (
     <>
@@ -46,13 +58,12 @@ const ExpndTable = (props: any) => {
           <div className="modal-content">
             <div className="modal-header">
               <h1
-                className="modal-title fs-5"
+                className="modal-title"
                 id="exampleModalLabel"
-                style={{ color: "#0000bc" }}
               >
                 Expand Search Result
               </h1>
-              <span><Tooltip ComponentId='3299'/></span>
+              <span><Tooltip ComponentId='1123'/></span>
               <button
                 type="button"
                 className="btn-close"
@@ -60,8 +71,8 @@ const ExpndTable = (props: any) => {
                 aria-label="Close"
               />
             </div>
-            <div className="modal-body" style={{ backgroundColor: "#F2EDED" }}>
-              <div className="row d-flex justify-content-center">
+            <div className="modal-body bg-f5f5" >
+              <div className="row d-flex justify-content-center py-2 expandedpopup">
                 <div
                   data-bs-dismiss="modal"
                   role={"button"}
@@ -103,12 +114,8 @@ const ExpndTable = (props: any) => {
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-light px-3 border" 
-                data-bs-dismiss="modal"
-              >
+            <div className="modal-footer text-end">
+              <button  type="button" className="btn btn-default"  data-bs-dismiss="modal" >
                 Cancel
               </button>
             </div>

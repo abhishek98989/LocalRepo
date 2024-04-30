@@ -24,6 +24,7 @@ export interface ICreateTaskWebPartProps {
   DocumentsListID: 'd0f88b8f-d96d-4e12-b612-2706ba40fb08';
   TaskTimeSheetListID: '464fb776-e4b3-404c-8261-7d3c50ff343f';
   AdminConfigrationListID:'e968902a-3021-4af2-a30a-174ea95cf8fa';
+  PortFolioTypeID: "c21ab0e4-4984-4ef7-81b5-805efaa3752e";
   TimeEntry: any;
   SiteCompostion: any;
 }
@@ -52,6 +53,7 @@ export default class CreateTaskWebPart extends BaseClientSideWebPart<ICreateTask
         DocumentsListID: this.properties.DocumentsListID,
         TaskTimeSheetListID: this.properties.TaskTimeSheetListID,
         AdminConfigrationListID: this.properties.AdminConfigrationListID,
+        PortFolioTypeID:this.properties.PortFolioTypeID,
         TimeEntry: this.properties.TimeEntry,
         SiteCompostion: this.properties.SiteCompostion
       }
@@ -61,17 +63,37 @@ export default class CreateTaskWebPart extends BaseClientSideWebPart<ICreateTask
   }
 
   protected onInit(): Promise<void> {
-    this._environmentMessage = this._getEnvironmentMessage();
-    
-    return super.onInit();
+    return this._getEnvironmentMessage().then(message => {
+      this._environmentMessage = message;
+    });
   }
 
-  private _getEnvironmentMessage(): string {
-    if (!!this.context.sdks.microsoftTeams) { // running in Teams
-      return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
+
+
+  private _getEnvironmentMessage(): Promise<string> {
+    if (!!this.context.sdks.microsoftTeams) { // running in Teams, office.com or Outlook
+      return this.context.sdks.microsoftTeams.teamsJs.app.getContext()
+        .then((context: { app: { host: { name: any; }; }; }) => {
+          let environmentMessage: string = '';
+          switch (context.app.host.name) {
+            case 'Office': // running in Office
+              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOffice : strings.AppOfficeEnvironment;
+              break;
+            case 'Outlook': // running in Outlook
+              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOutlook : strings.AppOutlookEnvironment;
+              break;
+            case 'Teams': // running in Teams
+              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
+              break;
+            default:
+              throw new Error('Unknown host');
+          }
+
+          return environmentMessage;
+        });
     }
 
-    return this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment;
+    return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
   }
 
   // protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
@@ -128,6 +150,9 @@ export default class CreateTaskWebPart extends BaseClientSideWebPart<ICreateTask
                 }),
                 PropertyPaneTextField('DocumentsListID', {
                   label: "DocumentsListID"
+                }),
+                PropertyPaneTextField("PortFolioTypeID", {
+                  label: "Portfolio Type List",
                 }),
                 PropertyPaneTextField('TaskTimeSheetListID', {
                   label: "TaskTimeSheetListID"

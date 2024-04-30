@@ -240,7 +240,6 @@ const PortfolioTagging = (item: any) => {
             //  ungetFilterLength();
             // setData(data => ([...maidataBackup]));
             setComponentsData(maidataBackup);
-            //setData(ComponentsData)= SharewebCommonFactoryService.ArrayCopy($scope.CopyData);
         }
         }
     const handleOpen = (item: any) => {
@@ -287,8 +286,8 @@ const PortfolioTagging = (item: any) => {
                     .getById(item?.AllListId?.MasterTaskListID)
                     .items
                     //.getById(this.state.itemID)
-                    .select("ID", "Title", "DueDate", "Status", "ItemRank", "Item_x0020_Type", "Parent/Id", "Author/Id", "Author/Title", "Parent/Title", "SharewebCategories/Id", "SharewebCategories/Title", "AssignedTo/Id", "AssignedTo/Title", "Team_x0020_Members/Id", "Team_x0020_Members/Title", "ClientCategory/Id", "ClientCategory/Title")
-                    .expand("Team_x0020_Members", "Author", "ClientCategory", "Parent", "SharewebCategories", "AssignedTo", "ClientCategory").filter("Portfolio_x0020_Type eq '" + item?.type + "'")
+                    .select("ID", "Title", "DueDate", "Status", "ItemRank", "Item_x0020_Type", "Parent/Id", "Author/Id", "Author/Title", "Parent/Title", "TaskCategories/Id", "TaskCategories/Title", "AssignedTo/Id", "AssignedTo/Title", "TeamMembers/Id", "TeamMembers/Title", "ClientCategory/Id", "ClientCategory/Title")
+                    .expand("TeamMembers", "Author", "ClientCategory", "Parent", "TaskCategories", "AssignedTo", "ClientCategory").filter("Portfolio_x0020_Type eq '" + item?.type + "'")
                     .top(4999)
                     .get()
     
@@ -325,8 +324,8 @@ const PortfolioTagging = (item: any) => {
                             }
                         })
                     }
-                    if (result.Team_x0020_Members != undefined && result.Team_x0020_Members.length > 0) {
-                        $.each(result.Team_x0020_Members, function (index: any, Assig: any) {
+                    if (result.TeamMembers != undefined && result.TeamMembers.length > 0) {
+                        $.each(result.TeamMembers, function (index: any, Assig: any) {
                             if (Assig.Id != undefined) {
                                 $.each(Response, function (index: any, users: any) {
                                     if (Assig.Id != undefined && users.AssingedToUserId != undefined && Assig.Id == users.AssingedToUserId) {
@@ -339,11 +338,11 @@ const PortfolioTagging = (item: any) => {
                         })
                     }
     
-                    if (result.ClientCategory != undefined && result.ClientCategory.length > 0) {
-                        $.each(result.Team_x0020_Members, function (index: any, catego: any) {
-                            result.ClientCategory.push(catego);
-                        })
-                    }
+                    // if (result.ClientCategory != undefined && result.ClientCategory.length > 0) {
+                    //     $.each(result.TeamMembers, function (index: any, catego: any) {
+                    //         result.ClientCategory.push(catego);
+                    //     })
+                    // }
                     if (result.Item_x0020_Type == 'Root Component') {
                         result['Child'] = [];
                         RootComponentsData.push(result);
@@ -467,7 +466,7 @@ const PortfolioTagging = (item: any) => {
                                                 </th>
                                                 <th style={{ width: "18%" }}>
                                                     <div style={{ width: "17%" }} className="smart-relative ">
-                                                        <input id="searchClientCategory" onChange={event => handleChange1(event, 'Shareweb_x0020_ID')} type="search" placeholder="Client Category"
+                                                        <input id="searchClientCategory" onChange={event => handleChange1(event, 'TaskID')} type="search" placeholder="Client Category"
                                                             title="Client Category" className="full_width searchbox_height"
                                                         />
                                                         <span className="sorticon">

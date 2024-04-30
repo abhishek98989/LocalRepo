@@ -18,9 +18,11 @@ export interface IComponentProfileWebPartProps {
   MasterTaskListID: 'ec34b38f-0669-480a-910c-f84e92e58adf';
   TaskUsertListID: 'b318ba84-e21d-4876-8851-88b94b9dc300';
   DocumentsListID:'d0f88b8f-d96d-4e12-b612-2706ba40fb08';
+  SmartInformationListID:"edf0a6fb-f80e-4772-ab1e-666af03f7ccd";
   SmartMetadataListID: '01a34938-8c7e-4ea6-a003-cee649e8c67a';
-  SmartHelptListID:'9cf872fc-afcd-42a5-87c0-aab0c80c5457';
+  SmartHelpListID:'9cf872fc-afcd-42a5-87c0-aab0c80c5457';
   TaskTypeID:'21b55c7b-5748-483a-905a-62ef663972dc';
+  PortFolioTypeID: "c21ab0e4-4984-4ef7-81b5-805efaa3752e";
   TimeEntry:any;
   SiteCompostion:any;
   dropdownvalue:string,
@@ -46,9 +48,11 @@ export default class ComponentProfileWebPart extends BaseClientSideWebPart<IComp
         TaskUsertListID: this.properties.TaskUsertListID,
         TaskTypeID:this.properties.TaskTypeID,
         DocumentsListID:this.properties.DocumentsListID,
-        SmartHelptListID:this.properties.SmartHelptListID,
+        SmartHelpListID:this.properties.SmartHelpListID,
         SmartMetadataListID: this.properties.SmartMetadataListID,
+        PortFolioTypeID:this.properties.PortFolioTypeID,
         Context: this.context,
+        SmartInformationListID: this.properties.SmartInformationListID,
         TimeEntry:this.properties.TimeEntry,
         SiteCompostion:this.properties.SiteCompostion,
         dropdownvalue:this.properties.dropdownvalue,
@@ -114,7 +118,7 @@ export default class ComponentProfileWebPart extends BaseClientSideWebPart<IComp
                 PropertyPaneTextField('TaskUsertListID', {
                   label: 'Task User List'
                 }),
-                PropertyPaneTextField('SmartHelptListID', {
+                PropertyPaneTextField('SmartHelpListID', {
                   label: 'SmartHelp List'
                 }),
                 PropertyPaneTextField('SmartMetadataListID', {
@@ -128,6 +132,12 @@ export default class ComponentProfileWebPart extends BaseClientSideWebPart<IComp
                 }),
                 PropertyPaneTextField('TaskTypeID', {
                   label: 'Task Type List',
+                }),
+                PropertyPaneTextField("PortFolioTypeID", {
+                  label: "Portfolio Type List",
+                }),
+                PropertyPaneTextField('SmartInformationListID', {
+                  label: 'SmartInformationListID'
                 }),
                 PropertyPaneTextField('TimeEntry', {
                   label: "TimeEntry"

@@ -8,7 +8,7 @@ import ApprovalHistoryPopup from "./ApprovalHistoryPopup";
 
 export default function subCommentComponent(SubTextItemsArray: any) {
     const SubTextItems = SubTextItemsArray.SubTextItemsArray;
-    const callBack = SubTextItemsArray.callBack
+    const callBack = SubTextItemsArray.callBack;
     const Context = SubTextItemsArray.Context;
     const [Texts, setTexts] = useState(false);
     const [subCommentsData, setSubCommentsData] = useState([]);
@@ -21,8 +21,8 @@ export default function subCommentComponent(SubTextItemsArray: any) {
     const [ApprovalPointHistoryStatus, setApprovalPointHistoryStatus] = useState(false);
     const [ApprovalPointUserData, setApprovalPointUserData] = useState<any>([]);
     const [ApprovalPointCurrentIndex, setApprovalPointCurrentIndex] = useState('');
-    const currentArrayIndex = SubTextItemsArray.currentIndex
-    const isFirstComment = SubTextItemsArray.isFirstComment
+    const currentArrayIndex = SubTextItemsArray.currentIndex;
+    const isFirstComment = SubTextItemsArray.isFirstComment;
     let ApprovalStatus: any = SubTextItemsArray.ApprovalStatus;
     let SmartLightPercentStatus: any = SubTextItemsArray.SmartLightPercentStatus;
     let SmartLightStatus: any = SubTextItemsArray.SmartLightStatus;
@@ -35,6 +35,23 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                     subItem.ApproverData = [];
                 }
                 ChildArray.push(subItem);
+                ChildArray?.forEach((ele:any)=>{
+                    if(ele.ApproverData != undefined && ele.ApproverData.length > 0){
+                   ele.ApproverData?.forEach((ba:any)=>{
+                       if(ba.isShowLight == 'Reject'){
+                        ba.Status = 'Rejected by'
+                       }
+                       if(ba.isShowLight == 'Approve'){
+                           ba.Status = 'Approved by '
+                       }
+                       if(ba.isShowLight == 'Maybe'){
+                           ba.Status = 'For discussion with'
+                       }
+                       
+           
+                   })
+                 }
+                   })
                 UpdatedFeedBackChildArray.push(subItem);
                 subCommentsData.push(subItem);
             })
@@ -77,7 +94,8 @@ export default function subCommentComponent(SubTextItemsArray: any) {
             Phone: "",
             LowImportance: "",
             HighImportance: "",
-            isShowLight: ""
+            isShowLight: "",
+            SeeAbove: ''
         };
         subCommentsData.push(object);
         setTexts(!Texts)
@@ -93,7 +111,8 @@ export default function subCommentComponent(SubTextItemsArray: any) {
             Phone: "",
             LowImportance: "",
             HighImportance: "",
-            isShowLight: ""
+            isShowLight: "",
+            SeeAbove: '',
         };
         subCommentsData.push(object);
         setTexts(!Texts)
@@ -107,46 +126,53 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                 tempArray.push(array);
             }
         });
-        // tempArray?.map((tempData: any) => {
-        //     ChildArray.push(tempData);
-        // })
         callBack(tempArray, currentArrayIndex);
         setSubCommentsData(tempArray);
     }
-
     function handleChangeChild(e: any) {
-        // let tempArray: any = [];
-        if (e.target.matches("textarea")) {
-            const { id } = e.currentTarget.dataset;
-            const { name, value } = e.target;
-            const copy = [...subCommentsData];
-            const obj = { ...subCommentsData[id], [name]: value };
-            copy[id] = obj;
-            setSubCommentsData(copy);
-            UpdatedFeedBackChildArray[id].Title = value;
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        const { name, type, checked, value } = e.target;
+        let updatedValue = type === "checkbox" ? checked : value;
 
+        if (name === "SeeAbove") {
+            // Handle the 'See Above' checkbox
+            let newTitle = UpdatedFeedBackChildArray[id].Title;
+            const seeText = ` (See ${SubTextItemsArray.index + 1}.${id})`;
+
+            if (updatedValue) {
+                if (!newTitle.includes(seeText)) {
+                    // Append only if not already included
+                    newTitle += seeText;
+                }
+            } else {
+                // Remove the text if unchecked
+                newTitle = newTitle.replace(seeText, "").trim();
+            }
+
+            UpdatedFeedBackChildArray[id].Title = newTitle;
+            UpdatedFeedBackChildArray[id].SeeAbove = updatedValue;
+        } else if (type === "textarea") {
+            // Handle changes in textarea
+            UpdatedFeedBackChildArray[id].Title = updatedValue;
+        } else if (type === "checkbox") {
+            // Handle other checkbox types
+            UpdatedFeedBackChildArray[id][name] = updatedValue;
         }
-        if (e.target.matches("input")) {
-            const { id } = e.currentTarget.dataset;
-            const { name, value } = e.target;
-            const copy = [...subCommentsData];
-            const obj = { ...subCommentsData[id], [name]: value == "true" ? false : true };
-            copy[id] = obj;
-            setSubCommentsData(copy);
-            if (name == "Phone") {
-                UpdatedFeedBackChildArray[id].Phone = (value == "true" ? false : true)
+
+        // Update subCommentsData to trigger re-render
+        const updatedSubCommentsData = subCommentsData.map((item, idx) => {
+            if (idx === id) {
+                return {
+                    ...item,
+                    Title: UpdatedFeedBackChildArray[id].Title,
+                    [name]: updatedValue
+                };
             }
-            if (name == "LowImportance") {
-                UpdatedFeedBackChildArray[id].LowImportance = (value == "true" ? false : true)
-            }
-            if (name == "HighImportance") {
-                UpdatedFeedBackChildArray[id].HighImportance = (value == "true" ? false : true)
-            }
-            if (name == "Completed") {
-                UpdatedFeedBackChildArray[id].Completed = (value == "true" ? false : true)
-            }
-        }
-        callBack(UpdatedFeedBackChildArray, currentArrayIndex);
+            return item;
+        });
+        setSubCommentsData(updatedSubCommentsData);
+
+        callBack(updatedSubCommentsData, currentArrayIndex);
     }
 
     const postBtnHandle = (index: any) => {
@@ -163,10 +189,6 @@ export default function subCommentComponent(SubTextItemsArray: any) {
         } else {
             setPostBtnStatus(true)
         }
-        // const copy = [...subCommentsData];
-        // const obj = { ...subCommentsData[Index], Comments: dataPost };
-        // copy[Index] = obj;
-        // setSubCommentsData(copy);
         UpdatedFeedBackChildArray[Index].Comments = dataPost;
         callBack(UpdatedFeedBackChildArray, currentArrayIndex);
     }, [])
@@ -178,10 +200,26 @@ export default function subCommentComponent(SubTextItemsArray: any) {
             ApprovalDate: Moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
             isShowLight: value
         }
-        // currentUserData.isShowLight = value;
         UpdatedFeedBackChildArray[index].isShowLight = value;
         UpdatedFeedBackChildArray[index].ApproverData.push(temObject);
         let tempApproverData: any = UpdatedFeedBackChildArray[index].ApproverData
+        UpdatedFeedBackChildArray?.forEach((ele: any) => {
+            if (ele.ApproverData != undefined && ele.ApproverData.length > 0) {
+                ele.ApproverData?.forEach((ba: any) => {
+                    if (ba.isShowLight == 'Reject') {
+                        ba.Status = 'Rejected by'
+                    }
+                    if (ba.isShowLight == 'Approve') {
+                        ba.Status = 'Approved by '
+                    }
+                    if (ba.isShowLight == 'Maybe') {
+                        ba.Status = 'For discussion with'
+                    }
+
+
+                })
+            }
+        })
         callBack(UpdatedFeedBackChildArray, currentArrayIndex);
         const copy = [...subCommentsData];
         const obj = { ...subCommentsData[index], isShowLight: value, ApproverData: tempApproverData };
@@ -199,10 +237,6 @@ export default function subCommentComponent(SubTextItemsArray: any) {
 
     // ********************* this is for the Approval Point History Popup ************************
 
-    // const ApprovalPointPopupClose = () => {
-    //     setApprovalPointHistoryStatus(false)
-    // }
-
     const ApprovalPopupOpenHandle = (index: any, data: any) => {
         setApprovalPointCurrentIndex(index);
         setApprovalPointHistoryStatus(true);
@@ -212,6 +246,17 @@ export default function subCommentComponent(SubTextItemsArray: any) {
     const ApprovalHistoryPopupCallBack = useCallback(() => {
         setApprovalPointHistoryStatus(false)
     }, [])
+
+    function handleTextAreaChange(e: any, index: any) {
+        const updatedValue = e.target.value;
+        const updatedSubCommentsData = subCommentsData.map((item, idx) => {
+            if (idx === index) {
+                return {...item, Title: updatedValue};
+            }
+            return item;
+        });
+        setSubCommentsData(updatedSubCommentsData);
+    }
 
     function createSubRows(state: any[]) {
         return (
@@ -227,7 +272,7 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                 >
                                     <div className="Task-panel alignCenter justify-content-between">
                                         <div className="alignCenter">
-                                            <span className="me-1">{`${SubTextItemsArray.index}.${index + 1}`}</span>
+                                            <span className="me-1">{`${SubTextItemsArray.index + 1}.${index + 1}`}</span>
                                             <div className="d-flex">
                                                 {ApprovalStatus ?
                                                     <div>
@@ -248,44 +293,70 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                                     </div>
                                                     : null
                                                 }
-                                                {obj.ApproverData != undefined && obj.ApproverData.length > 0 ?
-                                                    <span className="siteColor hreflink ms-2" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(index, obj)}>
-                                                        Pre-approved by - <span className="ms-1">
-                                                            <a title={obj.ApproverData[obj.ApproverData.length - 1]?.Title}>
-                                                                <img className='imgAuthor' src={obj.ApproverData[obj.ApproverData.length - 1]?.ImageUrl} />
-                                                            </a>
-                                                        </span>
-                                                    </span>
-                                                    : null
-                                                }
+                                               {obj.ApproverData != undefined && obj.ApproverData.length > 0 ?
+                                                <>
+                                                   
+                                                            <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(index, obj)}>
+                                                            {obj.ApproverData[obj?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={obj.ApproverData[obj.ApproverData?.length - 1]?.Title}><span><a href={`${Context.pageContext.web.absoluteUrl}/SitePages/TaskDashboard.aspx?UserId=${obj.ApproverData[obj?.ApproverData?.length - 1]?.Id}&Name=${obj.ApproverData[obj?.ApproverData?.length - 1]?.Title}`} target="_blank" data-interception="off" title={obj?.ApproverData[obj.ApproverData?.length - 1]?.Title}> <img className='imgAuthor' src={obj.ApproverData[obj.ApproverData?.length - 1]?.ImageUrl} /></a></span></a></span>
+                                                      
+                                                </> :
+                                                null
+                                            }
                                             </div>
                                         </div>
                                         <div>
+                                            {index > 0 ? <><span className="mx-1">
+                                                
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={index}
+                                                    name="SeeAbove"
+                                                    checked={obj.SeeAbove}
+                                                />
+                                                <label className="commentSectionLabel ms-1">See Above</label>
+                                            </span>
+                                                <span> | </span> </> : null}
                                             <span className="mx-1">
-                                                <input className="form-check-input m-0 rounded-0 commentSectionLabel " type="checkbox"
+                                               
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={index}
+                                                    name="Phone"
                                                     checked={obj.Phone}
-                                                    value={obj.Phone}
-                                                    name='Phone'
                                                 />
                                                 <label className="commentSectionLabel ms-1">Phone</label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1" >
-                                                <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input m-0 rounded-0 commentSectionLabel "
+                                               
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={index}
+                                                    name="LowImportance"
+                                                    checked={obj.LowImportance}
                                                 />
                                                 <label className="commentSectionLabel ms-1">Low Importance</label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='HighImportance' checked={obj.HighImportance}
-                                                    value={obj.HighImportance} className="form-check-input m-0 rounded-0 commentSectionLabel "
+                                               
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={index}
+                                                    name="HighImportance"
+                                                    checked={obj.HighImportance}
                                                 />
                                                 <label className="commentSectionLabel ms-1">High Importance </label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" id="" className="form-check-input m-0 rounded-0 commentSectionLabel "
-                                                    name='Completed' checked={obj.Completed} value={obj.Completed} />
+                                               
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={index}
+                                                    name="Completed"
+                                                    checked={obj.Completed}
+                                                />
                                                 <label className="commentSectionLabel ms-1">Mark As Completed</label>
                                             </span>
                                             <span> | </span>
@@ -306,10 +377,12 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                     </div>
                                     <div>
                                         <div className="d-flex" title={obj.isShowLight}>
+                                           
                                             <textarea
                                                 style={{ width: "100%" }}
                                                 className={`form-control SubTestLeftBorder`}
-                                                defaultValue={obj?.Title?.replace(/<[^>]*>/g, ' ')}
+                                                value={obj.Title || ''}
+                                                onChange={(e) => handleTextAreaChange(e, index)}
                                                 name='Title'
                                             ></textarea>
                                         </div>
@@ -327,6 +400,7 @@ export default function subCommentComponent(SubTextItemsArray: any) {
                                             CancelCallback={postBtnHandleCallBackCancel}
                                             Context={Context}
                                             ApprovalStatus={ApprovalStatus}
+                                            SmartLightStatus={obj?.isShowLight}
                                             isCurrentUserApprover={isCurrentUserApprover}
                                         />
                                     </div>

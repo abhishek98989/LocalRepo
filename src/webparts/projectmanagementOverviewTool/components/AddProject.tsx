@@ -4,23 +4,49 @@ import { Web } from "sp-pnp-js";
 import * as Moment from 'moment';
 import ComponentPortPolioPopup from '../../EditPopupFiles/ComponentPortfolioSelection';
 import Button from 'react-bootstrap/Button';
-import LinkedComponent from '../../../globalComponents/EditTaskPopup/LinkedComponent';
 import PortfolioTagging from './PortfolioTagging';
 import ServiceComponentPortfolioPopup from '../../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup';
+import * as globalCommon from "../../../globalComponents/globalCommon";
 let portfolioType = '';
 let AllListId: any = {};
+let AllFlatProject: any = [];
+let selectedProject: any = {};
 const AddProject = (props: any) => {
     const [title, settitle] = React.useState('')
     const [lgShow, setLgShow] = useState(false);
     const [IsComponent, setIsComponent] = React.useState(false);
-    const [ShareWebComponent, setShareWebComponent] = React.useState('');
+    const [CMSToolComponent, setCMSToolComponent] = React.useState('');
     const [linkedComponentData, setLinkedComponentData] = React.useState([]);
+    const [selectedItem, setSetSelectedItem]: any = React.useState(undefined);
     const [IsPortfolio, setIsPortfolio] = React.useState(false);
     const [save, setSave] = React.useState({ siteType: '', linkedServices: [], recentClick: undefined, Mileage: '', DueDate: undefined, dueDate: '', taskCategory: '', taskCategoryParent: '', rank: undefined, Time: '', taskName: '', taskUrl: undefined, portfolioType: 'Component', Component: [] })
     const [smartComponentData, setSmartComponentData] = React.useState([]);
+    const [projectData, setProjectData] = React.useState([]);
+    const [searchedProjectKey, setSearchedProjectKey] = React.useState("");
     const OpenCreateTaskPopup = () => {
         setLgShow(true)
     }
+    React.useEffect(() => {
+        try {
+            if (props?.items?.length == 1 && props?.items[0]?.original?.Item_x0020_Type == "Project") {
+                setSetSelectedItem(props?.items[0]?.original)
+                selectedProject = props?.items[0]?.original;
+            } else if (props?.items?.Id != undefined && props?.items?.Item_x0020_Type == "Project") {
+                setSetSelectedItem(props?.items)
+                selectedProject = props?.items;
+                props.items = [props?.items];
+            } else if (props?.items?.length == 1 && props?.items[0]?.Item_x0020_Type == "Project") {
+                setSetSelectedItem(props?.items[0])
+                selectedProject = props?.items[0];
+            } else if (props?.items?.length == 1 && props?.items[0][0]?.original?.Item_x0020_Type == "Project") {
+                setSetSelectedItem(props?.items[0][0]?.original)
+                selectedProject = props?.items[0][0]?.original;
+            }
+        } catch (e) {
+
+        }
+        GetMasterData();
+    }, [props?.items?.length])
     const addFunction = async () => {
         if (title?.length > 0) {
             let selectedComponent: any[] = [];
@@ -29,46 +55,195 @@ const AddProject = (props: any) => {
                     selectedComponent.push(smart?.Id);
                 })
             }
-            let selectedService: any[] = [];
-            if (linkedComponentData !== undefined && linkedComponentData.length > 0) {
-                $.each(linkedComponentData, function (index: any, smart: any) {
-                    selectedService.push(smart?.Id);
-                })
-            }
+            let portfolioLevel = 1;
             let web = new Web(props?.AllListId?.siteUrl);
-            await web.lists.getById(props?.AllListId?.MasterTaskListID).items
-                .select("Id,Title,PortfolioLevel,PortfolioStructureID").filter("Item_x0020_Type eq 'Project'")
-                .top(1).orderBy('PortfolioLevel', false)
-                .get().then(async (res: any) => {
-                    let portfolioLevel = 1;
-                    if (res?.length > 0) {
-                        portfolioLevel = res[0].PortfolioLevel + 1
-                    }
-                    await web.lists.getById(props?.AllListId?.MasterTaskListID).items.add({
-                        Title: `${title}`,
-                        Item_x0020_Type: "Project",
-                        PortfolioLevel: portfolioLevel,
-                        ComponentId: { "results": (selectedComponent !== undefined && selectedComponent?.length > 0) ? selectedComponent : [] },
-                        PortfolioStructureID: `P${portfolioLevel}`,
-                        ServicesId: { "results": (selectedService !== undefined && selectedService?.length > 0) ? selectedService : [] },
-                    }).then((res: any) => {
-                        closePopup()
-                        props?.CallBack()
+            if (props?.items?.length == 1 && selectedItem?.Id != undefined) {
+                await web.lists.getById(props?.AllListId?.MasterTaskListID).items
+                    .select("Id,Title,PortfolioLevel,PortfolioStructureID")
+                    .filter(("Item_x0020_Type eq 'Sprint'") && ("Parent/Id eq '" + selectedItem?.Id + "'"))
+                    .orderBy('PortfolioLevel', false)
+                    .get().then(async (res: any) => {
 
+                        if (res?.length > 0) {
+                            portfolioLevel = res?.length + 1
+                        }
+                        let portfolioStructureId = ''
+                        if (portfolioLevel >= 1) {
+                            portfolioStructureId = `${selectedItem?.PortfolioStructureID}-X${portfolioLevel}`
+                        }
+                        await web.lists.getById(props?.AllListId?.MasterTaskListID).items.add({
+                            Title: `${title}`,
+                            Item_x0020_Type: "Sprint",
+                            PortfolioLevel: portfolioLevel,
+                            ParentId: selectedItem?.Id,
+                            PortfoliosId: { "results": (selectedComponent !== undefined && selectedComponent?.length > 0) ? selectedComponent : [] },
+                            PortfolioStructureID: portfolioStructureId,
+                        }).then((res: any) => {
+                            const newProjectId = res.data.Id;
+                            let result: any = res.data;
+                            try {
+                                result.siteUrl = props?.AllListId?.siteUrl;
+                                result["siteType"] = "Master Tasks";
+                                result.AllTeamName = "";
+                                result.portfolioItemsSearch = result?.Item_x0020_Type;
+                                result.TeamLeaderUser = []
+                                result.DisplayDueDate = Moment(result?.DueDate).format("DD/MM/YYYY");
+                                result.DisplayCreateDate = Moment(result?.Created).format("DD/MM/YYYY");
+                                result.DueDate = Moment(result?.DueDate).format('DD/MM/YYYY')
+                                if (result.DueDate == 'Invalid date' || '') {
+                                    result.DueDate = result?.DueDate?.replaceAll("Invalid date", "")
+                                }
+                                if (result.DisplayDueDate == "Invalid date" || "") {
+                                    result.DisplayDueDate = result.DisplayDueDate.replaceAll(
+                                        "Invalid date",
+                                        ""
+                                    );
+                                }
+                                if (result.DisplayCreateDate == "Invalid date" || "") {
+                                    result.DisplayCreateDate = result.DisplayCreateDate.replaceAll(
+                                        "Invalid date",
+                                        ""
+                                    );
+                                }
+                                if (result.PercentComplete != undefined)
+                                    result.PercentComplete = (result.PercentComplete * 100).toFixed(0);
+
+                                if (result.Item_x0020_Type === "Project") {
+                                    result.lableColor = "w-bg";
+                                    result.ItemCat = "Project"
+                                }
+                                if (result.Item_x0020_Type === "Sprint") {
+                                    result.ItemCat = "Project"
+                                }
+                                if (result?.Item_x0020_Type != undefined) {
+                                    result.SiteIconTitle = result?.Item_x0020_Type?.charAt(0);
+                                }
+
+                                result.descriptionsSearch = '';
+
+                                result.Id = result.Id != undefined ? result.Id : result.ID;
+                                result["TaskID"] = result?.PortfolioStructureID;
+
+                                if (result?.ClientCategory?.length > 0) {
+                                    result.ClientCategorySearch = result?.ClientCategory?.map(
+                                        (elem: any) => elem.Title
+                                    ).join(" ");
+                                } else {
+                                    result.ClientCategorySearch = "";
+                                }
+                            } catch (e) {
+                                console.log(e, 'Error Creating Data after Post')
+                            }
+
+                            if (props?.PageName == "ProjectOverview") {
+                                window.open(`${props?.AllListId?.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${newProjectId}`, "_blank");
+                                props?.CallBack(result, "Save")
+                            } else {
+                                props?.CallBack(result, "Save")
+                            }
+                            closePopup()
+                        })
                     })
+            } else {
+                await web.lists.getById(props?.AllListId?.MasterTaskListID).items
+                    .select("Id,Title,PortfolioLevel,PortfolioStructureID").filter("Item_x0020_Type eq 'Project'")
+                    .top(1).orderBy('PortfolioLevel', false)
+                    .get().then(async (res: any) => {
 
-                })
+                        if (res?.length > 0) {
+                            portfolioLevel = res[0].PortfolioLevel + 1
+                        }
+                        let portfolioStructureId = ''
+                        if (portfolioLevel >= 1 && portfolioLevel < 10) {
+                            portfolioStructureId = `P00${portfolioLevel}`
+                        } else if (portfolioLevel >= 10 && portfolioLevel < 100) {
+                            portfolioStructureId = `P0${portfolioLevel}`
+                        } else if (portfolioLevel >= 100) {
+                            portfolioStructureId = `P${portfolioLevel}`
+                        }
+
+                        await web.lists.getById(props?.AllListId?.MasterTaskListID).items.add({
+                            Title: `${title}`,
+                            Item_x0020_Type: "Project",
+                            PortfolioLevel: portfolioLevel,
+                            PortfoliosId: { "results": (selectedComponent !== undefined && selectedComponent?.length > 0) ? selectedComponent : [] },
+                            PortfolioStructureID: portfolioStructureId,
+                        }).then((res: any) => {
+                            const newProjectId = res.data.Id;
+                            closePopup()
+                            props?.CallBack(res.data, "Save")
+                            window.open(`${props?.AllListId?.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${newProjectId}`, "_blank");
+                        })
+                    })
+            }
 
         } else {
             alert("Please Enter Project Title")
         }
 
     }
+    const createItem = async (portfolioStructureId: any, selectedComponent: any, ItemType: any, portfolioLevel: any) => {
+        let web = new Web(props?.AllListId?.siteUrl);
+        await web.lists.getById(props?.AllListId?.MasterTaskListID).items.add({
+            Title: `${title}`,
+            Item_x0020_Type: ItemType,
+            PortfolioLevel: portfolioLevel,
+            PortfoliosId: { "results": (selectedComponent !== undefined && selectedComponent?.length > 0) ? selectedComponent : [] },
+            PortfolioStructureID: portfolioStructureId,
+        }).then((res: any) => {
+            closePopup()
+            props?.CallBack()
+
+        })
+    }
+    const GetMasterData = async () => {
+        let PropsObject: any = {
+            MasterTaskListID: props?.AllListId.MasterTaskListID,
+            siteUrl: props?.AllListId.siteUrl,
+            TaskUserListId: props?.AllListId.TaskUsertListID,
+        }
+        let results = await globalCommon.GetServiceAndComponentAllData(PropsObject)
+        if (results?.AllData?.length > 0) {
+            AllFlatProject = results?.FlatProjectData
+        }
+
+    }
+    const autoSuggestionsForProject = (e: any) => {
+        let SearchedKeyWord: any = e.target.value;
+        let TempArray: any = [];
+        if (SearchedKeyWord.length > 0) {
+            if (AllFlatProject != undefined && AllFlatProject?.length > 0) {
+                AllFlatProject.map((AllDataItem: any) => {
+                    if (AllDataItem?.Title?.toLowerCase()?.includes(SearchedKeyWord.toLowerCase())) {
+                        TempArray.push(AllDataItem);
+                    }
+                });
+            }
+            if (TempArray != undefined && TempArray.length > 0) {
+                setProjectData(TempArray);
+                setSearchedProjectKey(SearchedKeyWord);
+            }
+            else {
+                setProjectData([]);
+            }
+
+        } else {
+            setProjectData([]);
+            // setSearchedServiceCompnentKey("");
+        }
+        // let updatedInputData: any = [...backupInputData];
+        // updatedInputData[index].SearchedComps = [...TempArray];
+        // updatedInputData[index].searchText = SearchedKeyWord;
+        // setInputData(updatedInputData);
+    };
+
     const closePopup = () => {
         settitle('')
         setLinkedComponentData([])
         setSmartComponentData([])
+        setProjectData([])
         setLgShow(false)
+        props?.CallBack(undefined, "Save")
 
     }
     const ComponentServicePopupCallBack = React.useCallback((DataItem: any, Type: any, functionType: any) => {
@@ -76,38 +251,13 @@ const AddProject = (props: any) => {
             setIsComponent(false);
             setIsPortfolio(false);
         } else {
-            if (Type === "Service") {
-                if (DataItem?.length > 0) {
-                    setLinkedComponentData(DataItem);
-                }
-            }
-            if (Type === "Component") {
-                if (DataItem?.length > 0) {
-                    setSmartComponentData(DataItem);
-                }
+            if (DataItem?.length > 0) {
+                setSmartComponentData(DataItem);
             }
             setIsPortfolio(false);
         }
     }, [])
-    const Call = (propsItems: any, type: any) => {
-        setIsPortfolio(false);
-        if (type === "Service") {
-            if (propsItems?.smartService?.length > 0) {
-                setLinkedComponentData(propsItems.smartService);
-            }
-        }
-        if (type === "Component") {
-            if (propsItems?.smartComponent?.length > 0) {
-                setSmartComponentData(propsItems.smartComponent);
-            }
-        }
 
-    };
-    const unTagService = (array: any, index: any) => {
-        array.splice(index, 1);
-        setLinkedComponentData(array)
-        setIsComponent(!IsComponent);
-    }
     const unTagComponent = (array: any, index: any) => {
         array.splice(index, 1);
         setSmartComponentData(array)
@@ -121,50 +271,42 @@ const AddProject = (props: any) => {
                     item.smartComponent.push({ Title: com?.Title, Id: com?.Id });
                 });
             }
-        } else if (type == "Service") {
-            item.smartComponent = [];
-            if (item.smartComponent != undefined) {
-                linkedComponentData?.map((com: any) => {
-                    item.smartComponent.push({ Title: com?.Title, Id: com?.Id });
-                });
-            }
         }
 
         portfolioType = type;
         setIsPortfolio(true);
-        setShareWebComponent(item);
+        setCMSToolComponent(item);
     };
-    const EditPortfolio1 = (item: any, type: any) => {
-        if (type == 'Component') {
-            item.smartComponent = [];
-            if (item.smartComponent != undefined) {
-                smartComponentData?.map((com: any) => {
-                    item.smartComponent.push({ 'Title': com?.Title, 'Id': com?.Id });
-                })
-            }
-
-        } else if (type == 'Service') {
-            item.smartService = [];
-            if (item.smartService != undefined) {
-                linkedComponentData?.map((com: any) => {
-                    item.smartService.push({ 'Title': com?.Title, 'Id': com?.Id });
-                })
-            }
-
-        }
-        portfolioType = type
-        setIsPortfolio(true);
-        setShareWebComponent(item);
-    }
+    const onRenderCustomHeader = (
+    ) => {
+        return (
+            <div className=" full-width pb-1" >
+                {props?.items != undefined && props?.items?.length == 1 &&
+                    <div>
+                        <ul className="spfxbreadcrumb mb-2 ms-2 p-0">
+                            <li><a data-interception="off" target="_blank" href={`${props?.AllListId?.siteUrl}/SitePages/PX-Overview.aspx`}>PX Management Overview</a></li>
+                            <li>
+                                {" "}
+                                <a target='_blank' data-interception="off" href={`${props?.AllListId?.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${selectedProject?.Id}`}>{selectedProject?.Title}</a>{" "}
+                            </li>
+                        </ul>
+                    </div>
+                }
+                <div className="subheading">
+                    <span className="siteColor">
+                        {props?.items?.length == 1 ? 'Create Sprint' : 'Create Project'}
+                    </span>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <>
-            <button type="button" className='btn btn-primary mb-2' onClick={() => OpenCreateTaskPopup()}>Create Project</button>
-
             <Panel
-                headerText={`Create Project`}
+                onRenderHeader={onRenderCustomHeader}
                 type={PanelType.medium}
-                isOpen={lgShow}
+                isOpen={true}
                 onDismiss={() => closePopup()}
                 isBlocking={false}>
 
@@ -172,7 +314,24 @@ const AddProject = (props: any) => {
                     <span >
                         <div>
                             <span>
-                                <input type='text' className='form-control' placeholder='Enter Project Name' value={title} onChange={(e) => { settitle(e.target.value) }} />
+                                <input type='text' className='form-control' placeholder='Enter Title' value={title} onChange={(e) => { settitle(e.target.value); autoSuggestionsForProject(e) }} />
+                                {projectData?.length > 0 ? (
+                                    <div>
+                                        <ul className="list-group">
+                                            {projectData?.map((Item: any) => {
+                                                return (
+                                                    <li
+                                                        className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                        key={Item.id}
+                                                        onClick={() => window.open(`${Item?.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${Item?.Id}`, '_blank')}
+                                                    >
+                                                        <a>{Item.Title}</a>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+                                ) : null}
                             </span>
                         </div>
                     </span>
@@ -180,14 +339,12 @@ const AddProject = (props: any) => {
                         <div className="col-sm-12 input-group full-width">
                             <div className="input-group full-width">
                                 <label className="form-label full-width">
-                                    Component Portfolio
+                                    Portfolios
                                 </label>
                                 <input type="text"
                                     readOnly className="form-control" />
                                 <span className="input-group-text">
-                                    <svg onClick={(e) => EditPortfolio(save, 'Component')} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M33.5163 8.21948C33.058 8.34241 32.4072 8.6071 32.0702 8.80767C31.7334 9.00808 26.7046 13.9214 20.8952 19.7259L10.3328 30.2796L9.12891 35.1C8.46677 37.7511 7.95988 39.9549 8.0025 39.9975C8.04497 40.0399 10.2575 39.5397 12.919 38.8857L17.7581 37.6967L28.08 27.4328C33.7569 21.7875 38.6276 16.861 38.9036 16.4849C40.072 14.8925 40.3332 12.7695 39.5586 11.1613C38.8124 9.61207 37.6316 8.62457 36.0303 8.21052C34.9371 7.92775 34.5992 7.92896 33.5163 8.21948ZM35.7021 10.1369C36.5226 10.3802 37.6953 11.5403 37.9134 12.3245C38.2719 13.6133 38.0201 14.521 36.9929 15.6428C36.569 16.1059 36.1442 16.4849 36.0489 16.4849C35.8228 16.4849 31.5338 12.2111 31.5338 11.9858C31.5338 11.706 32.8689 10.5601 33.5598 10.2469C34.3066 9.90852 34.8392 9.88117 35.7021 10.1369ZM32.3317 15.8379L34.5795 18.0779L26.1004 26.543L17.6213 35.008L17.1757 34.0815C16.5838 32.8503 15.1532 31.437 13.9056 30.8508L12.9503 30.4019L21.3663 21.9999C25.9951 17.3788 29.8501 13.5979 29.9332 13.5979C30.0162 13.5979 31.0956 14.6059 32.3317 15.8379ZM12.9633 32.6026C13.8443 32.9996 14.8681 33.9926 15.3354 34.9033C15.9683 36.1368 16.0094 36.0999 13.2656 36.7607C11.9248 37.0836 10.786 37.3059 10.7347 37.2547C10.6535 37.1739 11.6822 32.7077 11.8524 32.4013C11.9525 32.221 12.227 32.2709 12.9633 32.6026Z" fill="#333333" />
-                                    </svg>
+                                    <span onClick={(e) => EditPortfolio(save, 'Component')} title="Edit Portfolios" className="svg__iconbox svg__icon--editBox"></span>
                                 </span>
                             </div>
                             {smartComponentData?.length > 0 ?
@@ -196,8 +353,8 @@ const AddProject = (props: any) => {
                                         smartComponentData?.map((com: any, index: any) => {
                                             return (
                                                 <>
-                                                    <span className="Component-container-edit-task block d-flex justify-content-between" >
-                                                        <a style={{ color: "#fff !important" }} target="_blank" href={`${props?.AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
+                                                    <span style={{ backgroundColor: com?.PortfolioType?.Color }} className="Component-container-edit-task mt-1 d-flex justify-content-between" >
+                                                        <a className='light' target="_blank" href={`${props?.AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>{com.Title}</a>
                                                         <a>
                                                             <span style={{ marginLeft: "6px" }} onClick={() => unTagComponent(smartComponentData, index)} className="bg-light svg__icon--cross svg__iconbox"></span>
                                                         </a>
@@ -212,41 +369,6 @@ const AddProject = (props: any) => {
                         </div>
 
 
-                        <div className="col-sm-12 full-width input-group">
-                            <div className="input-group full-width">
-                                <label className="form-label full-width">
-                                    Service Portfolio
-                                </label>
-                                <input type="text" readOnly
-                                    className="form-control" />
-                                <span className="input-group-text">
-                                    <svg onClick={(e) => EditPortfolio(save, 'Service')} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-
-                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M33.5163 8.21948C33.058 8.34241 32.4072 8.6071 32.0702 8.80767C31.7334 9.00808 26.7046 13.9214 20.8952 19.7259L10.3328 30.2796L9.12891 35.1C8.46677 37.7511 7.95988 39.9549 8.0025 39.9975C8.04497 40.0399 10.2575 39.5397 12.919 38.8857L17.7581 37.6967L28.08 27.4328C33.7569 21.7875 38.6276 16.861 38.9036 16.4849C40.072 14.8925 40.3332 12.7695 39.5586 11.1613C38.8124 9.61207 37.6316 8.62457 36.0303 8.21052C34.9371 7.92775 34.5992 7.92896 33.5163 8.21948ZM35.7021 10.1369C36.5226 10.3802 37.6953 11.5403 37.9134 12.3245C38.2719 13.6133 38.0201 14.521 36.9929 15.6428C36.569 16.1059 36.1442 16.4849 36.0489 16.4849C35.8228 16.4849 31.5338 12.2111 31.5338 11.9858C31.5338 11.706 32.8689 10.5601 33.5598 10.2469C34.3066 9.90852 34.8392 9.88117 35.7021 10.1369ZM32.3317 15.8379L34.5795 18.0779L26.1004 26.543L17.6213 35.008L17.1757 34.0815C16.5838 32.8503 15.1532 31.437 13.9056 30.8508L12.9503 30.4019L21.3663 21.9999C25.9951 17.3788 29.8501 13.5979 29.9332 13.5979C30.0162 13.5979 31.0956 14.6059 32.3317 15.8379ZM12.9633 32.6026C13.8443 32.9996 14.8681 33.9926 15.3354 34.9033C15.9683 36.1368 16.0094 36.0999 13.2656 36.7607C11.9248 37.0836 10.786 37.3059 10.7347 37.2547C10.6535 37.1739 11.6822 32.7077 11.8524 32.4013C11.9525 32.221 12.227 32.2709 12.9633 32.6026Z" fill="#333333" />
-                                    </svg>
-                                </span>
-                            </div>
-                            {
-                                linkedComponentData?.length > 0 ?
-                                    <div className="full-width serviepannelgreena">
-                                        {linkedComponentData?.map((com: any, index: any) => {
-                                            return (
-                                                <>
-                                                    <span className="Component-container-edit-task block d-flex justify-content-between " >
-
-                                                        <a className="hreflink " target="_blank" href={`${props?.AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}>
-                                                            {com.Title}
-                                                        </a>
-                                                        <span style={{ marginLeft: "6px" }} onClick={() => unTagService(linkedComponentData, index)} className="bg-light svg__icon--cross svg__iconbox"></span>
-
-                                                    </span>
-                                                </>
-                                            )
-                                        })}
-                                    </div> : ""
-                            }
-
-                        </div>
                     </div>
                 </div>
                 <footer className='text-end'>
@@ -257,14 +379,14 @@ const AddProject = (props: any) => {
             </Panel>
             {IsPortfolio && (
                 <ServiceComponentPortfolioPopup
-                    props={ShareWebComponent}
+                    props={CMSToolComponent}
                     Dynamic={props?.AllListId}
                     ComponentType={portfolioType}
                     Call={ComponentServicePopupCallBack}
                     selectionType={"Multi"}
                 ></ServiceComponentPortfolioPopup>
             )}
-            {/* {IsPortfolio && <PortfolioTagging props={ShareWebComponent} AllListId={props?.AllListId} type={portfolioType} Call={Call}></PortfolioTagging>} */}
+            {/* {IsPortfolio && <PortfolioTagging props={CMSToolComponent} AllListId={props?.AllListId} type={portfolioType} Call={Call}></PortfolioTagging>} */}
         </>
     )
 }

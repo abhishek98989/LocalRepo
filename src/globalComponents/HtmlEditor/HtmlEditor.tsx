@@ -45,6 +45,13 @@ export interface IHtmlEditorProps {
                       wrapperClassName="wrapperClassName"
                       editorClassName="editorClassName"
                       wrapperStyle={{ width: '100%', border: "1px solid #ccc"}}
+                      toolbar={{
+                        link: 
+                        {
+                          defaultTargetOption: '_blank',
+                        },
+                        remove:{title:"Remove Formatting"}
+                      }}
                   />
                 );
         }

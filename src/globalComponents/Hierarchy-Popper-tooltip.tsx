@@ -2,15 +2,19 @@ import * as React from "react";
 import { usePopperTooltip } from "react-popper-tooltip";
 import "react-popper-tooltip/dist/styles.css";
 import { ColumnDef, } from "@tanstack/react-table";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { FaChevronDown, FaChevronRight, FaPlus } from "react-icons/fa";
 import GlobalCommanTable from "./GroupByReactTableComponents/GlobalCommanTable";
+import CreateActivity from "./CreateActivity";
+import CreateWS from "./CreateWS";
+
+let checkedData = ''
 export const getTooltiphierarchy = (row: any) => {
     let rowOrg = { ...row.original };
     rowOrg.subRows = [];
     while (true) {
         // if (row?.parentRow) {
         if (row?.getParentRow()) {
-            // const temp = { ...row.parentRow.original };
+        // const temp = { ...row.parentRow.original };
             const temp = { ...row.getParentRow().original };
             temp.subRows = [rowOrg];
             rowOrg = temp;
@@ -24,8 +28,10 @@ export const getTooltiphierarchy = (row: any) => {
 };
 let scrollToolitem: any = false
 let pageName: any = 'hierarchyPopperToolTip'
-export default function ReactPopperTooltip({ ShareWebId, row }: any) {
+export default function ReactPopperTooltip({ CMSToolId, row, projectToolShow, AllListId }: any) {
     const [controlledVisible, setControlledVisible] = React.useState(false);
+    const [openActivity, setOpenActivity] = React.useState(false);
+    const [openWS, setOpenWS] = React.useState(false);
     const [action, setAction] = React.useState("");
 
     const {
@@ -68,42 +74,57 @@ export default function ReactPopperTooltip({ ShareWebId, row }: any) {
         return [];
     }, [action]);
 
+    const openActivityPopup = (row: any) => {
+        if (row.TaskType == undefined) {
+            setOpenActivity(true)
+            row['NoteCall'] = 'Task'
+            row['PageType'] = 'ProjectManagement'
+            checkedData = row;
+        }
+        if (row?.TaskType?.Title == 'Activities') {
+            setOpenWS(true)
+            row['NoteCall'] = 'Task'
+            row['PageType'] = 'ProjectManagement'
+            checkedData = row;
+        }
+        if (row?.TaskType?.Title == 'Workstream') {
+            setOpenActivity(true)
+            row['NoteCall'] = 'Task'
+            row['PageType'] = 'ProjectManagement'
+            checkedData = row;
+        }
+
+    }
+    const Call = (childItem: any) => {
+        setOpenActivity(false)
+        setOpenWS(false)
+
+    }
     const columns = React.useMemo<ColumnDef<any, unknown>[]>(
         () => [
             {
                 accessorKey: "",
-                size: 7,
+                placeholder: "",
+                hasCustomExpanded: true,
+                hasExpanded: true,
+                isHeaderNotAvlable: true,
+                size: 30,
+                id: 'Id',
+            },
+            {
+                accessorKey: "",
+                size: 140,
                 canSort: false,
                 placeholder: "",
-                id: 'Shareweb_x0020_ID',
+                id: '',
                 cell: ({ row, getValue }) => (
-                    <div
-                        style={row.getCanExpand() ? {
-                            paddingLeft: `${row.depth * 5}px`,
-                        } : {
-                            paddingLeft: "18px",
-                        }}
-                    >
-                        <>
-                            {row.getCanExpand() ? (
-                                <span className=' border-0'
-                                    {...{
-                                        onClick: row.getToggleExpandedHandler(),
-                                        style: { cursor: "pointer" },
-                                    }}
-                                >
-                                    {row.getIsExpanded() ? <FaChevronDown /> : <FaChevronRight />}
-                                </span>
-                            ) : (
-                                ""
-                            )}{" "}
-
-                            <> {row?.original?.SiteIcon != undefined ?
-                                <a className="hreflink" title="Show All Child" data-toggle="modal">
-                                    <img className="icon-sites-img ml20 me-1" src={row?.original?.SiteIcon}></img>
-                                </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons'>{row?.original?.SiteIconTitle}</div> : ""}</>}
-                                <span>{row?.original?.Shareweb_x0020_ID}</span>
-                            </>
+                    <div>
+                        <><> {row?.original?.SiteIcon != undefined ?
+                            <a className="hreflink" title="Show All Child" data-toggle="modal">
+                                <img className="icon-sites-img ml20 me-1" src={row?.original?.SiteIcon}></img>
+                            </a> : <>{row?.original?.Title != "Others" ? <div className='Dyicons'>{row?.original?.SiteIconTitle}</div> : ""}</>}
+                            <span className="mx-1">{row?.original?.TaskID}</span>
+                        </>
                             {getValue()}
                         </>
                     </div>
@@ -119,8 +140,22 @@ export default function ReactPopperTooltip({ ShareWebId, row }: any) {
                 canSort: false,
                 placeholder: "",
                 header: "",
-                size: 15,
-            }
+            },
+            {
+                accessorKey: "",
+                size: 27,
+                canSort: false,
+                header: "",
+                placeholder: "",
+                id: 'plushIcon',
+                cell: ({ row }) => (
+                    <div>
+                        <>
+                            <span onClick={() => openActivityPopup(row.original)}><FaPlus style={{ fontSize: '10px' }} /></span>
+                        </>
+                    </div>
+                ),
+            },
         ],
         [tooltiphierarchy]
     );
@@ -134,16 +169,36 @@ export default function ReactPopperTooltip({ ShareWebId, row }: any) {
     const callBackData = React.useCallback((elem: any, ShowingData: any) => {
 
     }, []);
+    //*************************** find all Hyrarchy TitleShow  ****************************/
+
+    React.useEffect(() => {
+        let toolTitles:any = '';
+        if (row.getParentRows() != undefined) {
+            if (Array.isArray(row.getParentRows())) {
+                toolTitles = row?.getParentRows()?.map((elem:any) => elem.original.Title).join(' > ');
+            }
+            row.original.toolTitle = toolTitles != "" ?  toolTitles+ ' > ' +row.original.Title : row?.original?.Title;
+        }
+    }, [row]);
+
+    //*************************** find all Hyrarchy TitleShow End  ****************************/
     return (
         <>
-            <span
+            {projectToolShow != true ? <span
                 ref={setTriggerRef}
                 onClick={() => handlAction("click")}
                 onMouseEnter={() => handlAction("hover")}
                 onMouseLeave={() => handleMouseLeave()}
             >
-                {ShareWebId}
-            </span>
+                {CMSToolId}
+            </span> :
+                <span
+                    ref={setTriggerRef}
+                    onMouseEnter={() => handlAction("hover")}
+                    onMouseLeave={() => handleMouseLeave()}
+                >
+                    {CMSToolId}
+                </span>}
 
             {action === "click" && visible && (
                 <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container p-0 m-0" })}>
@@ -153,25 +208,48 @@ export default function ReactPopperTooltip({ ShareWebId, row }: any) {
                     </div>
 
                     <div className={scrollToolitem === true ? "tool-Wrapper scroll-toolitem" : "tool-Wrapper"}  >
-                        <GlobalCommanTable columns={columns} data={tooltiphierarchy} callBackDataToolTip={callBackDataToolTip} callBackData={callBackData} pageName={pageName} />
+                        <GlobalCommanTable columns={columns} data={tooltiphierarchy} callBackDataToolTip={callBackDataToolTip} callBackData={callBackData} pageName={pageName} expendedTrue={true} />
                     </div>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
                 </div>
             )}
-            {action === "hover" && visible && (
+            {action === "hover" && visible && projectToolShow != true && row?.original?.toolTitle != undefined && row?.original?.TaskID != undefined && (
                 <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container" })}>
-                    {/* <span>
-                   {row.original.Item_x0020_Type == "Component" || row.original.Item_x0020_Type == "SubComponent" || row.original.Item_x0020_Type == "Feature"  ? <span>{row.original.PortfolioStructureID}</span>: 
-                   row.original.SharewebTaskType?.Title == "Activities" ? <span>{row.original.ShowTooltipSharewebId}</span> : 
-                   row.original.SharewebTaskType?.Title == "Workstream" ? <span>{row?.parentRow?.original?.ShowTooltipSharewebId + '-' + row.original.Shareweb_x0020_ID.slice(-2)}</span>: ''} :- {row.original.toolTitle}
-                   </span> */}
                     <span>
                         <span>
-                            <a>{row.original.toolSharewebId} : </a></span><span><a>{row.original.toolTitle}</a>
+                            <a>{row?.original?.TaskID} : </a></span><span><a>{row?.original?.toolTitle}</a>
                         </span>
                     </span>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
                 </div>
+            )}
+
+            {action === "hover" && visible && projectToolShow === true && (
+                <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container" })}>
+                    <span>
+                        {row?.original?.joinedData.map((line: any, index: any) => (
+                            <span key={index}>
+                                {line}
+                                <br />
+                            </span>
+                        ))}
+                    </span>
+                    <div {...getArrowProps({ className: "tooltip-arrow" })} />
+                </div>
+            )}
+            {openActivity && (
+                <CreateActivity
+                    props={checkedData}
+                    Call={Call}
+                    SelectedProp={AllListId}
+                ></CreateActivity>
+            )}
+            {openWS && (
+                <CreateWS
+                    props={checkedData}
+                    Call={Call}
+                    SelectedProp={AllListId}
+                ></CreateWS>
             )}
         </>
     );

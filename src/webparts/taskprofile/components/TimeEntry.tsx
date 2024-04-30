@@ -10,14 +10,11 @@ function TimeEntry(props: any) {
     props.CallBackTimesheet();
 
   };
-  const ComponentCallBack=(dt:any)=>{
-console.log(dt)
-  }
   const onRenderCustomHeaderTimeEntry = () => {
     return (
       <>
 
-        <div className='ps-4' style={{ marginRight: "auto", fontSize: "20px", fontWeight: "600" }}>
+        <div className='subheading siteColor' >
         {`All Time Entry -${props.data.Title}`}
         </div>
         <Tooltip ComponentId='1753' />
@@ -34,15 +31,15 @@ console.log(dt)
         type={PanelType.large}
       >
         <div className="modal-body">
-          <TimeEntryPopup props={props.data} Context={props.context} context={props.context} parentCallback={ComponentCallBack} />
+          <TimeEntryPopup props={props.data} Context={props.context}context={props.context} />
         </div>
         <footer className="mt-3 text-end">
-          <Button variant="primary" onClick={handleClose}>
-            OK
-          </Button>
-          <Button variant="btn btn-default ms-2" onClick={handleClose}>
-            Cancel
-          </Button>
+          <Button className="me-2" variant="primary" onClick={handleClose}>
+              OK
+            </Button>
+          <Button variant="btn btn-default " onClick={handleClose}>
+              Cancel
+            </Button>
         </footer>
       </Panel>
     </>

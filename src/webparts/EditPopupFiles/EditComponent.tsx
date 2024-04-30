@@ -1,83 +1,100 @@
 import * as React from "react";
-// import ImagesC from "./Images";
-import {
-  arraysEqual,
-  Modal,
-  Panel,
-  PanelType,
-  TextField,
-} from "office-ui-fabric-react";
-
-// import * as Moment from 'moment';
+import { Panel, PanelType, DefaultButton } from "office-ui-fabric-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/js/dist/modal.js";
 import "bootstrap/js/dist/tab.js";
 import * as moment from "moment";
 import { Web } from "sp-pnp-js";
-import ComponentPortPolioPopup from "./ComponentPortfolioSelection";
 import CommentCard from "../../globalComponents/Comments/CommentCard";
-import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
-import { Editor } from "react-draft-wysiwyg";
+import * as globalCommon from "../../globalComponents/globalCommon";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import { map } from "lodash";
-import DatePicker from "react-datepicker";
-import { ClickAwayListener } from "@material-ui/core";
 import "react-datepicker/dist/react-datepicker.css";
 import Picker from "../../globalComponents/EditTaskPopup/SmartMetaDataPicker";
-// import LinkedComponent from "../../globalComponents/EditTaskPopup/LinkedComponent";
 import ServiceComponentPortfolioPopup from "../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup";
 import { EditorState } from "draft-js";
 import HtmlEditorCard from "../../globalComponents/HtmlEditor/HtmlEditor";
 import TeamConfigurationCard from "./TeamConfigurationPortfolio";
 import Tooltip from "../../globalComponents/Tooltip";
-import ImagesC from "./Image";
-import { AllOut } from "@material-ui/icons";
 import VersionHistoryPopup from "../../globalComponents/VersionHistroy/VersionHistory";
-import SiteCompositionComponent from "./PortfolioSiteCompsition";
+import CentralizedSiteComposition from "../../globalComponents/SiteCompositionComponents/CentralizedSiteComposition";
+
+import ImagesC from "./ImageInformation";
+import { SlArrowDown, SlArrowRight } from "react-icons/sl";
+import Smartmetadatapickerin from "../../globalComponents/Smartmetadatapickerindependent/SmartmetadatapickerSingleORMulti";
+import { EditableField } from "../componentProfile/components/Portfoliop";
 var PostTechnicalExplanations = "";
+var PostHelp_x0020_Information = "";
+var PostQuestionDescription = "";
 var PostDeliverables = "";
+let PortfolioTypeColor: any = "";
 var PostShort_x0020_Description_x0020_On = "";
 var PostBody = "";
 var AllUsers: any = [];
 var Assin: any = [];
 var AssignedToIds: any = [];
+var GlobalServiceAndComponentData: any = [];
 var ResponsibleTeamIds: any = [];
 var SiteTypeBackupArray: any = [];
 var TeamMemberIds: any = [];
 var Backupdata: any = [];
 var BackupCat: any = "";
-let web: any = '';
+let web: any = "";
 let RequireData: any = {};
 var selectedClientCategoryData: any = [];
 var AllClientCategoryDataBackup: any = [];
+let AutoCompleteItemsArray: any = [];
+var AllClientCategory: any = [];
+let smartmetaDetails: any = [];
+let ShowCategoryDatabackup: any = [];
+let subCategories: any = [];
+let IsapprovalTask = false;
+let CategoryAllData: any = [];
+let mydata: any = [];
+let componentDetailsData: any = [];
+let count = 0;
+let ID: any;
 
-function EditInstitution({ item, SelectD, Calls }: any) {
-  // Id:any
-
-
-
+function EditInstitution({ item, SelectD, Calls, usedFor, portfolioTypeData, }: any) {
+  // var AssignedToIds: any = [];
+  ResponsibleTeamIds = [];
+  AssignedToIds = [];
+  TeamMemberIds = [];
   if (SelectD != undefined && SelectD?.siteUrl != undefined) {
     web = new Web(SelectD?.siteUrl);
-    RequireData = SelectD
+    RequireData = SelectD;
   } else {
     if (item?.siteUrl != undefined) {
       web = new Web(item?.siteUrl);
     }
-
-    RequireData = SelectD.SelectedProp
+    RequireData = SelectD.SelectedProp;
     web = new Web(RequireData?.siteUrl);
   }
+  let categoryitem: any = [];
+  if (item.Categories != undefined) {
+    categoryitem = item.Categories.split(";");
+  }
+  //
+  // smart fetaure data
+  const [Smartdatapopup, setSmartdatapopup] = React.useState(false);
+  const [Smartdata, setSmartdata] = React.useState([]);
   const [CompoenetItem, setComponent] = React.useState([]);
+  const [changeType, setChangeType] = React.useState(false);
+  const [selectPortfolioType, setSelectPortfolioType]: any = React.useState({
+    Title: item?.PortfolioType?.Title,
+  });
+  const [SmartHelpDetails, setSmartHelpDetails] = React.useState<any>([]);
   const [update, setUpdate] = React.useState(0);
   const [isDropItem, setisDropItem] = React.useState(false);
   const [isDropItemRes, setisDropItemRes] = React.useState(false);
   const [EditData, setEditData] = React.useState<any>({});
   const [modalIsOpen, setModalIsOpen] = React.useState(false);
-  const [SharewebItemRank, setSharewebItemRank] = React.useState([]);
+  const [CMSItemRank, setCMSItemRank] = React.useState([]);
   const [isOpenPicker, setIsOpenPicker] = React.useState(false);
   const [IsComponent, setIsComponent] = React.useState(false);
-  const [SharewebComponent, setSharewebComponent] = React.useState("");
-  const [SharewebCategory, setSharewebCategory] = React.useState("");
+  const [isopenProjectpopup, setisopenProjectpopup] = React.useState(false);
+  const [CMSToolComponent, setCMSToolComponent] = React.useState("");
+  const [TaskCat, setTaskCat] = React.useState("");
   const [CollapseExpend, setCollapseExpend] = React.useState(true);
   let [CategoriesData, setCategoriesData] = React.useState([]);
   const TeamConfigInfo = item;
@@ -90,21 +107,128 @@ function EditInstitution({ item, SelectD, Calls }: any) {
   const [TaskAssignedTo, setTaskAssignedTo] = React.useState([]);
   const [TaskTeamMembers, setTaskTeamMembers] = React.useState([]);
   const [TaskResponsibleTeam, setTaskResponsibleTeam] = React.useState([]);
+  const [filterdata, setfilterData] = React.useState([]);
   const [Completiondate, setCompletiondate] = React.useState(undefined);
   const [AssignUser, setAssignUser] = React.useState(undefined);
+  const [allProjectData, SetAllProjectData] = React.useState([]);
+  const [SearchedServiceCompnentData, setSearchedServiceCompnentData] =
+    React.useState<any>([]);
+  const [searchedProjectData, setSearchedProjectData] = React.useState([]);
   const [IsComponentPicker, setIsComponentPicker] = React.useState(false);
   const [IsService, setIsService] = React.useState(false);
   const [editorState, setEditorState] = React.useState(
     EditorState.createEmpty()
   );
-  const [selectedClientCategory, setSelectedClientCategory] = React.useState([]);
+  const [selectedClientCategory, setSelectedClientCategory] = React.useState(
+    []
+  );
   const [ParentData, SetParentData] = React.useState([]);
   const [SiteTypes, setSiteTypes] = React.useState([]);
-  // $('.ms-Dialog-main .main-153').hide();
-  const setModalIsOpenToTrue = (e: any) => {
-    // e.preventDefault()
-    setModalIsOpen(true);
+  const [EnableSiteCompositionValidation, setEnableSiteCompositionValidation] =
+    React.useState(false);
+  const [SiteCompositionSetting, setSiteCompositionSetting] = React.useState(
+    []
+  );
+  const [SiteTaggingData, setSiteTaggingData] = React.useState([]);
+  // For Status
+  const [PhoneStatus, setPhoneStatus] = React.useState(false);
+
+  const [EmailStatus, setEmailStatus] = React.useState(false);
+
+  const [ImmediateStatus, setImmediateStatus] = React.useState(false);
+
+  const [ApprovalStatus, setApprovalStatus] = React.useState(false);
+  const [AllCategoryData, setAllCategoryData] = React.useState([]);
+  const [categorySearchKey, setCategorySearchKey] = React.useState("");
+  const [SearchedCategoryData, setSearchedCategoryData] = React.useState([]);
+  const [imagetab, setImagetab] = React.useState(false);
+  const [instantCategories, setInstantCategories] = React.useState([]);
+  const [openPopup, setOpenPopup] = React.useState(false);
+  const [isOpenPopup, setIsOpenPopup] = React.useState(false);
+  const [editPopup, setEditPopup] = React.useState(false);
+  const [editHelpPopup, setEditHelpPopup] = React.useState(false);
+  const [choice, setChoice] = React.useState("");
+  const [question, setQuestion] = React.useState("");
+  const [help, setHelp] = React.useState("");
+  const [dataUpdate, setDataUpdate] = React.useState<any>();
+  const [helpDataUpdate, setHelpDataUpdate] = React.useState<any>();
+  //    for the verified
+  const [shortDescriptionVerifieds, setShortDescriptionVerifieds] =
+    React.useState(false); // State to manage checkbox status
+  const [descriptionVerifieds, setdescriptionVerifieds] = React.useState(false);
+  const [BackgroundVerifieds, setBackgroundVerifieds] = React.useState(false);
+  const [IdeaVerifieds, setIdeaVerifieds] = React.useState(false);
+  const [ValueAddedVerifieds, setValueAddedVerifieds] = React.useState(false);
+  const [DeliverablesVerifieds, setDeliverablesVerifieds] =
+    React.useState(false);
+  const [TechnicalExplanationsVerifieds, setTechnicalExplanationsVerifieds] =
+    React.useState(false);
+  const [HelpInformationVerifieds, setHelpInformationVerifieds] =
+    React.useState(false);
+
+  const [SiteCompositionShow, setSiteCompositionShow] = React.useState(false);
+  const [composition, setComposition] = React.useState(true);
+  const [FeatureTypeData, setFeatureTypeData] = React.useState([]);
+  const [autoSearchFeatureType, setAutoSearchFeatureType] = React.useState([]);
+  const [percentComplete, setPercentComplete]: any = React.useState();
+  const [searchFeatureType, setSearchFeatureType] = React.useState([]);
+
+  const handleCheckboxChange = () => {
+    setShortDescriptionVerifieds((prevChecked: any) => !prevChecked);
   };
+  const handleCheckboxChangedescription = () => {
+    setdescriptionVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const handleCheckboxBackground = () => {
+    setBackgroundVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const handleCheckboxIdea = () => {
+    setIdeaVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const handleCheckboxValueAdded = () => {
+    setValueAddedVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const handleCheckboxDeliverables = () => {
+    setDeliverablesVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const getPlainTextFromHTML = (htmlString: any) => {
+    const temporaryElement = document.createElement("div");
+    temporaryElement.innerHTML = htmlString;
+    const plainText = temporaryElement.innerText.replace(/\n/g, "");
+    return plainText;
+  };
+  const handleCheckboxTechnicalExplanations = () => {
+    setTechnicalExplanationsVerifieds((prevChecked: any) => !prevChecked);
+  };
+  const handleCheckboxHelpInformation = () => {
+    setHelpInformationVerifieds((prevChecked: any) => !prevChecked);
+  };
+
+  function imageta() {
+    setImagetab(true);
+  }
+  // End of Status
+  const setModalIsOpenToTrue = (e: any) => {
+    setModalIsOpen(true);
+    let targetDiv: any = document?.querySelector(".ms-Panel-main");
+    setTimeout(() => {
+      if (targetDiv && PortfolioTypeColor?.length > 0) {
+        // Change the --SiteBlue variable for elements under the targetDiv
+        targetDiv?.style?.setProperty("--SiteBlue", PortfolioTypeColor); // Change the color to your desired value
+      }
+    }, 1000);
+  };
+  let statusDropDown = [
+    { rankTitle: "Not Started", rank: 0 },
+    { rankTitle: "In Progress", rank: 10 },
+    { rankTitle: "Completed", rank: 100 },
+  ];
+
+  const handleFieldChange = (fieldName: any) => (e: any) => {
+    // const updatedItem = { ...data[0], [fieldName]: e.target.value };
+    // setItem(updatedItem);
+  };
+
   const onEditorStateChange = React.useCallback(
     (rawcontent) => {
       setEditorState(rawcontent.blocks[0].text);
@@ -112,9 +236,172 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     [editorState]
   );
   const setModalIsOpenToFalse = () => {
-    EditComponentCallback();
+    EditComponentCallback("Close");
     setModalIsOpen(false);
   };
+
+  async function updateMultiLookup(
+    itemIds: number[],
+    lookupIds: number[],
+    AllListId: any
+  ) {
+    try {
+      if (itemIds?.length == 0) {
+        getMasterTaskListTasksData();
+      } else {
+        let web = new Web(AllListId?.siteUrl);
+        for (const itemId of itemIds) {
+          // Update the multi-lookup field for each item
+          await web.lists
+            .getById(AllListId?.MasterTaskListID)
+            .items.getById(itemId)
+            .update({
+              PortfoliosId: {
+                results:
+                  lookupIds !== undefined && lookupIds?.length > 0
+                    ? lookupIds
+                    : [],
+              },
+            })
+            .then((res: any) => {
+              getMasterTaskListTasksData();
+              count++;
+              console.log(res);
+            });
+        }
+      }
+    } catch (error) {
+      console.error("Error updating multi-lookup field:", error);
+    }
+  }
+
+  let getMasterTaskListTasksData = async function () {
+    try {
+      let web = new Web(SelectD?.siteUrl);
+
+      componentDetailsData = await web.lists
+        .getById(SelectD.MasterTaskListID)
+        .items.select(
+          "Item_x0020_Type",
+          "Title",
+          "PortfolioStructureID",
+          "Id",
+          "PercentComplete",
+          "Portfolios/Id",
+          "Portfolios/Title"
+        )
+        .expand("Portfolios")
+        .filter("(Item_x0020_Type eq 'Project' or Item_x0020_Type eq 'Sprint') and Portfolios/Id eq " + item.Id)
+        .top(4000)
+        .getAll();
+
+      // Project Data for HHHH Project Management
+
+      setfilterData(componentDetailsData);
+      console.log("data show on componentdetails", componentDetailsData);
+    } catch (error) {
+      console.log("error show", error);
+    }
+  };
+
+  const autoSuggestionsForProject = (e: any) => {
+    let searchedKey: any = e.target.value;
+    let tempArray: any = [];
+    if (searchedKey?.length > 0) {
+      allProjectData?.map((itemData: any) => {
+        if (itemData.Title.toLowerCase().includes(searchedKey.toLowerCase())) {
+          tempArray.push(itemData);
+        }
+      });
+      setSearchedProjectData(tempArray);
+      // callServiceComponent(tempArray,"Multi","Save");
+    } else {
+      setSearchedProjectData([]);
+    }
+  };
+  const autoSuggestionsForFeatureType = (e: any) => {
+    let searchedKey: any = e.target.value;
+    let tempArray: any = [];
+    if (searchedKey?.length > 0) {
+      autoSearchFeatureType?.map((itemData: any) => {
+        if (itemData.Title.toLowerCase().includes(searchedKey.toLowerCase())) {
+          tempArray.push(itemData);
+        }
+      });
+      setSearchFeatureType(tempArray);
+      // callServiceComponent(tempArray,"Multi","Save");
+    } else {
+      setSearchFeatureType([]);
+    }
+  };
+
+  const handleSuggestionProject = (suggestion: any) => {
+    allProjectData?.map((items: any) => {
+      if (items?.Id === suggestion?.Id) {
+        callServiceComponent([items], "Multi", "Save");
+      }
+    });
+    setSearchedProjectData([]);
+  };
+
+  const handleSuggestionFeature = (suggestion: any) => {
+    autoSearchFeatureType?.map((items: any) => {
+      if (items?.Id === suggestion?.Id) {
+        Smartmetadatafeature([items]);
+      }
+    });
+    setSearchFeatureType([]);
+  };
+
+  const GetAllComponentAndServiceData = async () => {
+    let PropsObject: any = {
+      MasterTaskListID: RequireData.MasterTaskListID,
+      siteUrl: RequireData?.siteUrl,
+      ComponentType: "Component",
+      TaskUserListId: RequireData.TaskUsertListID,
+    };
+    let CallBackData = await globalCommon.GetServiceAndComponentAllData(
+      PropsObject
+    );
+
+    if (CallBackData?.AllData != undefined && CallBackData?.AllData?.length > 0) {
+      GlobalServiceAndComponentData = CallBackData.AllData;
+      SetAllProjectData(CallBackData?.FlatProjectData);
+      // AllProjectBackupArray = CallBackData?.FlatProjectData;
+    }
+  };
+
+  const autoSuggestionsForServiceAndComponent = (e: any, usedFor: any) => {
+    let SearchedKeyWord: any = e.target.value;
+    let TempArray: any = [];
+    if (SearchedKeyWord.length > 0) {
+      if (
+        GlobalServiceAndComponentData != undefined &&
+        GlobalServiceAndComponentData.length > 0
+      ) {
+        GlobalServiceAndComponentData.map((AllDataItem: any) => {
+          if (
+            AllDataItem.Path?.toLowerCase()?.includes(
+              SearchedKeyWord.toLowerCase()
+            )
+          ) {
+            TempArray.push(AllDataItem);
+          }
+        });
+      }
+      if (TempArray != undefined && TempArray.length > 0) {
+        if (usedFor == "Portfolio") {
+          setSearchedServiceCompnentData(TempArray);
+        }
+      }
+    } else {
+      setSearchedServiceCompnentData([]);
+    }
+  };
+
+  React.useEffect(() => {
+    GetAllComponentAndServiceData();
+  }, []);
 
   const Call = React.useCallback((item1: any, type: any, functionType: any) => {
     if (type == "SmartComponent") {
@@ -123,9 +410,25 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         setSmartComponentData(item1.smartComponent);
       }
     }
+    if (type == "Category-Task-Footertable") {
+      setPhoneStatus(false);
 
+      setEmailStatus(false);
+
+      setImmediateStatus(false);
+
+      setApprovalStatus(false);
+
+      if (item1 != undefined && item1.length > 0) {
+        item1?.map((itenn: any) => {
+          selectedCategoryTrue(itenn.Title);
+        });
+
+        setCategoriesData(item1);
+      }
+    }
     if (type == "Category") {
-      if (item1 != undefined && item1.Categories != "") {
+      if (item1 != undefined && item1.categories != "") {
         var title: any = {};
         title.Title = item1.categories;
         item1.categories.map((itenn: any) => {
@@ -133,38 +436,39 @@ function EditInstitution({ item, SelectD, Calls }: any) {
             CategoriesData.push(itenn);
           }
         });
-        item1.SharewebCategories.map((itenn: any) => {
+        item1.TaskCategories.map((itenn: any) => {
           CategoriesData.push(itenn);
         });
-
-        //  Backupdata = CategoriesData
         setCategoriesData(CategoriesData);
-        //item.smartCategories = item1.smartCategories;
-        //  item.smartCategories.push(title);
       }
     }
     if (functionType == "Close") {
-      if (type == "Service") {
+      if (type == "Multi") {
         setIsService(false);
       } else {
-        setIsComponent(false)
+        setIsComponent(false);
       }
     } else {
-      if (type == "Component") {
+      if (type == "Multi" && functionType != "Save") {
         if (item1 != undefined && item1.length > 0) {
-          // item.linkedComponent = item1.linkedComponent;
-          // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
-          setLinkedComponentData(item1);
+          setfilterData(item1);
           console.log("Popup component linkedComponent", item1.linkedComponent);
         }
       }
-
-      if (type == "Service") {
+      if (type == "Single" && functionType == "Save") {
         if (item1 != undefined && item1.length > 0) {
-          // item.linkedComponent = item1.linkedComponent;
-          // setEditData({ ...EditData, RelevantPortfolio: propsItems.linkedComponent })
-          setLinkedComponentData(item1);
-          console.log("Popup component linkedComponent", item1.linkedComponent);
+          if (item1[0]?.length != undefined && item1[0]?.length > 1) {
+            setLinkedComponentData(item1[0].map((item: any) => item.original));
+          } else {
+            setLinkedComponentData(item1);
+          }
+
+          setSearchedServiceCompnentData([]);
+        } else {
+          if (item1 != undefined) {
+            setLinkedComponentData([item1]);
+            setSearchedServiceCompnentData([]);
+          }
         }
       }
     }
@@ -183,6 +487,7 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     setIsComponent(false);
     // setComponent(CompoenetItem => ([...CompoenetItem]));
   }, []);
+
   var isItemExists = function (arr: any, Id: any) {
     var isExists = false;
     $.each(arr, function (index: any, items: any) {
@@ -193,10 +498,24 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     });
     return isExists;
   };
-  const GetTaskUsers = async () => {
 
+  const GetSmartHelpDetails = async () => {
+    let smartHelpDetails = await web.lists
+      .getById(RequireData.SmartHelpListID)
+      .items.select(
+        "Title, Id, Body, Permission, ItemType, Components/Id, Components/Title, Created, Modified, Author/Id, Author/Title, Editor/Id, Editor/Title"
+      )
+      .expand("Components, Author, Editor")
+      .getAll();
+    setSmartHelpDetails(smartHelpDetails);
+  };
+
+  const GetTaskUsers = async () => {
     let taskUsers = [];
-    taskUsers = await web.lists.getById(RequireData.TaskUsertListID).items.top(4999).get();
+    taskUsers = await web.lists
+      .getById(RequireData.TaskUsertListID)
+      .items.top(4999)
+      .get();
     AllUsers = taskUsers;
     var UpdatedData: any = {};
     AllUsers.forEach(function (taskUser: any) {
@@ -211,22 +530,36 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       setAssignUser(Assin);
     });
   };
-  // var ConvertLocalTOServerDate = function (LocalDateTime: any, dtformat: any) {
-  //     if (dtformat == undefined || dtformat == '') dtformat = "MM-DD-YYYY";
 
-  //     // below logic works fine in all condition
-  //     if (LocalDateTime != '') {
-  //         var serverDateTime;
-  //         var vLocalDateTime = new Date(LocalDateTime);
-  //         //var offsetObj = GetServerOffset();
-  //         //var IANATimeZoneName = GetIANATimeZoneName();
-  //         var mDateTime = moment(LocalDateTime);
-  //         // serverDateTime = mDateTime.tz('Europe/Berlin').format(dtformat); // 5am PDT
-  //         //serverDateTime = mDateTime.tz('America/Los_Angeles').format(dtformat);  // 5am PDT
-  //         return serverDateTime;
-  //     }
-  //     return '';
-  // }
+  //Popup call for smartmetdata min
+
+  const Smartmetadatafeature = React.useCallback((data: any) => {
+    if (data === "Close") {
+      setSmartdatapopup(false);
+    } else {
+      setSmartdatapopup(false);
+      setFeatureTypeData(data);
+    }
+  }, []);
+  const deleteFeatureItem = (Item: any) => {
+    const updatedSelectedItems = FeatureTypeData.filter(
+      (valuee: any) => Item !== valuee.Id
+    );
+    setFeatureTypeData(updatedSelectedItems);
+  };
+
+  const ClosePopupCallBack = (FnType: any) => {
+    if (FnType == "Close") {
+      setSiteCompositionShow(false);
+    }
+    if ((FnType = "Save")) {
+      setSiteCompositionShow(false);
+      setTimeout(() => {
+        getMasterTaskListTasks();
+      }, 1000);
+    }
+  };
+
   var getMultiUserValues = function (item: any) {
     var users = "";
     var isuserexists = false;
@@ -248,64 +581,47 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     }
     return json;
   };
-  var LIST_CONFIGURATIONS_TASKS =
-    '[{"Title":"Gruene","listId":"2302E0CD-F41A-4855-A518-A2B1FD855E4C","siteName":"Gruene","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.gruene-washington.de","MetadataName":"SP.Data.GrueneListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/logo-gruene.png"},{"Title":"DE","listId":"3204D169-62FD-4240-831F-BCDDA77F5028","siteName":"DE","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/Development-Effectiveness","MetadataName":"SP.Data.DEListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_de.png"},{"Title":"DRR","listId":"CCBCBAFE-292E-4384-A800-7FE0AAB1F70A","siteName":"DRR","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"","MetadataName":"SP.Data.DRRListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_drr.png"},{"Title":"Education","listId":"CF45B0AD-7BFF-4778-AF7A-7131DAD2FD7D","siteName":"Education","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/education","MetadataName":"SP.Data.EducationListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_education.png"},{"Title":"EI","listId":"E0E1FC6E-0E3E-47F5-8D4B-2FBCDC3A5BB7","siteName":"EI","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/ei","MetadataName":"SP.Data.EIListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_ei.png"},{"Title":"EPS","listId":"EC6F0AE9-4D2C-4943-9E79-067EC77AA613","siteName":"EPS","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/eps","MetadataName":"SP.Data.EPSListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_eps.png"},{"Title":"Gender","listId":"F8FD0ADA-0F3C-40B7-9914-674F63F72ABA","siteName":"Gender","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"","MetadataName":"SP.Data.GenderListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_gender.png"},{"Title":"Health","listId":"E75C6AA9-E987-43F1-84F7-D1818A862076","siteName":"Health","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/Health","MetadataName":"SP.Data.HealthListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_health.png"},{"Title":"HHHH","listId":"091889BD-5339-4D11-960E-A8FF38DF414B","siteName":"HHHH","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://hhhhteams.sharepoint.com/sites/HHHH","MetadataName":"SP.Data.HHHHListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/icon_hhhh.png"},{"Title":"KathaBeck","listId":"beb3d9d7-daf3-4c0f-9e6b-fd36d9290fb9","siteName":null,"siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://kathabeck.sharepoint.com/sites/TeamK4Bundestag","MetadataName":"SP.Data.KathaBeckListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/Icon_Kathabeck.png"},{"Title":"QA","listId":"61B71DBD-7463-4B6C-AF10-6609A23AE650","siteName":"QA","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/qa","MetadataName":"SP.Data.QAListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_qa.png"},{"Title":"ALAKDigital","listId":"d70271ae-3325-4fac-9893-147ee0ba9b4d","siteName":"ALAKDigital","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/ei/digitaladministration","MetadataName":"SP.Data.ALAKDigitalListItem","TimesheetListName":"TasksTimesheet2","TimesheetListId":"9ED5C649-3B4E-42DB-A186-778BA43C5C93","TimesheetListmetadata":"SP.Data.TasksTimesheet2ListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_DA.png"},{"Title":"Shareweb","listId":"B7198F49-D58B-4D0A-ADAD-11995F6FADE0","siteName":"Shareweb","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/joint","MetadataName":"SP.Data.SharewebListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_shareweb.png"},{"Title":"Small Projects","listId":"3AFC4CEE-1AC8-4186-B139-531EBCEEA0DE","siteName":"Small Projects","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"","MetadataName":"SP.Data.Small_x0020_ProjectsListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/small_project.png"},{"Title":"Offshore Tasks","listId":"BEB90492-2D17-4F0C-B332-790BA9E0D5D4","siteName":"Offshore Tasks","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://hhhhteams.sharepoint.com/sites/HHHH","MetadataName":"SP.Data.SharewebQAListItem","TimesheetListName":"TaskTimeSheetListNew","TimesheetListId":"464FB776-E4B3-404C-8261-7D3C50FF343F","TimesheetListmetadata":"SP.Data.TaskTimeSheetListNewListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/offshore_Tasks.png"},{"Title":"Migration","listId":"D1A5AC25-3DC2-4939-9291-1513FE5AC17E","siteName":"Migration","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"https://www.shareweb.ch/site/Migration","MetadataName":"SP.Data.MigrationListItem","TimesheetListName":"TasksTimesheet2","TimesheetListId":"9ED5C649-3B4E-42DB-A186-778BA43C5C93","TimesheetListmetadata":"SP.Data.TasksTimesheet2ListItem","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_migration.png"},{"Title":"Master Tasks","listId":"EC34B38F-0669-480A-910C-F84E92E58ADF","siteName":"Master Tasks","siteUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SP","TaxType":"Sites","DomainUrl":"","MetadataName":"SP.Data.Master_x0020_TasksListItem","ImageUrl":"","ImageInformation":[{"ItemType":"Component","PortfolioType":"Component","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/component_icon.png"},{"ItemType":"SubComponent","PortfolioType":"Component","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/SubComponent_icon.png"},{"ItemType":"Feature","PortfolioType":"Component","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/feature_icon.png"},{"ItemType":"Component","PortfolioType":"Service","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png"},{"ItemType":"SubComponent","PortfolioType":"Service","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/SubComponent_icon.png"},{"ItemType":"Feature","PortfolioType":"Service","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/feature_icon.png"},{"ItemType":"Component","PortfolioType":"Events","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Event_Icons/component_icon.png"},{"ItemType":"SubComponent","PortfolioType":"Events","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Event_Icons/SubComponent_icon.png"},{"ItemType":"Feature","PortfolioType":"Events","ImageUrl":"https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Event_Icons/feature_icon.png"}]}]';
-  var GetIconImageUrl = function (listName: any, listUrl: any, Item: any) {
-    var IconUrl = "";
+  const GetSiteIcon = (listName: string) => {
+    console.log(this.state.Result)
     if (listName != undefined) {
-      let TaskListsConfiguration = parseJSON(LIST_CONFIGURATIONS_TASKS);
-      let TaskListItem = TaskListsConfiguration.filter(function (
-        filterItem: any
-      ) {
-        let SiteRelativeUrl = filterItem.siteUrl;
-        return (
-          filterItem.Title.toLowerCase() == listName.toLowerCase() &&
-          SiteRelativeUrl.toLowerCase() == listUrl.toLowerCase()
-        );
-      });
-      if (TaskListItem.length > 0) {
-        if (Item == undefined) {
-          IconUrl = TaskListItem[0].ImageUrl;
-        } else if (TaskListItem[0].ImageInformation != undefined) {
-          var IconUrlItem = TaskListItem[0].ImageInformation.filter(function (
-            index: any,
-            filterItem: any
-          ) {
-            return (
-              filterItem.ItemType == Item.Item_x0020_Type &&
-              filterItem.PortfolioType == Item.Portfolio_x0020_Type
-            );
-          });
-          if (IconUrlItem != undefined && IconUrlItem.length > 0) {
-            IconUrl = IconUrlItem[0].ImageUrl;
+      let siteicon = '';
+      smartmetaDetails?.map((icondata: any) => {
+        if (icondata.Title != undefined) {
+          if (icondata.Title.toLowerCase() == listName?.toLowerCase() && icondata.Item_x0020_Cover != undefined) {
+            siteicon = icondata.Item_x0020_Cover.Url
+          }
+          if (icondata.Title.toLowerCase() == listName?.toLowerCase() && icondata.Item_x005F_x0020_Cover != undefined) {
+            siteicon = icondata.Item_x005F_x0020_Cover.Url
           }
         }
-      }
+      })
+
+      return siteicon;
     }
-    return IconUrl;
-  };
+
+  }
 
   const getpriority = function (item: any) {
-    if (item.Priority_x0020_Rank >= 0 && item.Priority_x0020_Rank <= 3) {
+    if (item.PriorityRank >= 0 && item.PriorityRank <= 3) {
       item.Priority = "(3) Low";
     }
-    if (item.Priority_x0020_Rank >= 4 && item.Priority_x0020_Rank <= 7) {
+    if (item.PriorityRank >= 4 && item.PriorityRank <= 7) {
       item.Priority = "(2) Normal";
     }
-    if (item.Priority_x0020_Rank >= 8) {
+    if (item.PriorityRank >= 8) {
       item.Priority = "(1) High";
     }
   };
 
-  var getMasterTaskListTasks = async function () {
-    //  var query = "ComponentCategory/Id,ComponentCategory/Title,ComponentPortfolio/Id,ComponentPortfolio/Title,ServicePortfolio/Id,ServicePortfolio/Title,SiteCompositionSettings,PortfolioStructureID,ItemRank,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,Deliverable_x002d_Synonyms,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,Admin_x0020_Notes,AdminStatus,Background,Help_x0020_Information,SharewebComponent/Id,SharewebCategories/Id,SharewebCategories/Title,Priority_x0020_Rank,Reference_x0020_Item_x0020_Json,Team_x0020_Members/Title,Team_x0020_Members/Name,Component/Id,Component/Title,Component/ItemType,Team_x0020_Members/Id,Item_x002d_Image,component_x0020_link,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ClientCategory/Id,ClientCategory/Title";
 
-    let componentDetails = [];
+  var getMasterTaskListTasks = async function () {
+    //  var query = "ComponentCategory/Id,ComponentCategory/Title,ComponentPortfolio/Id,ComponentPortfolio/Title,ServicePortfolio/Id,ServicePortfolio/Title,SiteCompositionSettings,PortfolioStructureID,ItemRank,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,DeliverableSynonyms,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,AdminNotes,AdminStatus,Background,Help_x0020_Information,CMSToolComponent/Id,TaskCategories/Id,TaskCategories/Title,PriorityRank,Reference_x0020_Item_x0020_Json,TeamMembers/Title,TeamMembers/Name,Component/Id,Component/Title,Component/ItemType,TeamMembers/Id,Item_x002d_Image,ComponentLink,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ClientCategory/Id,ClientCategory/Title";
+
+    let componentDetails: any = [];
+
     componentDetails = await web.lists
       .getById(RequireData.MasterTaskListID)
       .items.select(
-        "ComponentPortfolio/Id",
-        "ComponentPortfolio/Title",
         "ServicePortfolio/Id",
         "ServicePortfolio/Title",
         "SiteCompositionSettings",
@@ -317,7 +633,7 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         "descriptionVerified",
         "Synonyms",
         "BasicImageInfo",
-        "Deliverable_x002d_Synonyms",
+        "DeliverableSynonyms",
         "OffshoreComments",
         "OffshoreImageUrl",
         "HelpInformationVerified",
@@ -336,23 +652,19 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         "Short_x0020_Description_x0020_On",
         "Short_x0020_Description_x0020__x",
         "Short_x0020_description_x0020__x0",
-        "Admin_x0020_Notes",
+        "AdminNotes",
         "AdminStatus",
         "Background",
         "Help_x0020_Information",
-        "SharewebComponent/Id",
-        "SharewebCategories/Id",
-        "SharewebCategories/Title",
-        "Priority_x0020_Rank",
+        "TaskCategories/Id",
+        "TaskCategories/Title",
+        "PriorityRank",
         "Reference_x0020_Item_x0020_Json",
-        "Team_x0020_Members/Title",
-        "Team_x0020_Members/Name",
-        "Component/Id",
-        "Component/Title",
-        "Component/ItemType",
-        "Team_x0020_Members/Id",
+        "TeamMembers/Title",
+        "TeamMembers/Name",
+        "TeamMembers/Id",
         "Item_x002d_Image",
-        "component_x0020_link",
+        "ComponentLink",
         "IsTodaysTask",
         "AssignedTo/Title",
         "AssignedTo/Name",
@@ -385,39 +697,82 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         "ClientCategory/Title",
         "Sitestagging",
         "SiteCompositionSettings",
-        "Responsible_x0020_Team/Id",
-        "Responsible_x0020_Team/Title",
-        "Parent/Id", "Parent/Title", "Parent/ItemType"
+        "ResponsibleTeam/Id",
+        "ResponsibleTeam/Title",
+        "Parent/Id",
+        "FeatureType/Title",
+        "FeatureType/Id",
+        "Parent/Title",
+        "Parent/ItemType",
+        "Portfolios/Id",
+        "Portfolios/Title",
+        "PortfolioType/Color"
       )
       .expand(
-        "ClientCategory",
-        "AssignedTo",
-        "Component",
-        "ComponentPortfolio",
         "ServicePortfolio",
+        "ClientCategory",
+        "Portfolios",
+        "AssignedTo",
         "AttachmentFiles",
         "Author",
+        "FeatureType",
         "Editor",
-        "Team_x0020_Members",
-        "SharewebComponent",
-        "SharewebCategories",
-        "Responsible_x0020_Team", "Parent"
+        "PortfolioType",
+        "TeamMembers",
+        "TaskCategories",
+        "ResponsibleTeam",
+        "Parent"
       )
       .filter("Id eq " + item.Id + "")
-      .get();
-    console.log(componentDetails);
+      .top(4000)
+      .getAll();
+    console.log("data show on componentdetails", componentDetails);
 
-    // var query = "ComponentCategory/Id,ComponentCategory/Title,ComponentPortfolio/Id,ComponentPortfolio/Title,ServicePortfolio/Id,ServicePortfolio/Title,SiteCompositionSettings,PortfolioStructureID,ItemRank,ShortDescriptionVerified,Portfolio_x0020_Type,BackgroundVerified,descriptionVerified,Synonyms,BasicImageInfo,Deliverable_x002d_Synonyms,OffshoreComments,OffshoreImageUrl,HelpInformationVerified,IdeaVerified,TechnicalExplanationsVerified,Deliverables,DeliverablesVerified,ValueAddedVerified,CompletedDate,Idea,ValueAdded,TechnicalExplanations,Item_x0020_Type,Sitestagging,Package,Parent/Id,Parent/Title,Short_x0020_Description_x0020_On,Short_x0020_Description_x0020__x,Short_x0020_description_x0020__x0,Admin_x0020_Notes,AdminStatus,Background,Help_x0020_Information,SharewebComponent/Id,SharewebCategories/Id,SharewebCategories/Title,Priority_x0020_Rank,Reference_x0020_Item_x0020_Json,Team_x0020_Members/Title,Team_x0020_Members/Name,Component/Id,Component/Title,Component/ItemType,Team_x0020_Members/Id,Item_x002d_Image,component_x0020_link,IsTodaysTask,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,AttachmentFiles/FileName,FileLeafRef,FeedBack,Title,Id,PercentComplete,Company,StartDate,DueDate,Comments,Categories,Status,WebpartId,Body,Mileage,PercentComplete,Attachments,Priority,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,ClientCategory/Id,ClientCategory/Title&$expand=ClientCategory,ComponentCategory,AssignedTo,Component,ComponentPortfolio,ServicePortfolio,AttachmentFiles,Author,Editor,Team_x0020_Members,SharewebComponent,SharewebCategories,Parent&$filter=Id eq " + item.Id + "";
-    // $.ajax({
-    //     url: "https://hhhhteams.sharepoint.com/sites/HHHH/SP/_api/lists/getbyid('ec34b38f-0669-480a-910c-f84e92e58adf')/items?$select=" + query + "",
-    //     method: "GET",
-    //     headers: {
-    //         "Accept": "application/json; odata=verbose"
-    //     },
-    //     success: function (data) {
     var Tasks = componentDetails;
     let ParentData: any = [];
+    let tempArray1: any = [];
+    let tempArray2: any = [];
     $.each(Tasks, function (index: any, item: any) {
+      if (item?.Short_x0020_Description_x0020_On) {
+        item.Short_x0020_Description_x0020_Onlength = getPlainTextFromHTML(
+          item?.Short_x0020_Description_x0020_On
+        );
+        setShortDescriptionVerifieds(item?.Short_x0020_Description_x0020_On);
+      }
+      shortDescriptionVerifieds;
+      setShortDescriptionVerifieds(item?.ShortDescriptionVerified);
+      if (item?.Body) {
+        item.Bodylength = getPlainTextFromHTML(item?.Body);
+        setdescriptionVerifieds(item?.Body);
+      }
+      descriptionVerifieds;
+      setdescriptionVerifieds(item?.descriptionVerified);
+      setBackgroundVerifieds(item?.BackgroundVerified);
+      setIdeaVerifieds(item?.IdeaVerified);
+      setValueAddedVerifieds(item?.ValueAddedVerified);
+      if (item?.Deliverables) {
+        item.Deliverableslength = getPlainTextFromHTML(item?.Deliverables);
+        setDeliverablesVerifieds(item?.Deliverables);
+      }
+      DeliverablesVerifieds;
+      setDeliverablesVerifieds(item?.DeliverablesVerified);
+      if (item?.TechnicalExplanations) {
+        item.TechnicalExplanationslength = getPlainTextFromHTML(
+          item?.TechnicalExplanations
+        );
+        setTechnicalExplanationsVerifieds(item?.TechnicalExplanations);
+      }
+      TechnicalExplanationsVerifieds;
+      if (item?.Help_x0020_Information) {
+        item.Help_x0020_Informationlength = getPlainTextFromHTML(
+          item?.Help_x0020_Information
+        );
+        setHelpInformationVerifieds(item?.Help_x0020_Information);
+      }
+      HelpInformationVerifieds;
+      setHelpInformationVerifieds(item?.HelpInformationVerified);
+      setTechnicalExplanationsVerifieds(item?.TechnicalExplanationsVerified);
+      PortfolioTypeColor = item?.PortfolioType?.Color;
       item.DateTaskDueDate = new Date(item.DueDate);
       if (item.DueDate != null)
         item.TaskDueDate = moment(item.DueDate).format("MM-DD-YYYY");
@@ -425,23 +780,40 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       item.FilteredModifiedDate = item.Modified;
       item.DateModified = new Date(item.Modified);
       item.DateCreatedNew = new Date(item.Created);
-
+      // changecode select member
+      if (item?.AssignedTo?.length > 0) {
+        item.AssignedTo?.map((arrayData: any) => {
+          if (arrayData != null) {
+            tempArray1.push(arrayData);
+          }
+        });
+        setTaskAssignedTo(tempArray1);
+      }
+      if (item?.TeamMembers?.length > 0) {
+        item.TeamMembers?.map((arrayData: any) => {
+          if (arrayData != null) {
+            tempArray2.push(arrayData);
+          }
+        });
+        setTaskTeamMembers(tempArray2);
+      }
+      setFeatureTypeData([item.FeatureType]);
       item.DateCreated = item.CreatedDate = moment(item.Created).format(
         "MM-DD-YYYY"
       ); // ConvertLocalTOServerDate(item.Created, 'MM-DD-YYYY');
       item.Creatednewdate = moment(item.Created).format("MM-DD-YYYY"); //ConvertLocalTOServerDate(item.Created, 'MM-DD-YYYY HH:mm');
       // item.Modified = moment(item.Modified).format('MM-DD-YYYY');
       //ConvertLocalTOServerDate(item.Modified, 'MM-DD-YYYY HH:mm');
-      if (item.Priority_x0020_Rank == undefined && item.Priority != undefined) {
+      if (item.PriorityRank == undefined && item.Priority != undefined) {
         switch (item.Priority) {
           case "(1) High":
-            item.Priority_x0020_Rank = 8;
+            item.PriorityRank = 8;
             break;
           case "(2) Normal":
-            item.Priority_x0020_Rank = 4;
+            item.PriorityRank = 4;
             break;
           case "(3) Low":
-            item.Priority_x0020_Rank = 1;
+            item.PriorityRank = 1;
             break;
         }
       }
@@ -461,112 +833,38 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       item.smartComponent = [];
       item.smartCategories = [];
       if (item.ComponentPortfolio != undefined) {
-        if (item.ComponentPortfolio.Id != undefined) {
+        if (item?.ComponentPortfolio?.Id != undefined) {
           if (item.smartComponent != undefined)
             item.smartComponent.push({
-              Title: item.ComponentPortfolio.Title,
-              Id: item.ComponentPortfolio.Id,
+              Title: item?.ComponentPortfolio?.Title,
+              Id: item?.ComponentPortfolio?.Id,
             });
         }
       }
       let ClientCategory: any;
-      ClientCategory = item.ClientCategory
+      ClientCategory = item.ClientCategory;
       if (ClientCategory != undefined && ClientCategory.length > 0) {
         let TempArray: any = [];
         ClientCategory.map((ClientData: any) => {
-          if (AllClientCategoryDataBackup != undefined && AllClientCategoryDataBackup.length > 0) {
+          if (
+            AllClientCategoryDataBackup != undefined &&
+            AllClientCategoryDataBackup.length > 0
+          ) {
             AllClientCategoryDataBackup.map((clientCategoryData: any) => {
               if (ClientData.Id == clientCategoryData.ID) {
                 ClientData.siteName = clientCategoryData.siteName;
                 ClientData.ParentID = clientCategoryData.ParentID;
-                TempArray.push(ClientData)
+                TempArray.push(ClientData);
               }
-            })
-
+            });
           }
-        })
+        });
         setSelectedClientCategory(TempArray);
         selectedClientCategoryData = TempArray;
-        console.log("selected client category form backend ==========", TempArray)
-      }
-      // if (item.Sitestagging != undefined && item.Sitestagging != null) {
-      //   item.Sitestagging = JSON.parse(item.Sitestagging);
-      //   item.Sitestagging.forEach(function (site: any) {
-      //     siteDetail.forEach(function (siteDetail: any) {
-      //       siteDetail.isEditableSiteDate = false;
-      //       if (siteDetail.Title == site.Title) {
-      //         siteDetail.Date = site.Date;
-      //         siteDetail.ClienTimeDescription = site.ClienTimeDescription;
-      //         siteDetail.Selected = true;
-      //         siteDetail.flag = true;
-      //       }
-      //     });
-      //   });
-      // }
-      if (item.Sitestagging != null && item.Sitestagging != undefined) {
-        let tempData: any = JSON.parse(item.Sitestagging);
-        let tempData2: any = [];
-        if (tempData != undefined && tempData.length > 0) {
-          tempData.map((siteData: any) => {
-            let siteName: any;
-            if (siteData != undefined) {
-              if (siteData.SiteName != undefined) {
-                siteName = siteData?.SiteName?.toLowerCase();
-              } else {
-                siteName = siteData?.Title?.toLowerCase();
-              }
-            }
-            if (siteName == "migration" || siteName == "health" || siteName == "eps" || siteName == "qa" || siteName == "ei" || siteName == "gender" || siteName == "education" || siteName == "cep" || siteName == "shareweb" || siteName == "small projects" || siteName == 'offshore tasks') {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_${siteName}.png`
-            }
-            if (siteName == 'alakdigital' || siteName == 'da e+e') {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_da.png`
-            }
-            if (siteName == 'development-effectiveness' || siteName == 'de') {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Shareweb/site_de.png`
-            }
-            if (siteName == "kathabeck") {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/Icon_Kathabeck.png`
-            }
-            if (siteName == "gruene") {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/logo-gruene.png`
-            }
-            if (siteName == "hhhh") {
-              siteData.siteIcons = `https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Foundation/icon_hhhh.png`
-            }
-            tempData2.push(siteData);
-          })
-        }
-
-        let tempArray3: any = [];
-        if (tempData2 != undefined && tempData2.length > 0) {
-          tempData2.map((siteData: any) => {
-            siteData.ClientCategory = [];
-            if (selectedClientCategoryData != undefined && selectedClientCategoryData.length > 0) {
-              selectedClientCategoryData.map((ClientCategoryData: any) => {
-                if (ClientCategoryData.siteName == siteData.SiteName) {
-                  siteData.ClientCategory.push(ClientCategoryData)
-                }
-              })
-              tempArray3.push(siteData);
-            } else {
-              tempArray3.push(siteData);
-            }
-
-          })
-        }
-        // setClientTimeData(tempArray3)
-        item.siteCompositionData = tempArray3;
-      }
-       else {
-        const object: any = {
-          SiteName: "HHHH",
-          ClienTimeDescription: 100,
-          localSiteComposition: true,
-          siteIcons: "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png"
-        }
-        item.siteCompositionData = [object];
-        // setClientTimeData([object]);
+        console.log(
+          "selected client category form backend ==========",
+          TempArray
+        );
       }
 
       item.AssignedUsers = [];
@@ -577,9 +875,9 @@ function EditInstitution({ item, SelectD, Calls }: any) {
           }
         });
       });
-      if (item.SharewebCategories != undefined) {
-        if (item.SharewebCategories.results != undefined) {
-          map(item.SharewebCategories.results, (bj) => {
+      if (item.TaskCategories != undefined) {
+        if (item.TaskCategories.results != undefined) {
+          map(item.TaskCategories.results, (bj) => {
             if (bj.Title != undefined)
               item.smartCategories.push({ Title: bj.Title, Id: bj.Id });
           });
@@ -599,11 +897,11 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         item.DueDate = moment(item.DueDate).format("MM-DD-YYYY");
         // setDate(item.DueDate);
       }
-      if (item.SharewebCategories != null) {
-        setCategoriesData(item.SharewebCategories);
-      }
-      if (item.SharewebCategories != null) {
-        item.SharewebCategories.forEach(function (type: any) {
+      // if (item.TaskCategories != null) {
+      //   setCategoriesData(item.TaskCategories);
+      // }
+      if (item.TaskCategories != null) {
+        item.TaskCategories.forEach(function (type: any) {
           CheckCategory.forEach(function (val: any) {
             if (type.Id == val.Id) {
               BackupCat = type.Id;
@@ -615,37 +913,25 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       if (item.Component?.length > 0) {
         setSmartComponentData(item.Component);
       }
-      var Rr: any = [];
-      if (item.ServicePortfolio != undefined) {
-        Rr.push(item.ServicePortfolio);
-        setLinkedComponentData(Rr);
+      if (item.Portfolios != undefined) {
+        setLinkedComponentData(item.Portfolios);
       }
-      // if (item.StartDate != undefined) {
-      //   item.StartDate = moment(item.StartDate).format("MM-DD-YYYY");
-      //   //setStartdate(item.StartDate);
-      // }
-      if (item.component_x0020_link != null) {
-        item.component_x0020_link = item.component_x0020_link.Url;
-        //setStartdate(item.StartDate);
+
+      if (item.ComponentLink != null) {
+        item.ComponentLink = item.ComponentLink.Url;
       }
       if (item.CompletedDate != undefined) {
         item.CompletedDate = moment(item.CompletedDate).format("MM-DD-YYYY");
-        // item.CompletedDate = item.CompletedDate.toString();
-        // setCompletiondatenew(item.CompletedDate);
       }
       item.SmartCountries = [];
       item.siteUrl = RequireData.siteUrl;
       item["SiteIcon"] =
         item.siteType == "Master Tasks"
-          ? GetIconImageUrl(
-            item.siteType,
-            "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
-            undefined
+          ? GetSiteIcon(
+            item.siteType
           )
-          : GetIconImageUrl(
-            item.siteType,
-            "https://hhhhteams.sharepoint.com/sites/HHHH/SP/",
-            undefined
+          : GetSiteIcon(
+            item.siteType
           );
       if (item.Synonyms != undefined && item.Synonyms.length > 0) {
         item.Synonyms = JSON.parse(item.Synonyms);
@@ -681,21 +967,111 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     //  deferred.resolve(Tasks);
     setComponent(Tasks);
     console.log("All Portfolio Data From Backend =====", Tasks);
-    setEditData(Tasks[0]);
-    setModalIsOpenToTrue(true);
+    if (Tasks[0].ClientCategory?.length > 0) {
+      Tasks[0].ClientCategory = {
+        results: Tasks[0].ClientCategory,
+      };
+    }
 
-    //  setModalIsOpenToTrue();
+    let SiteCompositionTemp: any = [];
+    if (Tasks[0]?.Sitestagging?.length > 0) {
+      SiteCompositionTemp = JSON.parse(Tasks[0]?.Sitestagging);
+    } else {
+      SiteCompositionTemp = [];
+    }
+    if (Tasks[0]?.ClientCategory?.results?.length > 0) {
+      let TempCCItems: any = [];
+      AllClientCategoryDataBackup?.map((AllCCItem: any) => {
+        item.ClientCategory?.results?.map((SelectedCCItem: any) => {
+          if (SelectedCCItem?.Id == AllCCItem?.Id) {
+            TempCCItems.push(AllCCItem);
+          }
+        });
+      });
+      if (TempCCItems?.length > 0) {
+        SiteCompositionTemp?.map((TaggedSC: any) => {
+          TempCCItems?.map((TaggedCC: any) => {
+            if (TaggedSC.Title == TaggedCC.siteName) {
+              if (TaggedSC?.ClientCategory?.length > 0) {
+                TaggedSC.ClientCategory?.push(TaggedCC);
+              } else {
+                TaggedSC.ClientCategory = [TaggedCC];
+              }
+            }
+          });
+        });
+      }
+    }
+
+    const imagesForSecondArray = Tasks[0].TeamMembers?.map(
+      ({ Id, Name, Title }: any) => ({
+        Id,
+        Name,
+        Title,
+        Item_x0020_Cover:
+          AllUsers.find((item: any) => item.AssingedToUserId === Id)
+            ?.Item_x0020_Cover || null,
+      })
+    );
+
+    console.log(imagesForSecondArray);
+    //     const user = AllUsers.filter(
+    //         (user: any) => user?.AssingedToUser?.Id === name
+    //     );
+    //     let Image: any;
+    //     if (user[0]?.Item_x0020_Cover != undefined) {
+    //         Image = user[0].Item_x0020_Cover.Url;
+    //     } else {
+    //         Image = "https://hhhhteams.sharepoint.com/sites/HHHH/PublishingImages/Portraits/icon_user.jpg";
+    //     }
+
+    Tasks[0].TeamMembers = imagesForSecondArray;
+    Tasks[0].siteCompositionData = SiteCompositionTemp;
+    Tasks[0].listId = RequireData.MasterTaskListID;
+    Tasks[0].siteUrl = RequireData.siteUrl;
+    setEditData(Tasks[0]);
+    getMasterTaskListTasksData();
+    setModalIsOpenToTrue(true);
   };
 
-  //     error: function (error) {
-
-  //     }
-  // });
-  // }
-
+  const onRenderCustomHeaderQuestion = () => {
+    return (
+      <>
+        <div className="subheading">Add Question</div>
+        <Tooltip ComponentId="1000" />
+      </>
+    );
+  };
+  const onRenderCustomHeaderHelp = () => {
+    return (
+      <>
+        <div className="subheading">Add Help</div>
+        <Tooltip ComponentId="1000" />
+      </>
+    );
+  };
+  const onRenderHeaderQuestionEdit = () => {
+    return (
+      <>
+        <div className="subheading">Edit Question</div>
+        <Tooltip ComponentId="1000" />
+      </>
+    );
+  };
+  const onRenderHeaderHelpEdit = () => {
+    return (
+      <>
+        <div className="subheading">Edit Help</div>
+        <Tooltip ComponentId="1000" />
+      </>
+    );
+  };
+  const onRenderHeaderChangeParent = () => {
+    return <div className="subheading siteColor">Change Portfolio Type</div>;
+  };
   var ListId: any = "";
   var CurrentSiteUrl: any = "";
-  //var SharewebItemRank: any = '';
+  //var CMSItemRank: any = '';
   const [state, setState] = React.useState("state");
 
   const loadDataOnlyOnce = React.useCallback(() => {
@@ -707,12 +1083,14 @@ function EditInstitution({ item, SelectD, Calls }: any) {
   const site: any = [];
   const siteDetail: any = [];
   const GetSmartmetadata = async () => {
-
-    let smartmetaDetails = [];
+    smartmetaDetails = [];
+    subCategories = [];
+    var TaskTypes: any = [];
+    var Task: any = [];
     smartmetaDetails = await web.lists
       //.getById('ec34b38f-0669-480a-910c-f84e92e58adf')
       .getById(RequireData.SmartMetadataListID)
-      .items//.getById(this.state.itemID)
+      .items //.getById(this.state.itemID)
       .select(
         "ID,Title,IsVisible,ParentID,Parent/Id,Parent/Title,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable"
       )
@@ -727,6 +1105,11 @@ function EditInstitution({ item, SelectD, Calls }: any) {
           site.push(val);
         }
       });
+      const featureTypeItems = smartmetaDetails.filter(
+        (item: any) => item.TaxType === "Feature Type"
+      );
+      setAutoSearchFeatureType(featureTypeItems);
+
       site.forEach(function (val: any) {
         if (
           val.listId != undefined &&
@@ -742,14 +1125,64 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         }
       });
     }
+    TaskTypes = getSmartMetadataItemsByTaxType(smartmetaDetails, "Categories");
+    let instantCat: any = [];
+    TaskTypes?.map((cat: any) => {
+      cat.ActiveTile = false;
+      getChilds(cat, TaskTypes);
+      if (
+        cat?.ParentID !== undefined &&
+        cat?.ParentID === 0 &&
+        cat?.Title !== "Phone"
+      ) {
+        Task.push(cat);
+      }
+      if (
+        cat?.Title == "Phone" ||
+        cat?.Title == "Email Notification" ||
+        cat?.Title == "Immediate" ||
+        cat?.Title == "Approval"
+      ) {
+        instantCat.push(cat);
+      }
+      if (
+        cat?.Parent?.Id !== undefined &&
+        cat?.Parent?.Id !== 0 &&
+        cat?.IsVisible
+      ) {
+        subCategories.push(cat);
+      }
+    });
+    setInstantCategories(instantCat);
+    let uniqueArray: any = [];
+    AutoCompleteItemsArray.map((currentObject: any) => {
+      if (!uniqueArray.find((obj: any) => obj.Id === currentObject.Id)) {
+        uniqueArray.push(currentObject);
+      }
+    });
+    AutoCompleteItemsArray = uniqueArray;
+    Task?.map((taskItem: any) => {
+      subCategories?.map((item: any) => {
+        if (taskItem?.Id === item?.Parent?.Id) {
+          try {
+            item.ActiveTile = false;
+            item.SubTaskActTile = item?.Title?.replace(/\s/g, "");
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      });
+    });
+
     setsiteDetails(siteDetail);
     getMasterTaskListTasks();
   };
 
-
   React.useEffect(() => {
     GetTaskUsers();
     getAllSitesData();
+    GetSmartHelpDetails();
+    loadAllCategoryData("Categories");
     var initLoading = function () {
       if (item != undefined) {
         var Item = item;
@@ -771,35 +1204,54 @@ function EditInstitution({ item, SelectD, Calls }: any) {
           { rankTitle: "(1) Archive", rank: 1 },
           { rankTitle: "(0) No Show", rank: 0 },
         ]);
-        setSharewebItemRank(TaskItemRank[0]);
+        setCMSItemRank(TaskItemRank[0]);
         loadAllClientCategoryData("Client Category");
-        // if (useeffectdata == false)
-        //     setuseeffectdata(true);
-        // else setuseeffectdata(false);
-        //loadColumnDetails();
       }
     };
     initLoading();
   }, []);
 
-  const EditComponent = (items: any, title: any) => {
-    if (title == "Service") {
-      setIsComponent(true);
-      setSharewebComponent(items);
-    } else {
-      setIsService(true);
-      setSharewebComponent(items);
-    }
-
+  const EditComponent = (items: any) => {
+    setIsComponent(true);
+    setCMSToolComponent(items);
     // <ComponentPortPolioPopup props={item}></ComponentPortPolioPopup>
   };
-  const GetComponents = async () => {
 
+  const openPortfolioPopup = (itemm: any) => {
+    setisopenProjectpopup(true);
+    mydata.push(item.Id);
+    setCMSToolComponent(itemm);
+  };
+
+  const callServiceComponent = React.useCallback(
+    (item1: any, type: any, functionType: any) => {
+      if (functionType === "Close") {
+        if (type === "Multi") {
+          setisopenProjectpopup(false);
+        } else {
+          setisopenProjectpopup(false);
+        }
+      } else {
+        if (type === "Multi" || type === "Single") {
+          let mydataid: any = [item?.Id];
+          let filteredIds = item1
+            .filter((item: { Id: null }) => item.Id !== null)
+            .map((item: { Id: any }) => item.Id);
+
+          updateMultiLookup(filteredIds, mydataid, SelectD);
+          setisopenProjectpopup(false);
+        }
+      }
+    },
+    []
+  );
+
+  const GetComponents = async () => {
     let componentDetails = [];
     componentDetails = await web.lists
       //.getById('ec34b38f-0669-480a-910c-f84e92e58adf')
       .getById(RequireData.MasterTaskListID)
-      .items//.getById(this.state.itemID)
+      .items //.getById(this.state.itemID)
       .select(
         "ID",
         "Title",
@@ -807,26 +1259,29 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         "Status",
         "ItemRank",
         "Item_x0020_Type",
+        "FeatureType/Title",
+        "FeatureType/Id",
         "Parent/Id",
         "Author/Id",
         "Author/Title",
         "Parent/Title",
-        "SharewebCategories/Id",
-        "SharewebCategories/Title",
+        "TaskCategories/Id",
+        "TaskCategories/Title",
         "AssignedTo/Id",
         "AssignedTo/Title",
-        "Team_x0020_Members/Id",
-        "Team_x0020_Members/Title",
+        "TeamMembers/Id",
+        "TeamMembers/Title",
         "ClientCategory/Id",
         "ClientCategory/Title"
       )
       .expand(
-        "Team_x0020_Members",
+        "TeamMembers",
         "Author",
         "ClientCategory",
         "Parent",
-        "SharewebCategories",
-        "AssignedTo"
+        "TaskCategories",
+        "AssignedTo",
+        "FeatureType"
       )
       .top(4999)
       .filter("Item_x0020_Type eq Component")
@@ -834,14 +1289,79 @@ function EditInstitution({ item, SelectD, Calls }: any) {
 
     console.log(componentDetails);
   };
-  function EditComponentCallback() {
-    Calls();
-  }
-  let mentionUsers: any = [];
-  //  mentionUsers = this.taskUsers.map((i:any)=>{
-  //     return({id : i.Title,display: i.Title})
-  // });
+  function EditComponentCallback(res: any) {
+    if (res === "Close") {
+      Calls(res);
+    } else {
+      const date = moment(res?.Created);
+      const formattedDate = date.format("DD/MM/YYYY");
+      const datedue = moment(res?.DueDate);
+      const formattedDateDue = datedue.format("DD/MM/YYYY");
+      if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
+        $.map(TaskAssignedTo, (Assig: any) => {
+          if (Assig.Id != undefined) {
+            $.map(AllUsers, (users: any) => {
+              if (
+                Assig.Id != undefined &&
+                users.AssingedToUser != undefined &&
+                Assig.Id == users.AssingedToUser.Id
+              ) {
+                users.ItemCover = users.Item_x0020_Cover;
+                res?.TeamLeaderUser?.push(users);
+              }
+            });
+          }
+        });
+      }
 
+      if (TaskTeamMembers != undefined && TaskTeamMembers.length > 0) {
+        $.map(TaskTeamMembers, (Assig: any) => {
+          if (Assig.Id != undefined) {
+            $.map(AllUsers, (users: any) => {
+              if (
+                Assig.Id != undefined &&
+                users.AssingedToUser != undefined &&
+                Assig.Id == users.AssingedToUser.Id
+              ) {
+                users.ItemCover = users.Item_x0020_Cover;
+                res?.TeamLeaderUser?.push(users);
+              }
+            });
+          }
+        });
+      }
+      // ClientCategory
+      if (
+        res?.ClientCategory != undefined &&
+        res?.ClientCategory?.results?.length > 0
+      ) {
+        const clientarray = res?.ClientCategory?.results?.filter(
+          (item: any) => item.Title != undefined
+        );
+        res.ClientCategory = clientarray;
+      }
+      res.DisplayCreateDate = formattedDate;
+
+      if (formattedDateDue === "Invalid date") {
+        res.DisplayDueDate = "";
+      } else {
+        res.DisplayDueDate = formattedDateDue;
+      }
+      res.TaskID = item.TaskID;
+      res.SiteIconTitle = item.SiteIconTitle;
+      res.Item_x0020_Type = item.Item_x0020_Type;
+      res.isRestructureActive = item.isRestructureActive;
+      res.ItemRank = item.ItemRank;
+      res.PercentComplete = item.PercentComplete;
+      res.PortfolioType = item.PortfolioType;
+      res.SiteIcon = undefined;
+      res.siteUrl = RequireData?.siteUrl;
+      res.data = res;
+      Calls(res, "UpdatedData");
+    }
+  }
+
+  let mentionUsers: any = [];
   var generateHierarchichalData = function (item: any, items: any) {
     var autoCompleteItem: any = {};
     autoCompleteItem["value"] = item.Title;
@@ -879,154 +1399,41 @@ function EditInstitution({ item, SelectD, Calls }: any) {
 
     return autoCompleteItem;
   };
-  // const bindAutoCompleteId = function (countrolId:any, taxItems:any, taxType:any, service:any, CompositionSiteType:any) {
-  //     var Items:any = [];
-  //     $.each(taxItems, function (taxItem:any) {
-  //         if (taxItem.TaxType == taxType && taxItem.TaxType != 'Components') {
-  //             var item = generateHierarchichalData(taxItem, taxItems);
-  //             item["Title"] = item.value;
-  //             Items.push(item);
-  //         }
-  //         if (taxItem.TaxType == 'Components') {
-  //             var item = generateHierarchichalData(taxItem, taxItems);
-  //             item["Title"] = item.value;
-  //             Items.push(item);
-  //         }
-  //     });
-  //     $("#" + countrolId).autocomplete({
-  //         source: function (request:any, response:any) {
-  //             // delegate back to autocomplete, but extract the last term
-  //             //var index= request.term.indexOf("@");
-  //             // if (request.term != undefined && request.term[index] == '@')
-  //             //     request.term = request.term.substr(index + 1, request.term.length);
-  //             //response($.ui.autocomplete.filter(Items, $scope.extractLast(request.term)));
-  //             var responseItems = $.ui.autocomplete.filter(Items, $scope.extractLast(request.term));
-  //             SharewebCommonFactoryService.DynamicSortitems(responseItems, 'label', 'Text', 'Ascending')
-  //             response(responseItems);
-
-  //         },
-  //         focus: function () {
-  //             // prevent value inserted on focus
-  //             return false;
-  //         },
-  //         select: function (event, ui) {
-  //             var terms = $scope.split(this.value);
-  //             // remove the current input
-  //             terms.pop();
-  //             // add the selected item
-  //             terms.push(ui.item.value);
-  //             // add placeholder to get the comma-and-space at the end
-  //             terms.push("");
-  //             this.value = terms.join("; ");
-  //             if (ui.item.TaxType != undefined && service == 'Service') {
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.ServicesmartComponent, ui.item.Id)) {
-  //                     ui.item['siteType'] = 'Master Tasks';
-  //                     $scope.ServicesmartComponent[0] = ui.item;
-  //                     $scope.SmartCompCopy[0] = ui.item;
-  //                     $scope.$apply();
-  //                 }
-  //                 $('#txtServiceSharewebComponent').val('');
-  //                 $('#txtServiceSharewebComponentselsction').val('');
-  //             } else if (ui.item.TaxType != undefined && ui.item.TaxType == 'Components') {
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.smartComponent, ui.item.Id)) {
-  //                     ui.item['siteType'] = 'Master Tasks';
-  //                     $scope.smartComponent[0] = ui.item;
-  //                     $scope.SmartCompCopy[0] = ui.item;
-  //                     $scope.$apply();
-  //                     $scope.Item.Portfolio_x0020_Type == 'Component'
-  //                 }
-  //                 $('#txtSharewebComponent').val('');
-  //                 $('#txtSharewebComponentselsction').val('');
-  //             } else if (ui.item.TaxType != undefined && ui.item.TaxType == 'Categories') {
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.smartCategories, ui.item.Id)) {
-  //                     $scope.smartCategories.push(ui.item);
-  //                     $scope.$apply();
-  //                 }
-  //                 $('#txtCategories').val('');
-  //             } else if (ui.item.TaxType != undefined && ui.item.TaxType == 'Sites') {
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.TargetedSites, ui.item.Id)) {
-  //                     $scope.TargetedSites.push(ui.item);
-  //                     $scope.$apply();
-  //                 }
-  //                 $('#txtSites').val('');
-  //             }
-  //             else if (ui.item.TaxType != undefined && ui.item.TaxType == 'SPComponents') {
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.smartSPComponents, ui.item.Id)) {
-  //                     $scope.smartSPComponents.push(ui.item);
-  //                     $scope.$apply();
-  //                 }
-  //                 $('#txtSPComponents').val('');
-  //                 $('#txtSPComponentsselsction').val('');
-  //             }
-  //             else if (ui.item.TaxType != undefined && ui.item.TaxType == 'Client Category') {
-  //                 $scope.IsUpdateClientCategory = true;
-  //                 if (ui.item.Id != undefined && !$scope.isItemExists($scope.smartClientCategories, ui.item.Id)) {
-  //                     if ($scope.smartClientCategories != undefined && $scope.smartClientCategories.length > 0) {
-  //                         angular.forEach($scope.smartClientCategories, function (clientcategory, index) {
-  //                             $scope.IsPushed = true;
-  //                             if (clientcategory.SiteType == ui.item.SiteType && !$scope.isItemExists($scope.smartClientCategories, ui.item.Id)) {
-  //                                 $scope.smartClientCategories.push(ui.item);
-  //                                 $scope.IsPushed = false
-  //                             }
-  //                         })
-  //                         if ($scope.IsPushed == true && !$scope.isItemExists($scope.smartClientCategories, ui.item.Id))
-  //                             $scope.smartClientCategories.push(ui.item);
-  //                     }
-  //                     else {
-  //                         if (!$scope.isItemExists($scope.smartClientCategories, ui.item.Id))
-  //                             $scope.smartClientCategories.push(ui.item);
-  //                     }
-  //                 }
-  //                 angular.forEach($scope.smartClientCategories, function (item) {
-  //                     if (item.SiteType == 'EI' && !$scope.isItemExists($scope.EIClientCategory, item.Id)) {
-  //                         $scope.EIClientCategory.push(item);
-  //                     }
-
-  //                     else if (item.SiteType == 'EPS' && !$scope.isItemExists($scope.EPSClientCategory, item.Id)) {
-  //                         $scope.EPSClientCategory.push(item);
-  //                     }
-  //                     else if (item.SiteType == 'Education' && !$scope.isItemExists($scope.EducationClientCategory, item.Id)) {
-  //                         $scope.EducationClientCategory.push(item);
-  //                     }
-
-  //                 })
-  //                 $scope.$apply();
-  //                 $scope.CurrentCCSiteType = CompositionSiteType;
-  //                 $('#UpdateCCItem').show();
-  //                 $('#txtclientCategories').val('');
-  //                 $('#EItxtclientCategories').val('');
-  //                 $('#EPStxtclientCategories').val('');
-  //                 $('#EducationtxtclientCategories').val('');
-  //                 $('#txtclientCategories1').val('');
-  //             }
-  //             return false;
-  //         }
-  //     });
-  // }
   const setPriority = function (item: any, val: number) {
-    item.Priority_x0020_Rank = val;
+    item.PriorityRank = val;
     getpriority(item);
 
     setComponent((EditData) => [...EditData]);
   };
   const setPriorityNew = function (e: any, item: any) {
-    item.Priority_x0020_Rank = e.target.value;
-    if (item.Priority_x0020_Rank <= 10) {
-
-      if (item.Priority_x0020_Rank == 8 || item.Priority_x0020_Rank == 9 || item.Priority_x0020_Rank == 10) {
+    item.PriorityRank = e.target.value;
+    if (item.PriorityRank <= 10) {
+      if (
+        item.PriorityRank == 8 ||
+        item.PriorityRank == 9 ||
+        item.PriorityRank == 10
+      ) {
         item.Priority = "(1) High";
       }
-      if (item.Priority_x0020_Rank == 4 || item.Priority_x0020_Rank == 5 || item.Priority_x0020_Rank == 6 || item.Priority_x0020_Rank == 7) {
+      if (
+        item.PriorityRank == 4 ||
+        item.PriorityRank == 5 ||
+        item.PriorityRank == 6 ||
+        item.PriorityRank == 7
+      ) {
         item.Priority = "(2) Normal";
       }
-      if (item.Priority_x0020_Rank == 1 || item.Priority_x0020_Rank == 2 || item.Priority_x0020_Rank == 3 || item.Priority_x0020_Rank == 0) {
+      if (
+        item.PriorityRank == 1 ||
+        item.PriorityRank == 2 ||
+        item.PriorityRank == 3 ||
+        item.PriorityRank == 0
+      ) {
         item.Priority = "(3) Low";
       }
-
     } else {
-      item.Priority_x0020_Rank = ""
+      item.PriorityRank = "";
       alert("Please Enter priority between 0 to 10");
-
     }
     // getpriority(item);
     setComponent((EditData) => [...EditData]);
@@ -1087,225 +1494,347 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     setComponent((EditData) => [...EditData]);
   };
   const SaveData = async () => {
+    let TaskShuoldBeUpdate = true;
     var UploadImage: any = [];
-
+    let ClientCategoryIDs: any = [];
     var item: any = {};
     var smartComponentsIds: any[] = [];
+    // var RelevantPortfolioIds = "";
+    var RelevantProjectIds = "";
     var RelevantPortfolioIds = "";
+    let PortfolioIds: any[] = [];
+    let ProjectId: any[] = [];
+    var RelevantProjectIdRemove = "";
+    let ProjectIdRemove: any[] = [];
+    let TotalCompositionsValue: any = 0;
     var Items = EditData;
-    if (smartComponentData != undefined && smartComponentData.length > 0) {
-      smartComponentData.map((com: any) => {
-        if (smartComponentData != undefined && smartComponentData.length >= 0) {
-          $.each(smartComponentData, function (index: any, smart: any) {
-            smartComponentsIds.push(smart.Id);
-          });
-        }
+
+    if (SiteTaggingData?.length > 0) {
+      SiteTaggingData.map((clientData: any) => {
+        TotalCompositionsValue =
+          TotalCompositionsValue + Number(clientData.ClienTimeDescription);
       });
     }
-    if (NewArray != undefined && NewArray.length > 0) {
-      CategoriesData = []
-      NewArray.map((NeitemA: any) => {
-        CategoriesData.push(NeitemA);
-      });
-    }
-    var categoriesItem = "";
-    CategoriesData.map((category) => {
-      if (category.Title != undefined) {
-        categoriesItem =
-          categoriesItem == ""
-            ? category.Title
-            : categoriesItem + ";" + category.Title;
+    if (EnableSiteCompositionValidation) {
+      if (TotalCompositionsValue > 100) {
+        TaskShuoldBeUpdate = false;
+        TotalCompositionsValue = 0;
+        alert("site composition allocation should not be more than 100%");
       }
-    });
-    var CategoryID: any = [];
-    CategoriesData.map((category) => {
-      if (category.Id != undefined) {
-        CategoryID.push(category.Id);
-      }
-    });
-    if (linkedComponentData != undefined && linkedComponentData?.length > 0) {
-      linkedComponentData?.map((com: any) => {
-        if (
-          linkedComponentData != undefined &&
-          linkedComponentData?.length >= 0
-        ) {
-          $.each(linkedComponentData, function (index: any, smart: any) {
-            RelevantPortfolioIds = smart.Id;
-          });
-        }
-      });
-    }
-    if (isDropItemRes == true) {
-      if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
-        TaskAssignedTo.map((taskInfo) => {
-          AssignedToIds.push(taskInfo.Id);
-        });
-      }
-    } else {
-      if (EditData?.AssignedTo != undefined && EditData?.AssignedTo?.length > 0) {
-        EditData?.AssignedTo.map((taskInfo: any) => {
-          AssignedToIds.push(taskInfo.Id);
-        });
-      }
-    }
-    if (isDropItem == true) {
-      if (TaskTeamMembers != undefined && TaskTeamMembers?.length > 0) {
-        TaskTeamMembers.map((taskInfo) => {
-          TeamMemberIds.push(taskInfo.Id);
-        });
-      }
-    } else {
       if (
-        EditData?.Team_x0020_Members != undefined &&
-        EditData?.Team_x0020_Members?.length > 0
+        TotalCompositionsValue.toFixed(0) < 100 &&
+        TotalCompositionsValue > 0
       ) {
-        EditData?.Team_x0020_Members.map((taskInfo: any) => {
-          TeamMemberIds.push(taskInfo.Id);
-        });
+        TotalCompositionsValue = 0;
+        let conformationStatus = confirm(
+          "Site composition should not be less than 100% if you still want to do it click on OK"
+        );
+        if (conformationStatus) {
+          TaskShuoldBeUpdate = true;
+        } else {
+          TaskShuoldBeUpdate = false;
+        }
       }
     }
-
-    // if (TaskResponsibleTeam != undefined && TaskResponsibleTeam?.length > 0) {
-    //     TaskResponsibleTeam.map((taskInfo) => {
-    //         ResponsibleTeamIds.push(taskInfo.Id);
-    //     })
-    // }
-
-    //     if (EditData?.Responsible_x0020_Team != undefined && EditData?.Responsible_x0020_Team?.length > 0) {
-    //         EditData?.Responsible_x0020_Team.map((taskInfo: any) => {
-    //             ResponsibleTeamIds.push(taskInfo.Id);
-    //         })
-    //     }
-
-    // if (Items.smartComponent != undefined) {
-    //     Items.smartComponent.map((com: any) => {
-    //         // if (com.Title != undefined) {
-
-    //         //     component = com.Title
-
-    //         // }
-
-    //         if (Items.smartComponent != undefined && Items.smartComponent.length >= 0) {
-
-    //             $.each(Items.smartComponent, function (index: any, smart: any) {
-
-    //                 smartComponentsIds.push(smart.Id);
-
-    //             })
-    //         }
-    //     })
-    // }
-    if (
-      Items.ItemRankTitle != undefined &&
-      Items.ItemRankTitle != "Select Item Rank"
-    )
-      var ItemRank = SharewebItemRank.filter(
-        (option: { rankTitle: any }) => option.rankTitle == Items.ItemRankTitle
-      )[0].rank;
-
-    await web.lists
-      .getById(RequireData.MasterTaskListID)
-      .items.getById(Items.Id)
-      .update({
-        Title: Items.Title,
-
-        ItemRank: ItemRank,
-        Priority_x0020_Rank: Items.Priority_x0020_Rank,
-        ComponentId: { results: smartComponentsIds },
-        Deliverable_x002d_Synonyms: Items.Deliverable_x002d_Synonyms,
-        StartDate: EditData?.StartDate ? moment(EditData?.StartDate).format("MM-DD-YYYY") : null,
-        DueDate: EditData?.DueDate ? moment(EditData?.DueDate).format("MM-DD-YYYY") : null,
-        CompletedDate: EditData?.CompletedDate ? moment(EditData?.CompletedDate).format("MM-DD-YYYY") : null,
-
-        // Categories:EditData?.smartCategories != undefined && EditData?.smartCategories != ''?EditData?.smartCategories[0].Title:EditData?.Categories,
-        Categories: categoriesItem ? categoriesItem : null,
-        SharewebCategoriesId: { results: CategoryID },
-        // ClientCategoryId: { "results": RelevantPortfolioIds },
-        ServicePortfolioId:
-          RelevantPortfolioIds != "" ? RelevantPortfolioIds : null,
-        Synonyms: JSON.stringify(Items["Synonyms"]),
-        Package: Items.Package,
-        AdminStatus: Items.AdminStatus,
-        Priority: Items.Priority,
-        Mileage: Items.Mileage,
-        ValueAdded: Items.ValueAdded,
-        Idea: Items.Idea,
-        Background: Items.Background,
-        Admin_x0020_Notes: Items.Admin_x0020_Notes,
-        component_x0020_link: {
-          Description:
-            Items.component_x0020_link != undefined
-              ? Items.component_x0020_link
-              : null,
-          Url:
-            Items.component_x0020_link != undefined
-              ? Items.component_x0020_link
-              : null,
-        },
-        TechnicalExplanations:
-          PostTechnicalExplanations != undefined &&
-            PostTechnicalExplanations != ""
-            ? PostTechnicalExplanations
-            : EditData?.TechnicalExplanations,
-        Deliverables:
-          PostDeliverables != undefined && PostDeliverables != ""
-            ? PostDeliverables
-            : EditData?.Deliverables,
-        Short_x0020_Description_x0020_On:
-          PostShort_x0020_Description_x0020_On != undefined &&
-            PostShort_x0020_Description_x0020_On != ""
-            ? PostShort_x0020_Description_x0020_On
-            : EditData?.Short_x0020_Description_x0020_On,
-        Body:
-          PostBody != undefined && PostBody != "" ? PostBody : EditData?.Body,
-        AssignedToId: {
-          results:
-            AssignedToIds != undefined && AssignedToIds?.length > 0
-              ? AssignedToIds
-              : [],
-        },
-        Responsible_x0020_TeamId: {
-          results:
-            ResponsibleTeamIds != undefined && ResponsibleTeamIds?.length > 0
-              ? ResponsibleTeamIds
-              : [],
-        },
-        Team_x0020_MembersId: {
-          results:
-            TeamMemberIds != undefined && TeamMemberIds?.length > 0
-              ? TeamMemberIds
-              : [],
-        },
-        // PercentComplete: saveData.PercentComplete == undefined ? EditData?.PercentComplete : saveData.PercentComplete,
-
-        // Categories: Items.Categories
-
-        // BasicImageInfo: JSON.stringify(UploadImage)
-      })
-      .then((res: any) => {
-        console.log(res);
-
-        setModalIsOpenToFalse();
+    if (TaskShuoldBeUpdate) {
+      if (smartComponentData != undefined && smartComponentData.length > 0) {
+        smartComponentData.map((com: any) => {
+          if (
+            smartComponentData != undefined &&
+            smartComponentData.length >= 0
+          ) {
+            $.each(smartComponentData, function (index: any, smart: any) {
+              smartComponentsIds.push(smart.Id);
+            });
+          }
+        });
+      }
+      if (NewArray != undefined && NewArray.length > 0) {
+        CategoriesData = [];
+        NewArray.map((NeitemA: any) => {
+          CategoriesData.push(NeitemA);
+        });
+      }
+      var categoriesItem = "";
+      CategoriesData.map((category) => {
+        if (category.Title != undefined) {
+          categoriesItem =
+            categoriesItem == ""
+              ? category.Title
+              : categoriesItem + ";" + category.Title;
+        }
       });
+      var CategoryID: any = [];
+      CategoriesData.map((category) => {
+        if (category.Id != undefined) {
+          CategoryID.push(category.Id);
+        }
+      });
+      if (linkedComponentData != undefined && linkedComponentData?.length > 0) {
+        linkedComponentData?.map((com: any) => {
+          if (
+            linkedComponentData != undefined &&
+            linkedComponentData?.length >= 0
+          ) {
+            $.each(linkedComponentData, function (index: any, smart: any) {
+              RelevantPortfolioIds = smart.Id;
+              PortfolioIds.push(smart.Id);
+            });
+          }
+        });
+      }
+
+      if (filterdata != undefined && filterdata?.length > 0) {
+        filterdata?.map((com: any) => {
+          if (filterdata != undefined && filterdata?.length >= 0) {
+            $.each(filterdata, function (index: any, smart: any) {
+              RelevantProjectIds = smart.Id;
+              ProjectId.push(smart.Id);
+            });
+          }
+        });
+      }
+
+      if (filterdata != null && filterdata.length >= 0) {
+        filterdata.filter((com: any) => {
+          RelevantProjectIdRemove = com.Id;
+          ProjectIdRemove.push(com.Id);
+        });
+      }
+
+      if (TaskTeamMembers != undefined && TaskTeamMembers?.length > 0) {
+        TaskTeamMembers?.map((taskInfo) => {
+          TeamMemberIds.push(taskInfo.Id);
+        });
+      } else if (TaskTeamMembers.length === 0 && TeamMemberIds.length > 0) {
+        TeamMemberIds;
+      } else {
+        TeamMemberIds = [];
+      }
+      if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
+        TaskAssignedTo?.map((taskInfo) => {
+          AssignedToIds.push(taskInfo.Id);
+        });
+      } else if (TaskAssignedTo?.length === 0 && AssignedToIds?.length > 0) {
+        AssignedToIds;
+      } else {
+        AssignedToIds = [];
+      }
+
+      if (selectedClientCategory?.length > 0) {
+        selectedClientCategory.map((dataItem: any) => {
+          ClientCategoryIDs.push(dataItem.Id);
+        });
+      } else {
+        ClientCategoryIDs = [];
+      }
+
+      if (
+        Items.ItemRankTitle != undefined &&
+        Items.ItemRankTitle != "Select Item Rank"
+      )
+        var ItemRank = CMSItemRank.filter(
+          (option: { rankTitle: any }) =>
+            option.rankTitle == Items.ItemRankTitle
+        )[0].rank;
+      let FeatureTypeIds =
+        FeatureTypeData?.length != 0 ? FeatureTypeData[0]?.Id : null;
+      await web.lists
+        .getById(RequireData.MasterTaskListID)
+        .items.getById(Items.Id)
+        .update({
+          Title: Items.Title,
+          FeatureTypeId: FeatureTypeIds,
+          ItemRank: ItemRank,
+          PriorityRank: Items.PriorityRank,
+          // ComponentId: { results: smartComponentsIds },
+          DeliverableSynonyms: Items.DeliverableSynonyms,
+          StartDate: EditData?.StartDate
+            ? moment(EditData?.StartDate).format("MM-DD-YYYY")
+            : null,
+          DueDate: EditData?.DueDate
+            ? moment(EditData?.DueDate).format("MM-DD-YYYY")
+            : null,
+          CompletedDate: EditData?.CompletedDate
+            ? moment(EditData?.CompletedDate).format("MM-DD-YYYY")
+            : null,
+
+          // Categories:EditData?.smartCategories != undefined && EditData?.smartCategories != ''?EditData?.smartCategories[0].Title:EditData?.Categories,
+          Categories: categoriesItem ? categoriesItem : null,
+          // ClientCategoryId: { "results": RelevantPortfolioIds },
+          ServicePortfolioId:
+            RelevantPortfolioIds != "" ? RelevantPortfolioIds : null,
+          PortfoliosId: (
+            { results: PortfolioIds?.length != 0 ? PortfolioIds : [] }
+              ? { results: PortfolioIds?.length != 0 ? PortfolioIds : [] }
+              : null
+          )
+            ? { results: PortfolioIds?.length >= 0 ? PortfolioIds : [] }
+            : null,
+          Synonyms: JSON.stringify(Items["Synonyms"]),
+          Package: Items.Package,
+          AdminStatus: Items.AdminStatus,
+          PercentComplete: Items?.PercentComplete / 100,
+          Priority: Items.Priority,
+          Mileage: Items.Mileage,
+          ValueAdded: Items.ValueAdded,
+          Idea: Items.Idea,
+          Background: Items.Background,
+          AdminNotes: Items.AdminNotes,
+          ShortDescriptionVerified: shortDescriptionVerifieds,
+          descriptionVerified: descriptionVerifieds,
+          BackgroundVerified: BackgroundVerifieds,
+          IdeaVerified: IdeaVerifieds,
+          ValueAddedVerified: ValueAddedVerifieds,
+          DeliverablesVerified: DeliverablesVerifieds,
+          TechnicalExplanationsVerified: TechnicalExplanationsVerifieds,
+          Item_x002d_Image: {
+            __metadata: { type: "SP.FieldUrlValue" },
+            Description:
+              EditData?.Item_x002d_Image?.Url != undefined
+                ? EditData?.Item_x002d_Image?.Url
+                : "",
+            Url:
+              EditData?.Item_x002d_Image?.Url != undefined
+                ? EditData?.Item_x002d_Image?.Url
+                : "",
+          },
+          // ClientActivity:,
+          ComponentLink: {
+            Description:
+              Items.ComponentLink != undefined ? Items.ComponentLink : null,
+            Url: Items.ComponentLink != undefined ? Items.ComponentLink : null,
+          },
+          TechnicalExplanations:
+            PostTechnicalExplanations != undefined &&
+              PostTechnicalExplanations != ""
+              ? PostTechnicalExplanations
+              : EditData?.TechnicalExplanations,
+          Deliverables:
+            PostDeliverables != undefined && PostDeliverables != ""
+              ? PostDeliverables
+              : EditData?.Deliverables,
+          Short_x0020_Description_x0020_On:
+            PostShort_x0020_Description_x0020_On != undefined &&
+              PostShort_x0020_Description_x0020_On != ""
+              ? PostShort_x0020_Description_x0020_On
+              : EditData?.Short_x0020_Description_x0020_On,
+          Help_x0020_Information:
+            PostHelp_x0020_Information != undefined &&
+              PostHelp_x0020_Information != ""
+              ? PostHelp_x0020_Information
+              : EditData?.Help_x0020_Information,
+          HelpInformation:
+            PostHelp_x0020_Information != undefined &&
+              PostHelp_x0020_Information != ""
+              ? PostHelp_x0020_Information
+              : EditData?.HelpInformation,
+          Body:
+            PostBody != undefined && PostBody != "" ? PostBody : EditData?.Body,
+          AssignedToId: {
+            results:
+              AssignedToIds != undefined && AssignedToIds?.length > 0
+                ? AssignedToIds
+                : [],
+          },
+          ResponsibleTeamId: {
+            results:
+              AssignedToIds != undefined && AssignedToIds?.length > 0
+                ? AssignedToIds
+                : [],
+          },
+          TeamMembersId: {
+            results:
+              TeamMemberIds != undefined && TeamMemberIds?.length > 0
+                ? TeamMemberIds
+                : [],
+          },
+        })
+        .then((res: any) => {
+          console.log(res);
+          EditComponentCallback(Items);
+          setModalIsOpenToFalse();
+        });
+    }
   };
-  const EditComponentPicker = (item: any, title: any) => {
-    // <ComponentPortPolioPopup ></ComponentPortPolioPopup>
+  const AddQuestionFunc = async () => {
+    try {
+      let componentId = CompoenetItem[0].Id;
+      const questionDescription = PostQuestionDescription;
+      const newItem = {
+        ItemType: "Question",
+        // Title: `${CompoenetItem[0].Title} - ${question}`,
+        Title: question,
+        ComponentsId: { results: [componentId] },
+        Permission: choice,
+        Body: questionDescription || EditData?.PostQuestionDescription || "",
+      };
+      await web.lists.getById(RequireData.SmartHelpListID).items.add(newItem);
+
+      // Update the state with the newly added item
+      setSmartHelpDetails([...SmartHelpDetails, newItem]);
+      setIsOpenPopup(false);
+      let smartHelpDetails = await web.lists
+        .getById(RequireData.SmartHelpListID)
+        .items.select(
+          "Title, Id, Body, Permission, ItemType, Components/Id, Components/Title, Created, Modified, Author/Id, Author/Title, Editor/Id, Editor/Title"
+        )
+        .expand("Components, Author, Editor")
+        .getAll();
+      setSmartHelpDetails(smartHelpDetails);
+      setQuestion("");
+      setChoice("");
+      PostQuestionDescription = "";
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleInputChange = (event: any) => {
+    const selectedValue = event.target.value;
+    setEditData({ ...EditData, PercentComplete: selectedValue });
+  };
+
+  const AddHelpFunc = async () => {
+    try {
+      let componentId = CompoenetItem[0].Id;
+      const questionDescription = PostQuestionDescription;
+      const newItem = {
+        ItemType: "Help",
+        // Title: `${CompoenetItem[0].Title} - ${help}`,
+        Title: help,
+        ComponentsId: { results: [componentId] },
+        Permission: choice,
+        Body: questionDescription || EditData?.PostQuestionDescription || "",
+      };
+      await web.lists.getById(RequireData.SmartHelpListID).items.add(newItem);
+
+      // Update the state with the newly added item
+      setSmartHelpDetails([...SmartHelpDetails, newItem]);
+      setOpenPopup(false);
+      let smartHelpDetails = await web.lists
+        .getById(RequireData.SmartHelpListID)
+        .items.select(
+          "Title, Id, Body, Permission, ItemType, Components/Id, Components/Title, Created, Modified, Author/Id, Author/Title, Editor/Id, Editor/Title"
+        )
+        .expand("Components, Author, Editor")
+        .getAll();
+      setSmartHelpDetails(smartHelpDetails);
+      setHelp("");
+      setChoice("");
+      PostQuestionDescription = "";
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const EditComponentPicker = (item: any) => {
     setIsComponentPicker(true);
-    setSharewebCategory(item);
-    // <ComponentPortPolioPopup props={item}></ComponentPortPolioPopup>
+    setTaskCat(item);
   };
-  // const onEditorStateChange = (e: any, item: any) => {
-  //     //  item.Description = e.target.value;
-  //     setComponent(EditData => ([...EditData]));
-  //     // const { components } = this.state;
-  //     // const x = { components };
-  //     // for (const i in x){
-  //     //     if(x[i].id ==== id){
-  //     //         x[i].contentValue.editorState = e;
-  //     //     }
-  //     // }
-  //     // this.setState({components: x})
-  // }
+  const opensmartmetadatapopup = (item: any) => {
+    setSmartdatapopup(true);
+    setSmartdata(item);
+  };
   const ChangeStatus = (e: any, item: any) => {
     item.AdminStatus = e.target.value;
     setComponent((EditData) => [...EditData]);
@@ -1341,6 +1870,24 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       let message: any = Editorvalue;
       EditData.TechnicalExplanations = message;
       PostTechnicalExplanations = EditData?.TechnicalExplanations;
+      console.log("Editor Data call back ====", Editorvalue);
+    },
+    []
+  );
+  const HelpInformationHtmlEditorCallBack = React.useCallback(
+    (Editorvalue: any) => {
+      let message: any = Editorvalue;
+      EditData.Help_x0020_Information = message;
+      PostHelp_x0020_Information = EditData?.Help_x0020_Information;
+      console.log("Editor Data call back ====", Editorvalue);
+    },
+    []
+  );
+  const QuestionDescriptionEditorCallBack = React.useCallback(
+    (Editorvalue: any) => {
+      let message: any = Editorvalue;
+      EditData.QuestionDescription = message;
+      PostQuestionDescription = EditData?.QuestionDescription;
       console.log("Editor Data call back ====", Editorvalue);
     },
     []
@@ -1411,9 +1958,7 @@ function EditInstitution({ item, SelectD, Calls }: any) {
       ? TeamConfigInfo?.Portfolio_x0020_Type
       : "",
     Services: TeamConfigInfo ? TeamConfigInfo?.Services : "",
-    siteUrl: TeamConfigInfo
-      ? TeamConfigInfo?.siteUrl
-      : RequireData.siteUrl,
+    siteUrl: TeamConfigInfo ? TeamConfigInfo?.siteUrl : RequireData.siteUrl,
     listName: TeamConfigInfo ? TeamConfigInfo?.siteType : "",
     itemID: TeamConfigInfo ? TeamConfigInfo?.Id : "",
   };
@@ -1437,65 +1982,93 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     return (
       <>
         <div className="align-items-center d-flex full-width justify-content-between">
-          <div className="ps-4">  <ul className=" m-0 p-0 spfxbreadcrumb"
-          >
-            <li>
-              {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-              {EditData?.Portfolio_x0020_Type != undefined && (
-                <a
-                  target="_blank"
-                  data-interception="off"
-                  href={`${RequireData.siteUrl}/SitePages/${EditData?.Portfolio_x0020_Type}-Portfolio.aspx`}
-                >
-                  {EditData?.Portfolio_x0020_Type}-Portfolio
-                </a>
-              )}
-            </li>
-            {(EditData?.Item_x0020_Type == "SubComponent" ||
-              EditData?.Item_x0020_Type == "Feature") && (
-                <> <li>
-                  {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-                  {(EditData?.Parent != undefined && ParentData != undefined && ParentData.length != 0) && (
+          <div className="ps-4">
+            {" "}
+            <ul className=" m-0 p-0 spfxbreadcrumb">
+              <li>
+                {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+                {EditData?.Portfolio_x0020_Type != undefined && (
+                  <a
+                    target="_blank"
+                    data-interception="off"
+                    href={`${RequireData.siteUrl}/SitePages/Team-Portfolio.aspx?PortfolioType=${EditData?.Portfolio_x0020_Type}`}
+                  >
+                    {EditData?.Portfolio_x0020_Type}-Portfolio
+                  </a>
+                )}
+              </li>
+              {(EditData?.Item_x0020_Type == "SubComponent" ||
+                EditData?.Item_x0020_Type == "Feature") && (
+                  <>
+                    {" "}
+                    <li>
+                      {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+                      {EditData?.Parent != undefined &&
+                        ParentData != undefined &&
+                        ParentData.length != 0 && (
+                          <a
+                            target="_blank"
+                            data-interception="off"
+                            href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${ParentData[0].Parent.Id}`}
+                          >
+                            {ParentData[0].Parent.Title}
+                          </a>
+                        )}
+                    </li>
+                    <li>
+                      {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
+                      {EditData?.Parent != undefined && (
+                        <a
+                          target="_blank"
+                          data-interception="off"
+                          href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${EditData?.Parent.Id}`}
+                        >
+                          {EditData?.Parent.Title}
+                        </a>
+                      )}
+                    </li>
+                  </>
+                )}
 
-                    <a
-                      target="_blank"
-                      data-interception="off"
-                      href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${ParentData[0].Parent.Id}`}
-                    >
-                      {ParentData[0].Parent.Title}
-                    </a>
+              <li>
+                {EditData?.Item_x0020_Type == "Feature" && (
+                  <a>
+                    <>
+                      <span className="Dyicons mt--3 me-1">F</span>
 
-                  )}
-                </li>
-                  <li>
-                    {/* if="Task.Portfolio_x0020_Type=='Component'  (Task.Item_x0020_Type=='Component Category')" */}
-                    {EditData?.Parent != undefined && (
-                      <a
-                        target="_blank"
-                        data-interception="off"
-                        href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${EditData?.Parent.Id}`}
-                      >
-                        {EditData?.Parent.Title}
-                      </a>
-                    )}
-                  </li>
-                </>
-              )}
+                      {EditData?.Title}
+                    </>
+                  </a>
+                )}
+                {EditData?.Item_x0020_Type == "SubComponent" && (
+                  <a>
+                    <>
+                      <span className="Dyicons mt--3 me-1">S</span>
+                      {EditData?.Title}
+                    </>
+                  </a>
+                )}
+                {EditData?.Item_x0020_Type == "Component" && (
+                  <a>
+                    <>
+                      <span className="Dyicons mt--3 me-1">C</span>
+                      {EditData?.Title}
+                    </>
+                  </a>
+                )}
+              </li>
+            </ul>
+          </div>
 
-            <li>
-              {EditData?.Item_x0020_Type == "Feature" && <a>
-                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/feature_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"} />{EditData?.Title}</>
-              </a>}
-              {EditData?.Item_x0020_Type == "SubComponent" && <a>
-                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/SubComponent_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/SubComponent_icon.png"} />{EditData?.Title}</>
-              </a>}
-              {EditData?.Item_x0020_Type == "Component" && <a>
-                <><img style={{ width: "20px", marginRight: "2px" }} src={EditData?.Portfolio_x0020_Type == "Service" ? "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/Service_Icons/component_icon.png" : "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/component_icon.png"} />{EditData?.Title}</>
-              </a>}
-            </li>
-          </ul></div>
-
-          <div className="feedbkicon"> <Tooltip /> </div>
+          <div className="feedbkicon">
+            {" "}
+            <Tooltip
+              ComponentId="1258"
+              IsServiceTask={
+                EditData?.Portfolio_x0020_Type == "Service" ? true : false
+              }
+            />{" "}
+          </div>
         </div>
       </>
     );
@@ -1503,7 +2076,6 @@ function EditInstitution({ item, SelectD, Calls }: any) {
   const deleteTask = async () => {
     var confirmDelete = confirm("Are you sure, you want to delete this?");
     if (confirmDelete) {
-
       await web.lists
         .getById(RequireData.MasterTaskListID)
         .items.getById(item.Id)
@@ -1511,7 +2083,17 @@ function EditInstitution({ item, SelectD, Calls }: any) {
         .then((i: any) => {
           console.log(i);
           setComponent((EditData) => [...EditData]);
+
+          var ItmesDelete: any = {
+            data: {
+              Id: item.Id,
+              ItmesDelete: true,
+              siteType: item?.siteType,
+            },
+          };
+          Calls(ItmesDelete);
           setModalIsOpenToFalse();
+
           item.showProgressBar();
         });
     }
@@ -1528,6 +2110,54 @@ function EditInstitution({ item, SelectD, Calls }: any) {
 
   // ******************** This is for the Site Compsition Component related All Functions And CallBack *******************
 
+  const SiteCompositionCallBack = React.useCallback((Data: any, Type: any) => {
+    if (Data.ClientTime != undefined && Data.ClientTime.length > 0) {
+      setEnableSiteCompositionValidation(true);
+      let tempArray: any = [];
+      Data.ClientTime?.map((ClientTimeItems: any) => {
+        if (
+          ClientTimeItems.ClientCategory != undefined ||
+          ClientTimeItems.SiteImages?.length > 0
+        ) {
+          let newObject: any = {
+            ClienTimeDescription: ClientTimeItems.ClienTimeDescription,
+            Title: ClientTimeItems.Title,
+            localSiteComposition: true,
+            SiteImages: ClientTimeItems.SiteImages,
+            Date: ClientTimeItems.Date,
+          };
+          tempArray.push(newObject);
+        } else {
+          tempArray.push(ClientTimeItems);
+        }
+      });
+      const finalData = tempArray.filter((val: any, id: any, array: any) => {
+        return array.indexOf(val) == id;
+      });
+      setSiteTaggingData(finalData);
+    } else {
+      if (Type == "dataDeleted") {
+        setSiteTaggingData([{}]);
+      }
+    }
+    if (
+      Data.selectedClientCategory != undefined &&
+      Data.selectedClientCategory.length > 0
+    ) {
+      setSelectedClientCategory(Data.selectedClientCategory);
+    } else {
+      if (Type == "dataDeleted") {
+        setSelectedClientCategory([]);
+      }
+    }
+    if (
+      Data.SiteCompositionSettings != undefined &&
+      Data.SiteCompositionSettings.length > 0
+    ) {
+      setSiteCompositionSetting(Data.SiteCompositionSettings);
+    }
+    console.log("Site Composition final Call back Data =========", Data);
+  }, []);
 
   //  ******************  This is All Site Details Get Data Call From Backend **************
 
@@ -1538,205 +2168,825 @@ function EditInstitution({ item, SelectD, Calls }: any) {
     let tempArray: any = [];
     MetaData = await web.lists
       .getById(RequireData.SmartMetadataListID)
-      .items
-      .select("Id,Title,listId,siteUrl,siteName,Item_x005F_x0020_Cover,ParentID,EncodedAbsUrl,IsVisible,Created,Modified,Description1,SortOrder,Selectable,TaxType,Created,Modified,Author/Name,Author/Title,Editor/Name,Editor/Title")
+      .items.select(
+        "Id,Title,listId,siteUrl,siteName,Item_x005F_x0020_Cover,ParentID,EncodedAbsUrl,IsVisible,Created,Modified,Description1,SortOrder,Selectable,TaxType,Created,Modified,Author/Name,Author/Title,Editor/Name,Editor/Title"
+      )
       .top(4999)
-      .expand('Author,Editor')
-      .get()
-
-    siteConfig = getSmartMetadataItemsByTaxType(MetaData, 'Sites');
+      .expand("Author,Editor")
+      .get();
+    CategoryAllData = MetaData?.filter(
+      (item: any) => item?.TaxType === "Categories"
+    );
+    let MyCategoriesd: any = [];
+    if (CategoryAllData?.length > 0 && categoryitem?.length > 0) {
+      CategoryAllData.map((item: any) => {
+        categoryitem.map((items: any) => {
+          if (item.Title === items) {
+            MyCategoriesd.push(item);
+          }
+        });
+      });
+    }
+    setCategoriesData(MyCategoriesd);
+    siteConfig = getSmartMetadataItemsByTaxType(MetaData, "Sites");
     siteConfig?.map((site: any) => {
-      if (site.Title !== undefined && site.Title !== 'Foundation' && site.Title !== 'Master Tasks' && site.Title !== 'DRR' && site.Title !== "SDC Sites") {
+      if (
+        site.Title !== undefined &&
+        site.Title !== "Foundation" &&
+        site.Title !== "Master Tasks" &&
+        site.Title !== "DRR" &&
+        site.Title !== "SDC Sites"
+      ) {
         site.BtnStatus = false;
         site.isSelected = false;
         tempArray.push(site);
       }
-    })
+    });
     setSiteTypes(tempArray);
     tempArray?.map((tempData: any) => {
       SiteTypeBackupArray.push(tempData);
-    })
-  }
-  var getSmartMetadataItemsByTaxType = function (metadataItems: any, taxType: any) {
+    });
+  };
+  var getSmartMetadataItemsByTaxType = function (
+    metadataItems: any,
+    taxType: any
+  ) {
     var Items: any = [];
     metadataItems.map((taxItem: any) => {
-      if (taxItem.TaxType === taxType)
-        Items.push(taxItem);
+      if (taxItem.TaxType === taxType) Items.push(taxItem);
     });
     Items.sort((a: any, b: any) => {
       return a.SortOrder - b.SortOrder;
     });
     return Items;
-  }
+  };
 
-   //  ######################  This is  Client Category Get Data Call From Backend  #######################
+  //  ######################  This is  Client Category Get Data Call From Backend  #######################
 
-   const loadAllClientCategoryData = function (SmartTaxonomy: any) {
-    var AllTaskusers = []
-    var AllMetaData: any = []
-    var TaxonomyItems: any = []
-    var url = (`${RequireData.siteUrl}/_api/web/lists/getbyid('${RequireData?.SmartMetadataListID}')/items?$select=Id,Title,IsVisible,ParentID,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable,IsSendAttentionEmail/Id,IsSendAttentionEmail/Title,IsSendAttentionEmail/EMail&$expand=IsSendAttentionEmail&$orderby=SortOrder&$top=4999&$filter=TaxType eq '` + SmartTaxonomy + "'")
+  const loadAllClientCategoryData = function (SmartTaxonomy: any) {
+    var AllTaskusers = [];
+    var AllMetaData: any = [];
+    var TaxonomyItems: any = [];
+    var url =
+      `${RequireData.siteUrl}/_api/web/lists/getbyid('${RequireData?.SmartMetadataListID}')/items?$select=Id,Title,IsVisible,ParentID,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable,IsSendAttentionEmail/Id,IsSendAttentionEmail/Title,IsSendAttentionEmail/EMail&$expand=IsSendAttentionEmail&$orderby=SortOrder&$top=4999&$filter=TaxType eq '` +
+      SmartTaxonomy +
+      "'";
     $.ajax({
-        url: url,
-        method: "GET",
-        headers: {
-            "Accept": "application/json; odata=verbose"
-        },
-        success: function (data) {
-            AllTaskusers = data.d.results;
-            $.each(AllTaskusers, function (index: any, item: any) {
-                if (item.Title.toLowerCase() == 'pse' && item.TaxType == 'Client Category') {
-                    item.newTitle = 'EPS';
-                }
-                else if (item.Title.toLowerCase() == 'e+i' && item.TaxType == 'Client Category') {
-                    item.newTitle = 'EI';
-                }
-                else if (item.Title.toLowerCase() == 'education' && item.TaxType == 'Client Category') {
-                    item.newTitle = 'Education';
-                }
-                else if (item.Title.toLowerCase() == 'migration' && item.TaxType == 'Client Category') {
-                    item.newTitle = 'Migration';
-                }
-                else {
-                    item.newTitle = item.Title;
-                }
-                AllMetaData.push(item);
-            })
-            if (SmartTaxonomy == "Client Category") {
-                // setAllClientCategoryData(AllMetaData);
-                // AllClientCategoryDataBackup = AllMetaData;
-                BuildClieantCategoryAllDataArray(AllMetaData);
-            }
-        },
-        error: function (error: any) {
-            console.log('Error:', error)
+      url: url,
+      method: "GET",
+      headers: {
+        Accept: "application/json; odata=verbose",
+      },
+      success: function (data) {
+        AllTaskusers = data.d.results;
+        $.each(AllTaskusers, function (index: any, item: any) {
+          if (
+            item.Title.toLowerCase() == "pse" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "EPS";
+          } else if (
+            item.Title.toLowerCase() == "e+i" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "EI";
+          } else if (
+            item.Title.toLowerCase() == "education" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "Education";
+          } else if (
+            item.Title.toLowerCase() == "migration" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "Migration";
+          } else {
+            item.newTitle = item.Title;
+          }
+          AllMetaData.push(item);
+        });
+        if (SmartTaxonomy == "Client Category") {
+          // setAllClientCategoryData(AllMetaData);
+          // AllClientCategoryDataBackup = AllMetaData;
+          BuildClieantCategoryAllDataArray(AllMetaData);
         }
-    })
-};
+      },
+      error: function (error: any) {
+        console.log("Error:", error);
+      },
+    });
+  };
 
-const BuildClieantCategoryAllDataArray = (DataItem: any) => {
+  const BuildClieantCategoryAllDataArray = (DataItem: any) => {
     let MainParentArray: any = [];
     let FinalArray: any = [];
     if (DataItem != undefined && DataItem.length > 0) {
-        DataItem.map((Item: any) => {
-            if (Item.ParentID == 0) {
-                Item.Child = [];
-                MainParentArray.push(Item);
-            }
-        })
+      DataItem.map((Item: any) => {
+        if (Item.ParentID == 0) {
+          Item.Child = [];
+          MainParentArray.push(Item);
+        }
+      });
     }
     if (MainParentArray?.length > 0) {
-        MainParentArray.map((ParentArray: any) => {
+      MainParentArray.map((ParentArray: any) => {
+        if (DataItem?.length > 0) {
+          DataItem.map((ChildArray: any) => {
+            if (ParentArray.Id == ChildArray.ParentID) {
+              ChildArray.siteName = ParentArray.newTitle;
+              ChildArray.Child = [];
+              ParentArray.Child.push(ChildArray);
+            }
+          });
+        }
+      });
+    }
+    if (MainParentArray?.length > 0) {
+      MainParentArray.map((ParentArray: any) => {
+        if (ParentArray?.Child?.length > 0) {
+          ParentArray?.Child.map((ChildLevelFirst: any) => {
             if (DataItem?.length > 0) {
-                DataItem.map((ChildArray: any) => {
-                    if (ParentArray.Id == ChildArray.ParentID) {
-                        ChildArray.siteName = ParentArray.newTitle;
-                        ChildArray.Child = [];
-                        ParentArray.Child.push(ChildArray);
-                    }
-                })
+              DataItem.map((ChildArray: any) => {
+                if (ChildLevelFirst.Id == ChildArray.ParentID) {
+                  ChildArray.siteName = ParentArray.newTitle;
+                  ChildArray.Child = [];
+                  ChildLevelFirst.Child.push(ChildArray);
+                }
+              });
             }
-
-        })
+          });
+        }
+      });
     }
     if (MainParentArray?.length > 0) {
-        MainParentArray.map((ParentArray: any) => {
-            if (ParentArray?.Child?.length > 0) {
-                ParentArray?.Child.map((ChildLevelFirst: any) => {
+      MainParentArray.map((ParentArray: any) => {
+        if (ParentArray?.Child?.length > 0) {
+          ParentArray?.Child.map((ChildLevelFirst: any) => {
+            if (ChildLevelFirst.Child?.length > 0) {
+              ChildLevelFirst.Child.map((lastChild: any) => {
+                if (DataItem?.length > 0) {
+                  DataItem.map((ChildArray: any) => {
+                    if (lastChild.Id == ChildArray.ParentID) {
+                      ChildArray.siteName = ParentArray.newTitle;
+                      ChildArray.Child = [];
+                      lastChild.Child.push(ChildArray);
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+    if (MainParentArray?.length > 0) {
+      MainParentArray.map((ParentArray: any) => {
+        if (ParentArray?.Child?.length > 0) {
+          ParentArray?.Child.map((ChildLevelFirst: any) => {
+            if (ChildLevelFirst.Child?.length > 0) {
+              ChildLevelFirst.Child.map((lastChild: any) => {
+                if (lastChild.Child?.length > 0) {
+                  lastChild.Child?.map((endChild: any) => {
                     if (DataItem?.length > 0) {
-                        DataItem.map((ChildArray: any) => {
-                            if (ChildLevelFirst.Id == ChildArray.ParentID) {
-                                ChildArray.siteName = ParentArray.newTitle;
-                                ChildArray.Child = [];
-                                ChildLevelFirst.Child.push(ChildArray);
-                            }
-                        })
+                      DataItem.map((ChildArray: any) => {
+                        if (endChild.Id == ChildArray.ParentID) {
+                          ChildArray.siteName = ParentArray.newTitle;
+                          ChildArray.Child = [];
+                          endChild.Child.push(ChildArray);
+                        }
+                      });
                     }
-                })
+                  });
+                }
+              });
             }
-        })
+          });
+        }
+      });
     }
     if (MainParentArray?.length > 0) {
-        MainParentArray.map((ParentArray: any) => {
-            if (ParentArray?.Child?.length > 0) {
-                ParentArray?.Child.map((ChildLevelFirst: any) => {
-                    if (ChildLevelFirst.Child?.length > 0) {
-                        ChildLevelFirst.Child.map((lastChild: any) => {
-                            if (DataItem?.length > 0) {
-                                DataItem.map((ChildArray: any) => {
-                                    if (lastChild.Id == ChildArray.ParentID) {
-                                        ChildArray.siteName = ParentArray.newTitle;
-                                        ChildArray.Child = [];
-                                        lastChild.Child.push(ChildArray);
-                                    }
-                                })
-                            }
-                        })
-
-                    }
-
-                })
+      MainParentArray.map((finalItem: any) => {
+        FinalArray.push(finalItem);
+        if (finalItem.Child?.length > 0) {
+          finalItem.Child.map((FinalChild: any) => {
+            FinalArray.push(FinalChild);
+            if (FinalChild.Child?.length > 0) {
+              FinalChild.Child.map((LastChild: any) => {
+                FinalArray.push(LastChild);
+                if (LastChild.Child?.length > 0) {
+                  LastChild.Child?.map((endChild: any) => {
+                    FinalArray.push(endChild);
+                  });
+                }
+              });
             }
-        })
-    }
-    if (MainParentArray?.length > 0) {
-        MainParentArray.map((ParentArray: any) => {
-            if (ParentArray?.Child?.length > 0) {
-                ParentArray?.Child.map((ChildLevelFirst: any) => {
-                    if (ChildLevelFirst.Child?.length > 0) {
-                        ChildLevelFirst.Child.map((lastChild: any) => {
-                            if (lastChild.Child?.length > 0) {
-                                lastChild.Child?.map((endChild: any) => {
-                                    if (DataItem?.length > 0) {
-                                        DataItem.map((ChildArray: any) => {
-                                            if (endChild.Id == ChildArray.ParentID) {
-                                                ChildArray.siteName = ParentArray.newTitle;
-                                                ChildArray.Child = [];
-                                                endChild.Child.push(ChildArray);
-                                            }
-                                        })
-                                    }
-
-                                })
-                            }
-
-                        })
-
-                    }
-
-                })
-            }
-        })
-    }
-    if (MainParentArray?.length > 0) {
-        MainParentArray.map((finalItem: any) => {
-            FinalArray.push(finalItem);
-            if (finalItem.Child?.length > 0) {
-                finalItem.Child.map((FinalChild: any) => {
-                    FinalArray.push(FinalChild);
-                    if (FinalChild.Child?.length > 0) {
-                        FinalChild.Child.map((LastChild: any) => {
-                            FinalArray.push(LastChild)
-                            if (LastChild.Child?.length > 0) {
-                                LastChild.Child?.map((endChild: any) => {
-                                    FinalArray.push(endChild);
-                                })
-                            }
-                        })
-
-                    }
-                })
-
-            }
-        })
+          });
+        }
+      });
     }
     AllClientCategoryDataBackup = FinalArray;
-}
+  };
+
+  // AutoSuggestion
+  const autoSuggestionsForCategory = (e: any) => {
+    let searchedKey: any = e.target.value;
+
+    setCategorySearchKey(e.target.value);
+
+    let tempArray: any = [];
+
+    if (searchedKey?.length > 0) {
+      AutoCompleteItemsArray?.map((itemData: any) => {
+        if (
+          itemData.Newlabel.toLowerCase().includes(searchedKey.toLowerCase())
+        ) {
+          tempArray.push(itemData);
+        }
+      });
+
+      setSearchedCategoryData(tempArray);
+    } else {
+      setSearchedCategoryData([]);
+    }
+  };
+  let AutoCompleteItems: any = [];
+  const loadAllCategoryData = function (SmartTaxonomy: any) {
+    var AllTaskusers = [];
+
+    var AllMetaData: any = [];
+
+    var TaxonomyItems: any = [];
+
+    var url =
+      `${RequireData?.siteUrl}/_api/web/lists/getbyid('${RequireData?.SmartMetadataListID}')/items?$select=Id,Title,IsVisible,ParentID,SmartSuggestions,TaxType,Description1,Item_x005F_x0020_Cover,listId,siteName,siteUrl,SortOrder,SmartFilters,Selectable,IsSendAttentionEmail/Id,IsSendAttentionEmail/Title,IsSendAttentionEmail/EMail&$expand=IsSendAttentionEmail&$orderby=SortOrder&$top=4999&$filter=TaxType eq '` +
+      SmartTaxonomy +
+      "'";
+
+    $.ajax({
+      url: url,
+
+      method: "GET",
+
+      headers: {
+        Accept: "application/json; odata=verbose",
+      },
+
+      success: function (data) {
+        AllTaskusers = data.d.results;
+
+        $.each(AllTaskusers, function (index: any, item: any) {
+          if (
+            item.Title.toLowerCase() == "pse" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "EPS";
+          } else if (
+            item.Title.toLowerCase() == "e+i" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "EI";
+          } else if (
+            item.Title.toLowerCase() == "education" &&
+            item.TaxType == "Client Category"
+          ) {
+            item.newTitle = "Education";
+          } else {
+            item.newTitle = item.Title;
+          }
+
+          AllMetaData.push(item);
+        });
+
+        if (SmartTaxonomy == "Categories") {
+          TaxonomyItems = loadSmartTaxonomyPortfolioPopup(
+            AllMetaData,
+            SmartTaxonomy
+          );
+
+          setAllCategoryData(TaxonomyItems);
+
+          TaxonomyItems?.map((items: any) => {
+            if (items.Title == "Actions") {
+              ShowCategoryDatabackup = ShowCategoryDatabackup.concat(
+                items.childs
+              );
+            }
+          });
+        }
+      },
+
+      error: function (error: any) {
+        console.log("Error:", error);
+      },
+    });
+  };
+  var loadSmartTaxonomyPortfolioPopup = (
+    AllTaxonomyItems: any,
+    SmartTaxonomy: any
+  ) => {
+    var TaxonomyItems: any = [];
+
+    var uniqueNames: any = [];
+
+    $.each(AllTaxonomyItems, function (index: any, item: any) {
+      if (item.ParentID == 0 && SmartTaxonomy == item.TaxType) {
+        TaxonomyItems.push(item);
+
+        getChilds(item, AllTaxonomyItems);
+
+        if (item.childs != undefined && item.childs.length > 0) {
+          TaxonomyItems.push(item);
+        }
+
+        uniqueNames = TaxonomyItems.filter((val: any, id: any, array: any) => {
+          return array.indexOf(val) == id;
+        });
+      }
+    });
+
+    return uniqueNames;
+  };
+  const getChilds = (item: any, items: any) => {
+    item.childs = [];
+
+    $.each(items, function (index: any, childItem: any) {
+      if (
+        childItem.ParentID != undefined &&
+        parseInt(childItem.ParentID) == item.ID
+      ) {
+        childItem.isChild = true;
+
+        item.childs.push(childItem);
+
+        getChilds(childItem, items);
+      }
+    });
+  };
+
+  if (AllCategoryData?.length > 0) {
+    AllCategoryData?.map((item: any) => {
+      if (item.newTitle != undefined) {
+        item["Newlabel"] = item.newTitle;
+
+        AutoCompleteItems.push(item);
+
+        if (
+          item.childs != null &&
+          item.childs != undefined &&
+          item.childs.length > 0
+        ) {
+          item.childs.map((childitem: any) => {
+            if (childitem.newTitle != undefined) {
+              childitem["Newlabel"] =
+                item["Newlabel"] + " > " + childitem.Title;
+
+              AutoCompleteItems.push(childitem);
+            }
+
+            if (childitem.childs.length > 0) {
+              childitem.childs.map((subchilditem: any) => {
+                if (subchilditem.newTitle != undefined) {
+                  subchilditem["Newlabel"] =
+                    childitem["Newlabel"] + " > " + subchilditem.Title;
+
+                  AutoCompleteItems.push(subchilditem);
+                }
+              });
+            }
+          });
+        }
+      }
+    });
+  }
+
+  AutoCompleteItemsArray = AutoCompleteItems.reduce(function (
+    previous: any,
+    current: any
+  ) {
+    var alredyExists =
+      previous.filter(function (item: any) {
+        return item.Title === current.Title;
+      }).length > 0;
+
+    if (!alredyExists) {
+      previous.push(current);
+    }
+
+    return previous;
+  },
+    []);
+  const setSelectedCategoryData = (selectCategoryData: any, usedFor: any) => {
+    setCategorySearchKey("");
+
+    console.log(selectCategoryData);
+
+    selectedCategoryTrue(selectCategoryData[0].Title);
+
+    setIsComponentPicker(false);
+
+    let data: any = CategoriesData;
+
+    data = data.concat(selectCategoryData);
+
+    setCategoriesData((CategoriesData) => [...data]);
+
+    setSearchedCategoryData([]);
+
+    // setCategoriesData(data)
+  };
+
+  // ==============CHANGE Category function==============
+
+  const CategoryChange = (e: any, typeValue: any, IdValue: any) => {
+    let statusValue: any = e.currentTarget.checked;
+
+    let type: any = typeValue;
+
+    let Id: any = IdValue;
+
+    if (statusValue) {
+      selectedCategoryTrue(type);
+
+      console.log(ShowCategoryDatabackup);
+
+      let array: any = [];
+
+      array = array.concat(CategoriesData);
+
+      ShowCategoryDatabackup.map((items: any) => {
+        if (items.Title == type) {
+          array.push(items);
+        }
+      });
+
+      setCategoriesData((CategoriesData) => [...array]);
+    }
+
+    if (statusValue == false) {
+      selectedCategoryFalse(type);
+
+      console.log(ShowCategoryDatabackup);
+
+      let array: any = [];
+
+      array = array.concat(CategoriesData);
+
+      array?.map((item: any, index: any) => {
+        if (item.Title == type) {
+          array.splice(index, 1);
+        }
+      });
+
+      setCategoriesData((CategoriesData) => [...array]);
+    }
+  };
+
+  const selectedCategoryFalse = (type: any) => {
+    if (type == "Phone") {
+      setPhoneStatus(false);
+    }
+
+    if (type == "Email Notification") {
+      setEmailStatus(false);
+    }
+
+    if (type == "Immediate") {
+      setImmediateStatus(false);
+    }
+
+    if (type == "Approval") {
+      setApprovalStatus(false);
+    }
+  };
+
+  // For first time
+
+  const selectedCategoryTrue = (type: any) => {
+    if (type == "Phone") {
+      setPhoneStatus(true);
+    }
+
+    if (type == "Email Notification") {
+      setEmailStatus(true);
+    }
+
+    if (type == "Immediate") {
+      setImmediateStatus(true);
+    }
+
+    if (type == "Approval") {
+      setApprovalStatus(true);
+    }
+  };
+
+  const imageTabCallBack = React.useCallback((data: any) => {
+    setEditData(data);
+    console.log(EditData);
+    console.log(data);
+    // setEditdocumentsData(data);
+  }, []);
+
+  React.useEffect(() => {
+    const categoryd = item?.Categories?.split(";");
+    categoryd?.map((item: any) => {
+      selectedCategoryTrue(item);
+    });
+  }, []);
+
+  const toggleCategorySelection = function (item: any) {
+    setCategoriesData(function (prevCategoriesData) {
+      var itemIndex = -1;
+
+      for (var i = 0; i < prevCategoriesData.length; i++) {
+        if (prevCategoriesData[i].Id === item.Id) {
+          itemIndex = i;
+          break;
+        }
+      }
+
+      if (itemIndex !== -1) {
+        // Category is already selected, so remove it.
+        var updatedCategoriesData = prevCategoriesData.slice(); // Create a shallow copy.
+        updatedCategoriesData.splice(itemIndex, 1);
+        return updatedCategoriesData;
+      } else {
+        // Category is not selected, so add it.
+        return prevCategoriesData.concat([item]);
+      }
+    });
+  };
+
+  const DeleteCrossIconData = async (titleToRemove: any) => {
+    try {
+      let web = new Web(SelectD?.siteUrl);
+
+      // Update the multi-lookup field for each item
+      titleToRemove.length > 0 &&
+        (await web.lists
+          .getById(SelectD?.MasterTaskListID)
+          .items.getById(titleToRemove[0])
+          .update({
+            PortfoliosId: {
+              results: titleToRemove !== undefined ? titleToRemove : [],
+            },
+          })
+          .then((res: any) => {
+            console.log(res);
+          })
+          .catch((error) => {
+            console.log("error", error);
+          }));
+
+      let updatedComponentData: any = [];
+      updatedComponentData = filterdata.filter(
+        (itemmm: any) => itemmm.Id !== titleToRemove[0]
+      );
+      console.log("remove data", updatedComponentData);
+      setfilterData(updatedComponentData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const choiceHandler = (event: any) => {
+    setChoice(event.target.value);
+  };
+
+  const editQuestionHandler = (ques: any) => {
+    setEditPopup(true);
+    setDataUpdate(ques);
+    ID = ques.Id;
+  };
+
+  const editHelpHandler = (help: any) => {
+    setEditHelpPopup(true);
+    setHelpDataUpdate(help);
+    ID = help.Id;
+  };
+
+  const updateDetails = async () => {
+    const questionDescription = PostQuestionDescription?.replace(
+      /<[^>]+>|&nbsp;|\n/g,
+      ""
+    );
+    try {
+      await web.lists
+        .getById(RequireData.SmartHelpListID)
+        .items.getById(ID)
+        .update({
+          Title: question ? question : dataUpdate?.Title,
+          Permission: choice ? choice : dataUpdate?.choice,
+          Body: questionDescription
+            ? questionDescription || EditData?.PostQuestionDescription || ""
+            : dataUpdate?.Body,
+        })
+        .then(async (i: any) => {
+          console.log(i);
+
+          // Fetch the updated data and set it to SmartHelpDetails
+          const updatedSmartHelpDetails = await web.lists
+            .getById(RequireData.SmartHelpListID)
+            .items.select(
+              "Title, Id, Body, Permission, ItemType, Components/Id, Components/Title, Created, Modified, Author/Id, Author/Title, Editor/Id, Editor/Title"
+            )
+            .expand("Components, Author, Editor")
+            .getAll();
+          setSmartHelpDetails(updatedSmartHelpDetails);
+          setQuestion("");
+          setChoice("");
+          PostQuestionDescription = "";
+          setEditPopup(false);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const updateHelpDetails = async () => {
+    const questionDescription = PostQuestionDescription?.replace(
+      /<[^>]+>|&nbsp;|\n/g,
+      ""
+    );
+    try {
+      await web.lists
+        .getById(RequireData.SmartHelpListID)
+        .items.getById(ID)
+        .update({
+          Title: help ? help : helpDataUpdate?.Title,
+          Permission: choice ? choice : helpDataUpdate?.choice,
+          Body: questionDescription
+            ? questionDescription || EditData?.PostQuestionDescription || ""
+            : helpDataUpdate?.Body,
+        })
+        .then(async (i: any) => {
+          console.log(i);
+
+          // Fetch the updated data and set it to SmartHelpDetails
+          const updatedSmartHelpDetails = await web.lists
+            .getById(RequireData.SmartHelpListID)
+            .items.select(
+              "Title, Id, Body, Permission, ItemType, Components/Id, Components/Title, Created, Modified, Author/Id, Author/Title, Editor/Id, Editor/Title"
+            )
+            .expand("Components, Author, Editor")
+            .getAll();
+          setSmartHelpDetails(updatedSmartHelpDetails);
+          setHelp("");
+          setChoice("");
+          PostQuestionDescription = "";
+          setEditHelpPopup(false);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // Function to delete Question and Help from Help tab section
+  const deleteHandler = async (item_Id: any) => {
+    await web.lists
+      .getById(RequireData.SmartHelpListID)
+      .items.getById(item_Id)
+      .recycle()
+      .then((i: any) => {
+        console.log(i);
+        SmartHelpDetails.map((catId: any, index: any) => {
+          if (item_Id == catId.Id) {
+            SmartHelpDetails.splice(index, 1);
+          }
+        });
+      });
+    setSmartHelpDetails((SmartHelpDetails: any) => [...SmartHelpDetails]);
+  };
+
+  React.useEffect(() => {
+    setTimeout(() => {
+      const panelMain: any = document.querySelector(".ms-Panel-main");
+      if (panelMain && PortfolioTypeColor?.length > 0) {
+        panelMain.style.setProperty("--SiteBlue", PortfolioTypeColor); // Set the desired color value here
+      }
+    }, 2000);
+  }, [
+    IsComponentPicker,
+    imagetab,
+    IsComponent,
+    IsService,
+    isOpenPopup,
+    editPopup,
+  ]);
+
+  // Change Type functionality
+
+  const changePortfolioType = async () => {
+    let confirmation = confirm("Are you sure you want to change the type ?");
+    if (confirmation) {
+      let web = new Web(item.siteUrl);
+      const selectedPopupItem = item.PortfolioStructureID;
+      const numbersOnly = selectedPopupItem.substring(1);
+      const selectedPorfolioItem = selectPortfolioType?.Title;
+      let firstWord: any;
+
+      if (selectedPorfolioItem.length > 0) {
+        firstWord = selectedPorfolioItem[0];
+      }
+
+      var postData: any = {
+        PortfolioTypeId: selectPortfolioType?.Id,
+        PortfolioStructureID: firstWord + numbersOnly,
+      };
+
+      await web.lists
+        .getById(RequireData.MasterTaskListID)
+        .items.getById(item.Id)
+        .update(postData)
+        .then(async (res: any) => {
+          if (
+            item?.subRows?.length > 0 &&
+            item?.subRows != undefined &&
+            item?.subRows != null
+          ) {
+            item?.subRows?.map(async (subRow: any) => {
+              if (
+                subRow?.Item_x0020_Type === "SubComponent" ||
+                subRow?.Item_x0020_Type === "Feature"
+              ) {
+                var originalString = subRow.PortfolioStructureID;
+                var stringWithoutFirstLetter = originalString.substring(1);
+                const selectedPorfolioItem = selectPortfolioType?.Title;
+                let firstWord: any;
+
+                if (selectedPorfolioItem.length > 0) {
+                  firstWord = selectedPorfolioItem[0];
+                }
+
+                var postData1: any = {
+                  PortfolioTypeId: selectPortfolioType?.Id,
+                  PortfolioStructureID: firstWord + stringWithoutFirstLetter,
+                };
+
+                await web.lists
+                  .getById(RequireData.MasterTaskListID)
+                  .items.getById(subRow.Id)
+                  .update(postData1)
+                  .then(async (res: any) => {
+                    if (
+                      subRow?.subRows?.length > 0 &&
+                      subRow?.subRows != undefined &&
+                      subRow?.subRows != null
+                    ) {
+                      subRow?.subRows?.map(async (feat: any) => {
+                        if (feat?.Item_x0020_Type === "Feature") {
+                          var originalString = feat.PortfolioStructureID;
+                          var stringWithoutFirstLetter =
+                            originalString.substring(1);
+                          const selectedPorfolioItem =
+                            selectPortfolioType?.Title;
+                          let firstWord: any;
+
+                          if (selectedPorfolioItem.length > 0) {
+                            firstWord = selectedPorfolioItem[0];
+                          }
+
+                          var postData2: any = {
+                            PortfolioTypeId: selectPortfolioType?.Id,
+                            PortfolioStructureID:
+                              firstWord + stringWithoutFirstLetter,
+                          };
+                          await web.lists
+                            .getById(RequireData.MasterTaskListID)
+                            .items.getById(feat.Id)
+                            .update(postData2)
+                            .then(async (res: any) => {
+                              setChangeType(false);
+                            })
+                            .catch((err: any) => { });
+                        }
+                      });
+                    } else {
+                      setChangeType(false);
+                    }
+                  })
+                  .catch((err: any) => {
+                    console.log(err);
+                  });
+              }
+            });
+          } else {
+            setChangeType(false);
+          }
+        })
+        .catch((err: any) => {
+          console.log(err);
+        });
+    }
+  };
 
   return (
     <>
       {console.log("All Done")}
-      <Panel className={`${EditData?.Portfolio_x0020_Type == "Service" ? " serviepannelgreena" : ""}`}
+      <Panel
+        className={`${EditData?.Portfolio_x0020_Type == "Service"
+            ? " serviepannelgreena"
+            : ""
+          }`}
         headerText={`${EditData?.Portfolio_x0020_Type}-Portfolio > ${EditData?.Title}`}
         isOpen={modalIsOpen}
         onDismiss={setModalIsOpenToFalse}
@@ -1746,11 +2996,17 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
       >
         {EditData != undefined && EditData?.Title != undefined && (
           <div id="EditGrueneContactSearch">
-            <div className="modal-body">
-              <ul className="nav nav-tabs" id="myTab" role="tablist">
+            <div className="modal-body mb-5">
+              <ul
+                className="nav nav-tabs fixed-Header"
+                id="myTab"
+                role="tablist"
+              >
                 <li className="nav-item" role="presentation">
                   <button
-                    className="nav-link active"
+                    className={
+                      usedFor != "Task-Popup" ? "nav-link active" : "nav-link"
+                    }
                     id="home-tab"
                     data-bs-toggle="tab"
                     data-bs-target="#home"
@@ -1764,7 +3020,9 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                 </li>
                 <li className="nav-item" role="presentation">
                   <button
-                    className="nav-link"
+                    className={
+                      usedFor == "Task-Popup" ? "nav-link active" : "nav-link"
+                    }
                     id="cncept-tab"
                     data-bs-toggle="tab"
                     data-bs-target="#concept"
@@ -1793,6 +3051,20 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                 <li className="nav-item" role="presentation">
                   <button
                     className="nav-link"
+                    id="help-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#help"
+                    type="button"
+                    role="tab"
+                    aria-controls="help"
+                    aria-selected="false"
+                  >
+                    HELP
+                  </button>
+                </li>
+                <li className="nav-item" role="presentation">
+                  <button
+                    className="nav-link"
                     id="image-tab"
                     data-bs-toggle="tab"
                     data-bs-target="#image"
@@ -1800,17 +3072,40 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                     role="tab"
                     aria-controls="image"
                     aria-selected="false"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      imageta();
+                    }}
                   >
                     IMAGE INFORMATION
                   </button>
                 </li>
+                <li className="alignCenter ml-auto">
+                  <a
+                    className="mt--2 hreflink"
+                    role="button"
+                    onClick={() => {
+                      setChangeType(true);
+                    }}
+                  >
+                    Change Type
+                  </a>
+                  <span className="hover-text">
+                    <span className="svg__iconbox mt-1 svg__icon--info dark"></span>
+                    <span className="tooltip-text pop-left">
+                      This link will be used to change the portfolio type of the
+                      Component item.
+                    </span>
+                  </span>
+                </li>
               </ul>
-              <div
-                className="tab-content clearfix "
-                id="myTabContent"
-              >
+              <div className="tab-content clearfix " id="myTabContent">
                 <div
-                  className="tab-pane  show active"
+                  className={
+                    usedFor != "Task-Popup"
+                      ? "tab-pane show active"
+                      : "tab-pane"
+                  }
                   id="home"
                   role="tabpanel"
                   aria-labelledby="home-tab"
@@ -1819,14 +3114,14 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                     <div className="col-sm-6 ">
                       <div className="col-12">
                         <div className="input-group">
-                          <label className="form-label  full-width">
-                            Title
-                          </label>
+                          <label className="form-label full-width">Title</label>
                           <input
                             type="text"
                             className="form-control"
                             defaultValue={
-                              EditData?.Title != undefined ? EditData?.Title : ""
+                              EditData?.Title != undefined
+                                ? EditData?.Title
+                                : ""
                             }
                             onChange={(e) => (EditData.Title = e.target.value)}
                           />
@@ -1840,7 +3135,7 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                               Item Rank
                             </label>
                             <select
-                              className="full_width searchbox_height"
+                              className="w-100" style={{ paddingTop: '3px' }}
                               defaultValue={EditData?.ItemRankTitle}
                               onChange={(e) =>
                                 (EditData.ItemRankTitle = e.target.value)
@@ -1851,8 +3146,8 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                                   ? "select Item Rank"
                                   : EditData?.ItemRankTitle}
                               </option>
-                              {SharewebItemRank &&
-                                SharewebItemRank.map(function (h: any, i: any) {
+                              {CMSItemRank &&
+                                CMSItemRank.map(function (h: any, i: any) {
                                   return (
                                     <option
                                       key={i}
@@ -1867,7 +3162,7 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                             </select>
                           </div>
                         </div>
-                        <div className="col-4 ps-0  mt-2">
+                        <div className="col-4 mt-2 ps-0">
                           <div className="input-group">
                             <label className="form-label full-width">
                               Deliverable-Synonyms
@@ -1877,185 +3172,138 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                               type="text"
                               className="form-control"
                               defaultValue={
-                                EditData?.Deliverable_x002d_Synonyms != undefined
-                                  ? EditData?.Deliverable_x002d_Synonyms
+                                EditData?.DeliverableSynonyms != undefined
+                                  ? EditData?.DeliverableSynonyms
                                   : ""
                               }
                               onChange={(e) =>
-                              (EditData.Deliverable_x002d_Synonyms =
-                                e.target.value)
+                                (EditData.DeliverableSynonyms = e.target.value)
                               }
                             />
                           </div>
                         </div>
-                        <div className="col-4 ps-0 pe-0 mt-2 ">
-                          {EditData?.Portfolio_x0020_Type == "Service" && (
-                            <div className="input-group">
-                              <label className="form-label full-width">
-                                Component Portfolio
-                              </label>
-                              <input type="text" className="form-control" />
-                              <span className="input-group-text">
-                                <svg
-                                  onClick={(e) =>
-                                    EditComponent(EditData, 'Component')
-                                  }
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 48 48"
-                                  fill="none"
-                                >
-                                  <path
-                                    fill-rule="evenodd"
-                                    clip-rule="evenodd"
-                                    d="M33.5163 8.21948C33.058 8.34241 32.4072 8.6071 32.0702 8.80767C31.7334 9.00808 26.7046 13.9214 20.8952 19.7259L10.3328 30.2796L9.12891 35.1C8.46677 37.7511 7.95988 39.9549 8.0025 39.9975C8.04497 40.0399 10.2575 39.5397 12.919 38.8857L17.7581 37.6967L28.08 27.4328C33.7569 21.7875 38.6276 16.861 38.9036 16.4849C40.072 14.8925 40.3332 12.7695 39.5586 11.1613C38.8124 9.61207 37.6316 8.62457 36.0303 8.21052C34.9371 7.92775 34.5992 7.92896 33.5163 8.21948ZM35.7021 10.1369C36.5226 10.3802 37.6953 11.5403 37.9134 12.3245C38.2719 13.6133 38.0201 14.521 36.9929 15.6428C36.569 16.1059 36.1442 16.4849 36.0489 16.4849C35.8228 16.4849 31.5338 12.2111 31.5338 11.9858C31.5338 11.706 32.8689 10.5601 33.5598 10.2469C34.3066 9.90852 34.8392 9.88117 35.7021 10.1369ZM32.3317 15.8379L34.5795 18.0779L26.1004 26.543L17.6213 35.008L17.1757 34.0815C16.5838 32.8503 15.1532 31.437 13.9056 30.8508L12.9503 30.4019L21.3663 21.9999C25.9951 17.3788 29.8501 13.5979 29.9332 13.5979C30.0162 13.5979 31.0956 14.6059 32.3317 15.8379ZM12.9633 32.6026C13.8443 32.9996 14.8681 33.9926 15.3354 34.9033C15.9683 36.1368 16.0094 36.0999 13.2656 36.7607C11.9248 37.0836 10.786 37.3059 10.7347 37.2547C10.6535 37.1739 11.6822 32.7077 11.8524 32.4013C11.9525 32.221 12.227 32.2709 12.9633 32.6026Z"
-                                    fill="#333333"
-                                  />
-                                </svg>
-                              </span>
-                            </div>
-                          )}
-                          {EditData?.Portfolio_x0020_Type == "Component" && (
-                            <div className="input-group">
-                              <label className="form-label full-width">
-                                Service Portfolio
-                              </label>
-                              <input type="text" className="form-control" />
-                              <span className="input-group-text">
-                                <svg
-                                  onClick={(e) =>
-                                    EditComponent(EditData, 'Service')
-                                  }
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 48 48"
-                                  fill="none"
-                                >
-                                  <path
-                                    fill-rule="evenodd"
-                                    clip-rule="evenodd"
-                                    d="M33.5163 8.21948C33.058 8.34241 32.4072 8.6071 32.0702 8.80767C31.7334 9.00808 26.7046 13.9214 20.8952 19.7259L10.3328 30.2796L9.12891 35.1C8.46677 37.7511 7.95988 39.9549 8.0025 39.9975C8.04497 40.0399 10.2575 39.5397 12.919 38.8857L17.7581 37.6967L28.08 27.4328C33.7569 21.7875 38.6276 16.861 38.9036 16.4849C40.072 14.8925 40.3332 12.7695 39.5586 11.1613C38.8124 9.61207 37.6316 8.62457 36.0303 8.21052C34.9371 7.92775 34.5992 7.92896 33.5163 8.21948ZM35.7021 10.1369C36.5226 10.3802 37.6953 11.5403 37.9134 12.3245C38.2719 13.6133 38.0201 14.521 36.9929 15.6428C36.569 16.1059 36.1442 16.4849 36.0489 16.4849C35.8228 16.4849 31.5338 12.2111 31.5338 11.9858C31.5338 11.706 32.8689 10.5601 33.5598 10.2469C34.3066 9.90852 34.8392 9.88117 35.7021 10.1369ZM32.3317 15.8379L34.5795 18.0779L26.1004 26.543L17.6213 35.008L17.1757 34.0815C16.5838 32.8503 15.1532 31.437 13.9056 30.8508L12.9503 30.4019L21.3663 21.9999C25.9951 17.3788 29.8501 13.5979 29.9332 13.5979C30.0162 13.5979 31.0956 14.6059 32.3317 15.8379ZM12.9633 32.6026C13.8443 32.9996 14.8681 33.9926 15.3354 34.9033C15.9683 36.1368 16.0094 36.0999 13.2656 36.7607C11.9248 37.0836 10.786 37.3059 10.7347 37.2547C10.6535 37.1739 11.6822 32.7077 11.8524 32.4013C11.9525 32.221 12.227 32.2709 12.9633 32.6026Z"
-                                    fill="#333333"
-                                  />
-                                </svg>
-                              </span>
-                            </div>
-                          )}
-                          {EditData?.Portfolio_x0020_Type == "Component" && (
-                            <div className="col-sm-12  inner-tabb">
-                              {linkedComponentData?.length > 0 ? (
-                                <div className="serviepannelgreena">
-                                  
-                                  {linkedComponentData?.map((com: any) => {
+                        <div className="col-4 px-0 mt-2">
+                          <div className="input-group">
+                            <label className="form-label full-width">
+                              Portfolio Item
+                            </label>
+
+                            {(linkedComponentData?.length == 0 ||
+                              linkedComponentData.length !== 1) && (
+                                <>
+                                  <input type="text" className="form-control" onChange={(e) =>
+                                    autoSuggestionsForServiceAndComponent(
+                                      e,
+                                      "Portfolio"
+                                    )
+                                  } />
+                                  <span
+                                    className="input-group-text"
+                                    placeholder="Portfolio Item"
+                                  >
+                                    <span
+                                      onClick={(e) => EditComponent(EditData)}
+                                      className="svg__iconbox svg__icon--editBox"
+                                    >
+                                      {" "}
+                                    </span>
+                                  </span>
+                                </>
+                              )}
+                            {SearchedServiceCompnentData?.length > 0 ? (
+                              <div className="SmartTableOnTaskPopup">
+                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                  {SearchedServiceCompnentData.map((Item: any) => {
                                     return (
-                                      <>
-                                        <div className="block d-flex justify-content-between mb-1">
-                                       
-                                            <a
-                                              className="hreflink service ps-2"
-                                              target="_blank"
-                                              data-interception="off"
-                                              href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}
-                                            >
-                                              {com.Title}
-                                            </a>
-                                            <a className='text-end'>  <span className="bg-light svg__icon--cross svg__iconbox"onClick={() =>
-                                                   setLinkedComponentData([])
-                                              }></span></a>
-                                          
-                                           
-                                       
-                                        </div>
-                                      </>
+                                      <li
+                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                        key={Item.id}
+                                        onClick={() => Call([Item], "Single", "Save")}>
+                                        <a>{Item.Path}</a>
+                                      </li>
                                     );
                                   })}
-                                </div>
-                              ) : null}
-                              {/* <span className="input-group-text">
-                                                            <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
-                                                                onClick={(e) => EditComponent(EditData, 'Component')} />
-                                                        </span> */}
+                                </ul>
+                              </div>) : null} </div>
+
+                          {linkedComponentData &&
+                            linkedComponentData.length == 1 ? (
+                            <div>
+                              {linkedComponentData?.map(
+                                (items: any, Index: any) => (
+                                  <div
+                                    className="full-width replaceInput pe-1 alignCenter"
+                                    key={Index}
+                                  >
+                                    <a
+                                      href={`${SelectD.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${items.Id}`}
+                                      className="textDotted hreflink"
+                                      data-interception="off"
+                                      target="_blank"
+                                    >
+                                      {items?.Title}
+                                    </a>
+                                    <span className="alignCenter" placeholder="Project">
+                                      <span
+                                        className="bg-dark svg__icon--cross svg__iconbox"
+                                        onClick={() =>
+                                          setLinkedComponentData([])
+                                        }
+                                      ></span>
+                                      <span
+                                        onClick={(e) => EditComponent(EditData)}
+                                        className="svg__iconbox svg__icon--editBox"
+                                      >
+                                        {" "}
+                                      </span>
+
+                                    </span>
+                                  </div>
+                                )
+                              )}
                             </div>
+                          ) : (
+                            ""
                           )}
-                          {EditData?.Portfolio_x0020_Type == "Service" && (
-                            <div className="col-sm-12  inner-tabb">
-                              {linkedComponentData?.length > 0 ? (
-                                <div>
-                                  {linkedComponentData?.map((com: any) => {
-                                    return (
-                                      <>
-                                        <div className="block d-flex justify-content-between mb-1">
-                                     
-                                            <a
-                                              className="hreflink service ps-2"
-                                              target="_blank"
-                                              data-interception="off"
-                                              href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}
-                                            >
-                                              {com.Title}
-                                            </a>
-                                            <a className='text-end'>
-                                            <span className="bg-light svg__icon--cross svg__iconbox"onClick={() =>
-                                                  setLinkedComponentData([])
-                                              }></span>
-                                            </a>
-                                          
-                                           
-                                         
-                                        </div>
-                                      </>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-                              {/* <span className="input-group-text">
-                                                            <img src="https://hhhhteams.sharepoint.com/_layouts/images/edititem.gif"
-                                                                onClick={(e) => EditComponent(EditData, 'Component')} />
-                                                        </span> */}
+
+                          {linkedComponentData &&
+                            linkedComponentData.length > 1 ? (
+                            <div className="w=100">
+                              {linkedComponentData?.map(
+                                (items: any, Index: any) => (
+                                  <div
+                                    className="block d-flex justify-content-between mb-1"
+                                    key={Index}
+                                  >
+                                    <a
+                                      href={`${SelectD.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${items.Id}`}
+                                      className="wid-90 light"
+                                      data-interception="off"
+                                      target="_blank"
+                                    >
+                                      {items?.Title}
+                                    </a>
+                                    <a className="text-end">
+                                      {" "}
+                                      <span
+                                        className="bg-light svg__icon--cross svg__iconbox"
+                                        onClick={() =>
+                                          setLinkedComponentData([])
+                                        }
+                                      ></span>
+                                    </a>
+
+                                  </div>
+                                )
+                              )}
                             </div>
+                          ) : (
+                            ""
                           )}
+
 
                           <div className="col-sm-12  inner-tabb">
                             <div>
-                              {/* {(EditData != undefined && EditData?.smartComponent != undefined)?
-                                                                <>
-                                                                {(EditData != undefined && EditData?.smartComponent != undefined && EditData?.smartComponent.length>0)&& EditData?.smartComponent.map((childinew: any) =>{
-                                                                return(
-                                                                    < div className="block bgsiteColor"
-
-                                                                    >
-                                                                        <a className="hreflink" target="_blank"
-                                                                            href="{{pageContext}}/SitePages/Portfolio-Profile.aspx?taskId={{EditData?.Id}}&amp;Site={{EditData?.siteType}}">{childinew.Title}</a>
-                                                                        <a className="hreflink"
-                                                                        >
-                                                                            <img src="/_layouts/images/delete.gif" ></img>
-                                                                        </a>
-                                                                    </div>
-                                                                )}
-                                                                )}
-                                                                </>:<>
-                                                                 {(EditData != undefined && EditData?.Component != undefined  && EditData?.Component.length>0) && EditData?.Component.map((childinew: any) =>{
-                                                                 return(
-                                                                    < div className="block bgsiteColor"
-
-                                                                    >
-                                                                        <a className="hreflink" target="_blank"
-                                                                            href="{{pageContext}}/SitePages/Portfolio-Profile.aspx?taskId={{EditData?.Id}}&amp;Site={{EditData?.siteType}}">{childinew.Title}</a>
-                                                                        <a className="hreflink"
-                                                                        >
-                                                                            <img src="/_layouts/images/delete.gif" ></img>
-                                                                        </a>
-                                                                    </div>
-                                                                 )}
-                                                                )}
-                                                                </>
-                                                              } */}
-                              {/* {smartComponentData?.length > 0 ? <>
-                                                            <input type="text" ng-model="SearchService"
-                                                                className="form-control"
-                                                                id="{{PortfoliosID}}" autoComplete="off"
-                                                            />
-                                                        </> :null
-                                                        
-                                                    } */}
                               {smartComponentData
                                 ? smartComponentData?.map((com: any) => {
                                   return (
@@ -2066,17 +3314,21 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                                           style={{ width: "81%" }}
                                         >
                                           <a
-                                            style={{ color: "#fff !important" }}
+                                            style={{
+                                              color: "#fff !important",
+                                            }}
                                             target="_blank"
                                             href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${com.ID}`}
                                           >
                                             {com.Title}
                                           </a>
                                           <a>
-                                          <span className="bg-light svg__icon--cross svg__iconbox" onClick={() =>
+                                            <span
+                                              className="bg-light svg__iconbox svg__icon--cross"
+                                              onClick={() =>
                                                 setSmartComponentData([])
-                                              }></span>
-                                           
+                                              }
+                                            ></span>
                                           </a>
                                         </div>
                                       </div>
@@ -2091,42 +3343,73 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                       <div className="mx-0 row mt-2">
                         <div className="col-sm-4 ps-0 ">
                           <div className="input-group">
-                            <label className="form-label  full-width">
+                            <label className="form-label full-width">
                               Start Date
                             </label>
-                            <input type="date" className="form-control" max="9999-12-31"
-                              defaultValue={moment(EditData?.StartDate).format("YYYY-MM-DD")}
-                              onChange={(e) => setEditData({
-                                ...EditData, StartDate: e.target.value
-                              })}
+                            <input
+                              type="date"
+                              className="form-control"
+                              max="9999-12-31"
+                              defaultValue={moment(EditData?.StartDate).format(
+                                "YYYY-MM-DD"
+                              )}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...EditData,
+                                  StartDate: e.target.value,
+                                })
+                              }
                             />
-
                           </div>
                         </div>
-                        <div className="col-sm-4 ">
+                        <div className="col-sm-4 ps-0">
                           <div className="input-group">
                             <label className="form-label  full-width">
                               Due Date
                             </label>
-                            <input type="date" className="form-control" max="9999-12-31"
-                              defaultValue={EditData?.DueDate ? moment(EditData?.DueDate).format("YYYY-MM-DD") : ''}
-                              onChange={(e) => setEditData({
-                                ...EditData, DueDate: e.target.value
-                              })}
+                            <input
+                              type="date"
+                              className="form-control"
+                              max="9999-12-31"
+                              defaultValue={
+                                EditData?.DueDate
+                                  ? moment(EditData?.DueDate).format(
+                                    "YYYY-MM-DD"
+                                  )
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                setEditData({
+                                  ...EditData,
+                                  DueDate: e.target.value,
+                                })
+                              }
                             />
                           </div>
                         </div>
-                        <div className="col-sm-4 pe-0">
+                        <div className="col-sm-4 px-0">
                           <div className="input-group">
                             <label className="form-label  full-width">
                               {" "}
                               Completion Date{" "}
                             </label>
-                            <input type="date" className="form-control" max="9999-12-31"
-                              defaultValue={EditData?.CompletedDate ? moment(EditData?.CompletedDate).format("YYYY-MM-DD") : ''}
-                              onChange={(e) => setEditData({
-                                ...EditData, CompletedDate: e.target.value
-                              })}
+                            <input
+                              type="date"
+                              className="form-control"
+                              max="9999-12-31"
+                              defaultValue={
+                                EditData?.CompletedDate
+                                  ? moment(EditData?.CompletedDate).format(
+                                    "YYYY-MM-DD"
+                                  )
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                setEditData({
+                                  ...EditData,
+                                  CompletedDate: e.target.value,
+                                })
+                              }
                             />
                           </div>
                         </div>
@@ -2159,14 +3442,13 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                               map(EditData["Synonyms"], (obj, index) => {
                                 return (
                                   <>
-                                    <div className="block ">
-                                      {obj.Title}
-                                      <a
-                                        className="input-group-text"
+                                    <div className="alignCenter block">
+                                      <span className="wid90">{obj.Title}</span>
+                                      <span
                                         onClick={(e) => deleteItem(EditData)}
-                                      >
-                                        <img src="/_layouts/images/delete.gif"></img>
-                                      </a>
+                                        className="bg-light ml-auto svg__iconbox svg__icon--cross"
+                                      ></span>
+                                      {/* <img onClick={(e) => deleteItem(EditData)} src="/_layouts/images/delete.gif"></img> */}
                                     </div>
                                   </>
                                 );
@@ -2174,7 +3456,7 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                           </div>
                         </div>
 
-                        <div className="col-sm-4">
+                        <div className="col-sm-4 ps-0">
                           <div className="input-group">
                             <label className="form-label  full-width">
                               Client Activity{" "}
@@ -2191,7 +3473,7 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                           </div>
                         </div>
 
-                        <div className="col-sm-4 pe-0">
+                        <div className="col-sm-4 px-0">
                           <div className="input-group">
                             <label className="form-label  full-width">
                               Package
@@ -2200,7 +3482,9 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                               type="text"
                               className="form-control"
                               defaultValue={
-                                EditData?.Package != null ? EditData?.Package : ""
+                                EditData?.Package != null
+                                  ? EditData?.Package
+                                  : ""
                               }
                               onChange={(e) =>
                                 (EditData.Package = e.target.value)
@@ -2215,102 +3499,24 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                             <label className="form-label  full-width">
                               Status
                             </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={EditData?.AdminStatus}
-                              onChange={(e) => ChangeStatus(e, EditData)}
-                            />
-                          </div>
-
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="NotStarted"
-                              type="radio"
-                              value="Not Started"
-                              checked={
-                                EditData?.AdminStatus === "Not Started"
-                                  ? true
-                                  : false
-                              }
-                              onChange={(e) =>
-                                setStatus(EditData, "Not Started")
-                              }
-                            ></input>
-                            <label className="form-check-label">
-                              Not Started{" "}
-                            </label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="NotStarted"
-                              type="radio"
-                              value="In Preparation"
-                              onChange={(e) =>
-                                setStatus(EditData, "In Preparation")
-                              }
-                              checked={
-                                EditData?.AdminStatus === "In Preparation"
-                                  ? true
-                                  : false
-                              }
-                            ></input>
-                            <label className="form-check-label">
-                              {" "}
-                              In Preparation
-                            </label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="NotStarted"
-                              type="radio"
-                              value="In Development"
-                              onChange={(e) =>
-                                setStatus(EditData, "In Development")
-                              }
-                              checked={
-                                EditData?.AdminStatus === "In Development"
-                                  ? true
-                                  : false
-                              }
-                            ></input>
-                            <label className="form-check-label">
-                              {" "}
-                              In Development{" "}
-                            </label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="NotStarted"
-                              type="radio"
-                              value="Active"
-                              onChange={(e) => setStatus(EditData, "Active")}
-                              checked={
-                                EditData?.AdminStatus === "Active" ? true : false
-                              }
-                            ></input>
-                            <label className="form-check-label">Active</label>
-                          </div>
-                          <div className="form-check">
-                            <input
-                              className="form-check-input"
-                              name="NotStarted"
-                              type="radio"
-                              value="Archived"
-                              onChange={(e) => setStatus(EditData, "Archived")}
-                              checked={
-                                EditData?.AdminStatus === "Archived"
-                                  ? true
-                                  : false
-                              }
-                            ></input>
-                            <label className="form-check-label">
-                              Archived{" "}
-                            </label>
+                            <div className="editcolumn full-width">
+                              {statusDropDown.map((item: any, index: any) => (
+                                <div className="SpfxCheckRadio">
+                                  <label key={index}>
+                                    <input
+                                      type="radio" className="radio"
+                                      name="percentComplete"
+                                      value={item.rank}
+                                      defaultChecked={
+                                        EditData?.PercentComplete === item.rank
+                                      }
+                                      onChange={handleInputChange}
+                                    />
+                                    {item.rankTitle}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                         <div className="col-sm-6">
@@ -2322,48 +3528,56 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                               type="text"
                               className="form-control"
                               value={
-                                EditData?.Mileage != null ? EditData?.Mileage : ""
+                                EditData?.Mileage != null
+                                  ? EditData?.Mileage
+                                  : ""
                               }
                               onChange={(e) => changeTime(e, EditData)}
                             />
                           </div>
 
-                          <div className="form-check">
+                          <div className="SpfxCheckRadio ">
                             <input
-                              className="form-check-input"
+                              className="radio"
                               name="radioTime"
                               onChange={(e) => setTime(EditData, "05")}
-                              checked={EditData?.Mileage === "05" ? true : false}
+                              checked={
+                                EditData?.Mileage === "05" ? true : false
+                              }
                               type="radio"
                             ></input>
                             <label className="form-check-label">
                               Very Quick
                             </label>
                           </div>
-                          <div className="form-check">
+                          <div className="SpfxCheckRadio">
                             <input
-                              className="form-check-input"
+                              className="radio"
                               name="radioTime"
                               onChange={(e) => setTime(EditData, "15")}
-                              checked={EditData?.Mileage === "15" ? true : false}
+                              checked={
+                                EditData?.Mileage === "15" ? true : false
+                              }
                               type="radio"
                             ></input>
 
                             <label className="form-check-label">Quick </label>
                           </div>
-                          <div className="form-check">
+                          <div className="SpfxCheckRadio">
                             <input
-                              className="form-check-input"
+                              className="radio"
                               name="radioTime"
                               onChange={(e) => setTime(EditData, "60")}
-                              checked={EditData?.Mileage === "60" ? true : false}
+                              checked={
+                                EditData?.Mileage === "60" ? true : false
+                              }
                               type="radio"
                             ></input>
                             <label className="form-check-label">Medium</label>
                           </div>
-                          <div className="form-check">
+                          <div className="SpfxCheckRadio">
                             <input
-                              className="form-check-input"
+                              className="radio"
                               name="radioTime"
                               onChange={(e) => setTime(EditData, "240")}
                               checked={
@@ -2385,15 +3599,15 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                           <input
                             type="text"
                             className="form-control"
-                            value={EditData?.Priority_x0020_Rank}
+                            value={EditData?.PriorityRank}
                             onChange={(e) => setPriorityNew(e, EditData)}
                             maxLength={2}
                           />
                         </div>
 
-                        <div className="form-check">
+                        <div className="SpfxCheckRadio">
                           <input
-                            className="form-check-input"
+                            className="radio"
                             name="radioPriority"
                             type="radio"
                             value="(1) High"
@@ -2404,9 +3618,9 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                           ></input>
                           <label> High</label>
                         </div>
-                        <div className="form-check">
+                        <div className="SpfxCheckRadio">
                           <input
-                            className="form-check-input"
+                            className="radio"
                             name="radioPriority"
                             type="radio"
                             value="(2) Normal"
@@ -2417,9 +3631,9 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                           ></input>
                           <label> Normal</label>
                         </div>
-                        <div className="form-check">
+                        <div className="SpfxCheckRadio">
                           <input
-                            className="form-check-input"
+                            className="radio"
                             name="radioPriority"
                             type="radio"
                             value="(3) Low"
@@ -2432,12 +3646,11 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                         </div>
                         <div className="col mt-2">
                           <div className="input-group">
-
                             <div className="TaskUsers">
                               <label className="form-label full-width  mx-2">
                                 Working Member
                               </label>
-                              {EditData?.AssignedUsers?.map(
+                              {EditData?.TeamMembers?.map(
                                 (userDtl: any, index: any) => {
                                   return (
                                     <a
@@ -2475,638 +3688,798 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                                 }
                               )}
                             </div>
-
                           </div>
                         </div>
                       </div>
-                      <div className="col">
-                        <div className="input-group position-relative">
-                          <label className="form-label  full-width">
-                            Categories{" "}
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            defaultValue={
-                              EditData?.Facebook != null
-                                ? EditData?.Facebook.Description
-                                : ""
-                            }
-                          />
+                      <div className="row mt-2">
+                        <div className="col-sm-12">
+                          <div className="col-sm-12 padding-0 input-group">
+                            <label className="full_width">Categories</label>
+                            {(CategoriesData?.length == 0 ||
+                              CategoriesData[0] == undefined ||
+                              CategoriesData?.length > 1) && (
+                                <>
+                                  <input
+                                    type="text"
+                                    className="ui-autocomplete-input form-control"
+                                    id="txtCategories"
+                                    value={categorySearchKey}
+                                    onChange={(e) =>
+                                      autoSuggestionsForCategory(e)
+                                    }
+                                  />
+                                  <span className="input-group-text">
+                                    <span
+                                      title="Edit Categories"
+                                      onClick={() => EditComponentPicker(item)}
+                                      className="svg__iconbox svg__icon--editBox"
+                                    ></span>
+                                  </span>
+                                </>
+                              )}
+                            {CategoriesData &&
+                              CategoriesData?.length == 1 &&
+                              CategoriesData != undefined ? (
+                              <div className="full-width">
+                                {CategoriesData?.map(
+                                  (type: any, index: number) => {
+                                    return (
+                                      <>
+                                        {!instantCategories?.some(
+                                          (selectedCat: any) =>
+                                            selectedCat?.Title == type?.Title
+                                        ) && (
+                                            <div className="full-width replaceInput alignCenter">
+                                              <a
+                                                style={{
+                                                  color: "#fff !important",
+                                                }}
+                                                target="_blank"
+                                                className="textDotted hreflink"
+                                                data-interception="off"
+                                                href={`${SelectD.siteUrl}/SitePages/Portfolio-Profile.aspx?${item?.Id}`}
+                                              >
+                                                {type.Title}
+                                              </a>
+                                              <span className="input-group-text">
+                                                {/* <span className="dark mini svg__iconbox svg__icon--cross"
+                                                                                onClick={() => deleteCategories(type?.Id)}
+                                                                            ></span> */}
+                                                <span
+                                                  title="Edit Categories"
+                                                  onClick={() =>
+                                                    EditComponentPicker(item)
+                                                  }
+                                                  className="svg__iconbox svg__icon--editBox"
+                                                ></span>
+                                              </span>
 
-                          <span className="input-group-text">
-                            <svg
-                              onClick={(e) =>
-                                EditComponentPicker(EditData, "Categories")
-                              }
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 48 48"
-                              fill="none"
-                            >
-                              <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
-                                d="M33.5163 8.21948C33.058 8.34241 32.4072 8.6071 32.0702 8.80767C31.7334 9.00808 26.7046 13.9214 20.8952 19.7259L10.3328 30.2796L9.12891 35.1C8.46677 37.7511 7.95988 39.9549 8.0025 39.9975C8.04497 40.0399 10.2575 39.5397 12.919 38.8857L17.7581 37.6967L28.08 27.4328C33.7569 21.7875 38.6276 16.861 38.9036 16.4849C40.072 14.8925 40.3332 12.7695 39.5586 11.1613C38.8124 9.61207 37.6316 8.62457 36.0303 8.21052C34.9371 7.92775 34.5992 7.92896 33.5163 8.21948ZM35.7021 10.1369C36.5226 10.3802 37.6953 11.5403 37.9134 12.3245C38.2719 13.6133 38.0201 14.521 36.9929 15.6428C36.569 16.1059 36.1442 16.4849 36.0489 16.4849C35.8228 16.4849 31.5338 12.2111 31.5338 11.9858C31.5338 11.706 32.8689 10.5601 33.5598 10.2469C34.3066 9.90852 34.8392 9.88117 35.7021 10.1369ZM32.3317 15.8379L34.5795 18.0779L26.1004 26.543L17.6213 35.008L17.1757 34.0815C16.5838 32.8503 15.1532 31.437 13.9056 30.8508L12.9503 30.4019L21.3663 21.9999C25.9951 17.3788 29.8501 13.5979 29.9332 13.5979C30.0162 13.5979 31.0956 14.6059 32.3317 15.8379ZM12.9633 32.6026C13.8443 32.9996 14.8681 33.9926 15.3354 34.9033C15.9683 36.1368 16.0094 36.0999 13.2656 36.7607C11.9248 37.0836 10.786 37.3059 10.7347 37.2547C10.6535 37.1739 11.6822 32.7077 11.8524 32.4013C11.9525 32.221 12.227 32.2709 12.9633 32.6026Z"
-                                fill="#333333"
-                              />
-                            </svg>
-                          </span>
+                                              {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => deleteCategories(type?.Id)} className="p-1" /> */}
+                                            </div>
+                                          )}
+                                      </>
+                                    );
+                                  }
+                                )}
+
+                              </div>
+                            ) : null}
+                            {SearchedCategoryData?.length > 0 ? (
+                              <div className="SmartTableOnTaskPopup">
+                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                  {SearchedCategoryData.map((item: any) => {
+                                    return (
+                                      <li
+                                        className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                        key={item.id}
+                                        onClick={() =>
+                                          setSelectedCategoryData(
+                                            [item],
+                                            "For-Auto-Search"
+                                          )
+                                        }
+                                      >
+                                        <a>{item.Newlabel}</a>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            ) : null}
+                          </div>
+                          {instantCategories?.map((item: any, index: any) => {
+                            const isChecked = CategoriesData?.some(
+                              (selectedCat: any) => selectedCat?.Id === item?.Id
+                            );
+
+                            return (
+                              <div key={index} className="form-check mt-2">
+                                <input
+                                  className="form-check-input rounded-0"
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleCategorySelection(item)}
+                                />
+                                <label>{item?.Title}</label>
+                              </div>
+                            );
+                          })}
                         </div>
+                        {CategoriesData &&
+                          CategoriesData.length > 1 &&
+                          CategoriesData != undefined ? (
+                          <div>
+                            {CategoriesData?.map((type: any, index: number) => {
+                              return (
+                                <>
+                                  {!instantCategories?.some(
+                                    (selectedCat: any) =>
+                                      selectedCat?.Title == type?.Title
+                                  ) && (
+                                      <div className="block d-flex full-width justify-content-between mb-1 p-2">
+                                        <a
+                                          style={{ color: "#fff !important" }}
+                                          target="_blank"
+                                          data-interception="off"
+                                          href={`${SelectD.siteUrl}/SitePages/Portfolio-Profile.aspx?${item?.Id}`}
+                                        >
+                                          {type.Title}
+                                        </a>
+                                        <span
+                                          className="bg-light svg__iconbox svg__icon--cross"
+                                          onClick={() =>
+                                            deleteCategories(type?.Id)
+                                          }
+                                        ></span>
+                                        {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => deleteCategories(type?.Id)} className="p-1" /> */}
+                                      </div>
+                                    )}
+                                </>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                        <div className="col-sm-12 mt-2">
+                          <div className="col-sm-12 padding-0 input-group">
+                            <label className="full_width">Project</label>
+                            {(filterdata?.length == 0 ||
+                              filterdata.length !== 1) && (
+                                <>
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    onChange={(e) => autoSuggestionsForProject(e)}
+                                  />
+                                  <span
+                                    className="input-group-text"
+                                    placeholder="Project"
+                                  >
+                                    <span
+                                      title="Project"
+                                      onClick={(e) =>
+                                        openPortfolioPopup("Project")
+                                      }
+                                      className="svg__iconbox svg__icon--editBox"
+                                    ></span>
+                                  </span>
+                                </>
+                              )}
 
-                        <div className="col-sm-11  inner-tabb">
-                          {/* <div>
-                                                       
-                                                        {CategoriesData != "" ?
-                                                            <div className="Component-container-edit-task d-flex justify-content-between">
-                                                                <a style={{ color: "#fff !important" }} target="_blank" href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Portfolio-Profile.aspx?${EditData?.Id}`}>
-                                                                    {CategoriesData}
-                                                                </a>
-                                                                <img src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/_layouts/images/delete.gif" onClick={() => setCategoriesData('')} className="p-1" />
-                                                            </div> : null
-                                                        }
+                            {filterdata && filterdata.length == 1 ? (
+                              //    "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/Project-Management.aspx?ProjectId=4310"
+                              <div className="w-100">
+                                {filterdata?.map((items: any, Index: any) => (
+                                  <div
+                                    className="full-width replaceInput alignCenter"
+                                    key={Index}
+                                  >
+                                    <a
+                                      href={`${SelectD.siteUrl}/SitePages/Project-Management-Profile.aspx?ProjectId?=${items.Id}`}
+                                      className="textDotted hreflink"
+                                      data-interception="off"
+                                      target="_blank"
+                                    >
+                                      {items?.Title}
+                                    </a>
+                                    <span
+                                      className="input-group-text"
+                                      placeholder="Project"
+                                    >
+                                      <span
+                                        className="bg-dark svg__icon--cross svg__iconbox"
+                                        onClick={() =>
+                                          DeleteCrossIconData([items?.Id])
+                                        }
+                                      ></span>
+                                      <span
+                                        title="Project"
+                                        onClick={(e) =>
+                                          openPortfolioPopup("Project")
+                                        }
+                                        className="svg__iconbox svg__icon--editBox"
+                                      ></span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              ""
+                            )}
 
+                            {searchedProjectData?.length > 0 && (
+                              <div className="SmartTableOnTaskPopup">
+                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                  {searchedProjectData.map(
+                                    (suggestion: any, index: any) => (
+                                      <li
+                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                        key={index}
+                                        onClick={() =>
+                                          handleSuggestionProject(suggestion)
+                                        }
+                                      >
+                                        {suggestion?.Title}
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
 
+                            <div className="col-sm-12  inner-tabb">
+                              {filterdata && filterdata.length > 1 ? (
+                                <div className="w=100">
+                                  {filterdata?.map((items: any, Index: any) => (
+                                    <div
+                                      className="block d-flex justify-content-between mb-1"
+                                      key={Index}
+                                    >
+                                      <a
+                                        href={`${SelectD.siteUrl}/SitePages/Project-Management-Profile.aspx?ProjectId?=${items.Id}`}
+                                        className="wid-90 light"
+                                        data-interception="off"
+                                        target="_blank"
+                                      >
+                                        {items?.Title}
+                                      </a>
+                                      <a className="text-end">
+                                        {" "}
+                                        <span
+                                          className="bg-light svg__icon--cross svg__iconbox"
+                                          onClick={() =>
+                                            DeleteCrossIconData([items?.Id])
+                                          }
+                                        ></span>
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                ""
+                              )}
+                            </div>
+                          </div>
+                          <div className="col-sm-12 padding-0 input-group mt-2">
+                            <label className="full_width">Feature Type </label>
+                            {(FeatureTypeData?.length == 0 ||
+                              FeatureTypeData[0] == undefined) && (
+                                <>
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    onChange={(e) =>
+                                      autoSuggestionsForFeatureType(e)
+                                    }
+                                  />
+                                  <span
+                                    className="input-group-text"
+                                    placeholder="Feature Type"
+                                  >
+                                    <span
+                                      title="Feature Type"
+                                      onClick={(e) =>
+                                        opensmartmetadatapopup(
+                                          EditData?.FeatureType
+                                        )
+                                      }
+                                      className="svg__iconbox svg__icon--editBox"
+                                    ></span>
+                                  </span>
+                                </>
+                              )}
 
-
-                                                    </div> */}
-                          <div className="col">
-                            <div className="col">
-                              {CheckCategory.map((type: any) => {
+                            {FeatureTypeData &&
+                              FeatureTypeData?.length == 1 &&
+                              FeatureTypeData?.map((item: any) => {
                                 return (
                                   <>
-                                    <div className="form-check">
-                                      <input
-                                        className="form-check-input"
-                                        defaultChecked={
-                                          BackupCat == type.Id
-                                            ? checkedCat
-                                            : false
-                                        }
-                                        type="checkbox"
-                                        onClick={() => checkCat(type.Title)}
-                                      />
-                                      <label className="form-check-label">
-                                        {type.Title}
-                                      </label>
-                                    </div>
+                                    {item != undefined && (
+                                      <div className="full-width replaceInput alignCenter">
+                                        <a style={{ color: "#fff !important" }}>
+                                          {item?.Title}
+                                        </a>
+                                        <span
+                                          className="input-group-text"
+                                          placeholder="Feature Type"
+                                        >
+                                          <span
+                                            title="Feature Type"
+                                            onClick={(e) =>
+                                              opensmartmetadatapopup(
+                                                EditData?.FeatureType
+                                              )
+                                            }
+                                            className="svg__iconbox svg__icon--editBox"
+                                          ></span>
+                                        </span>
+                                      </div>
+                                    )}
                                   </>
                                 );
                               })}
-                              {/* <div
-                                                                className="form-check">
-                                                                <input className="form-check-input"
-                                                                    type="checkbox"
-                                                                onClick={()=>checkCat('Phone')}/>
-                                                                <label className="form-check-label">Phone</label>
-                                                            </div> */}
-                              {/* <div
-                                                                className="form-check">
-                                                                <input className="form-check-input"
-                                                                    type="checkbox"
-                                                                    onClick={()=>checkCat('Email Notification')} />
-                                                                <label>Email Notification</label>
 
-                                                            </div>
-                                                            <div
-                                                                className="form-check">
-                                                                <input className="form-check-input"
-                                                                    type="checkbox"
-                                                                    onClick={()=>checkCat('Approvel')}/>
-                                                                <label>Approvel</label>
-
-                                                            </div>
-                                                            <div
-                                                                className="form-check">
-                                                                <input className="form-check-input" type="checkbox"  onClick={()=>checkCat('Immediate')}/>
-                                                                <label>Immediate</label>
-                                                            </div> */}
-                              {CategoriesData != undefined ? (
-                                <div>
-                                  {CategoriesData?.map(
-                                    (type: any, index: number) => {
-                                      return (
-                                        <>
-                                          {type.Title != "Phone" &&
-                                            type.Title !=
-                                            "Email Notification" &&
-                                            type.Title != "Approval" &&
-                                            type.Title != "Immediate" && (
-                                              <div className="block d-flex justify-content-between my-1 p-1">
-                                                <a
-                                                  style={{
-                                                    color: "#fff !important",
-                                                  }}
-                                                  target="_blank"
-                                                  data-interception="off"
-                                                  href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?${EditData?.Id}`}
-                                                >
-                                                  {type.Title}
-                                                </a>
-                                                <span className="bg-light svg__icon--cross svg__iconbox" onClick={() =>
-                                                    deleteCategories(type.Id)}></span>
-                                              
-                                               
-                                              </div>
-                                            )}
-                                        </>
-                                      );
-                                    }
+                            {searchFeatureType?.length > 0 && (
+                              <div className="SmartTableOnTaskPopup">
+                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                  {searchFeatureType.map(
+                                    (suggestion: any, index: any) => (
+                                      <li
+                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                        key={index}
+                                        onClick={() =>
+                                          handleSuggestionFeature(suggestion)
+                                        }
+                                      >
+                                        {suggestion?.Title}
+                                      </li>
+                                    )
                                   )}
-                                </div>
-                              ) : null}
-                            </div>
+                                </ul>
+                              </div>
+                            )}
+
+                            {FeatureTypeData &&
+                              FeatureTypeData?.length > 1 &&
+                              FeatureTypeData?.map((item: any) => {
+                                return (
+                                  <>
+                                    {item != undefined && (
+                                      <div className="block d-flex full-width justify-content-between mb-1 p-2">
+                                        <a style={{ color: "#fff !important" }}>
+                                          {item?.Title}
+                                        </a>
+                                        <span
+                                          className="bg-light svg__iconbox svg__icon--cross"
+                                          onClick={() =>
+                                            deleteFeatureItem(item?.Id)
+                                          }
+                                        ></span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })}
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="col-sm-4  ">
+                      <div className="mb-3 mt-1">
+                        {RequireData?.isShowSiteCompostion ? (
+                          <div className="Sitecomposition mb-2">
+                            <div className="dropdown">
+                              <a className="sitebutton bg-fxdark alignCenter justify-content-between">
+                                <div
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() =>
+                                    setComposition(composition ? false : true)
+                                  }
+                                >
+                                  <span>
+                                    {composition ? (
+                                      <SlArrowDown />
+                                    ) : (
+                                      <SlArrowRight />
+                                    )}
+                                  </span>
+                                  <span className="mx-2">Site Composition</span>
+                                </div>
+                                <span
+                                  className="svg__iconbox svg__icon--editBox hreflink"
+                                  title="Edit Site Composition"
+                                  onClick={() => setSiteCompositionShow(true)}
+                                ></span>
+                              </a>
+                              {composition &&
+                                EditData?.siteCompositionData?.length > 0 &&
+                                EditData?.siteCompositionData?.length > 0 ? (
+                                <div className="spxdropdown-menu">
+                                  <ul>
+                                    {EditData?.siteCompositionData !=
+                                      undefined &&
+                                      EditData?.siteCompositionData?.length >
+                                      0 ? (
+                                      <>
+                                        {EditData?.siteCompositionData?.map(
+                                          (SiteDtls: any, i: any) => {
+                                            return (
+                                              <li className="Sitelist">
+                                                <span
+                                                  className="ms-2"
+                                                  title={SiteDtls.Title}
+                                                >
+                                                  <img
+                                                    style={{ width: "22px" }}
+                                                    src={SiteDtls.SiteImages}
+                                                  />
+                                                </span>
+
+                                                {SiteDtls.ClienTimeDescription !=
+                                                  undefined && (
+                                                    <span className="mx-2">
+                                                      {Number(
+                                                        SiteDtls.ClienTimeDescription
+                                                      ).toFixed(2)}
+                                                      %
+                                                    </span>
+                                                  )}
+
+                                                <span className="d-inline">
+                                                  {SiteDtls.ClientCategory !=
+                                                    undefined &&
+                                                    SiteDtls.ClientCategory
+                                                      .length > 0
+                                                    ? SiteDtls.ClientCategory?.map(
+                                                      (
+                                                        clientcat: any,
+                                                        Index: any
+                                                      ) => {
+                                                        return (
+                                                          <div
+                                                            className={
+                                                              Index ==
+                                                                SiteDtls
+                                                                  .ClientCategory
+                                                                  ?.length -
+                                                                1
+                                                                ? "mb-0"
+                                                                : "mb-0 border-bottom"
+                                                            }
+                                                          >
+                                                            {clientcat.Title}
+                                                          </div>
+                                                        );
+                                                      }
+                                                    )
+                                                    : null}
+                                                </span>
+                                              </li>
+                                            );
+                                          }
+                                        )}
+                                      </>
+                                    ) : null}
+                                  </ul>
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                       <CommentCard
                         siteUrl={EditData?.siteUrl}
                         userDisplayName={EditData?.userDisplayName}
                         listName={EditData?.siteType}
                         itemID={EditData?.Id}
                         AllListId={RequireData}
+                        Context={RequireData.Context}
                       ></CommentCard>
                     </div>
-                    <div className="col-sm-8">
+                    <div className="col-sm-8 taskurl">
                       <div className="input-group mb-2">
-                        <label className="form-label  full-width"></label>
+                        <label className="form-label  full-width">
+                          Relevant URL
+                        </label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control me-1"
                           defaultValue={
-                            EditData.component_x0020_link != null
-                              ? EditData.component_x0020_link
+                            EditData.ComponentLink != null
+                              ? EditData.ComponentLink
                               : ""
                           }
                           onChange={(e) =>
-                            (EditData.component_x0020_link = e.target.value)
+                            (EditData.ComponentLink = e.target.value)
                           }
                           placeholder="Url"
                         ></input>
-                        <span><a target="_blank" data-interception="off" href={EditData.component_x0020_link}>Open</a></span>
+                        <span className="input-group-text">
+                          <a
+                            href={EditData.ComponentLink}
+                            target="_blank"
+                            data-interception="off"
+                          >
+                            <span className="svg__iconbox svg__icon--link"></span>
+                          </a>
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className="tab-pane"
+                  className={
+                    usedFor == "Task-Popup"
+                      ? "tab-pane show active"
+                      : "tab-pane"
+                  }
                   id="concept"
                   role="tabpanel"
                   aria-labelledby="profile-tab"
                 >
                   <div className="row">
-                    <div className="col-sm-7 pe-0">
+                    <div className="">
                       <div className="row">
                         <TeamConfigurationCard
-                          ItemInfo={item}
-                          Sitel={RequireData}
+                          ItemInfo={EditData}
+                          AllListId={RequireData}
                           parentCallback={DDComponentCallBack}
-                        ></TeamConfigurationCard>
+                        />
                       </div>
                       <div className="row">
-                        <section className="accordionbox">
+                        <section className="accordionbox mt-2">
                           <div className="accordion p-0  overflow-hidden">
-                            <div className="card shadow-none mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(
-                                      EditData,
-                                      "showsAdmin"
-                                    )
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="sign">
-                                      {EditData?.showsAdmin ? (
-                                        <IoMdArrowDropdown />
-                                      ) : (
-                                        <IoMdArrowDropright />
-                                      )}
-                                    </span>
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      {" "}
-                                      Admin Notes
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.showsAdmin && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <textarea
-                                        className="full_width"
-                                        defaultValue={
-                                          EditData?.Admin_x0020_Notes
-                                        }
-                                        onChange={(e) =>
-                                        (EditData.Admin_x0020_Notes =
-                                          e.target.value)
-                                        }
-                                      ></textarea>
-                                    </div>
-                                  )}
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Admin Notes{" "}
+                                    {`(${EditData?.AdminNotes?.length != undefined
+                                        ? EditData?.AdminNotes?.length
+                                        : 0
+                                      })`}
+                                    <span className="ml-auto"></span>
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <textarea
+                                    className="full_width"
+                                    defaultValue={EditData?.AdminNotes}
+                                    onChange={(e) =>
+                                      (EditData.AdminNotes = e.target.value)
+                                    }
+                                  ></textarea>
                                 </div>
                               </div>
-                            </div>
-                            <div className="card shadow-none  mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "showdes")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      <span className="sign">
-                                        {EditData?.showdes ? (
-                                          <IoMdArrowDropdown />
-                                        ) : (
-                                          <IoMdArrowDropright />
-                                        )}
-                                      </span>{" "}
-                                      Description
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.showdes && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.descriptionVerified ===
-                                            true
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
-                                      {/* <HtmlEditorCard editorValue={this.state.editorValue} HtmlEditorStateChange={this.HtmlEditorStateChange}></HtmlEditorCard> */}
-                                      <HtmlEditorCard
-                                        editorValue={
-                                          EditData?.Body != undefined
-                                            ? EditData?.Body
-                                            : ""
-                                        }
-                                        HtmlEditorStateChange={
-                                          HtmlEditorCallBack
-                                        }
-                                      ></HtmlEditorCard>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="card shadow-none  mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "show")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      <span className="sign">
-                                        {EditData?.show ? (
-                                          <IoMdArrowDropdown />
-                                        ) : (
-                                          <IoMdArrowDropright />
-                                        )}
-                                      </span>{" "}
-                                      Short Description
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.show && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.ShortDescriptionVerified ===
-                                            true
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
+                            </details>
 
-                                      <HtmlEditorCard
-                                        editorValue={
-                                          EditData?.Short_x0020_Description_x0020_On !=
-                                            undefined
-                                            ? EditData?.Short_x0020_Description_x0020_On
-                                            : ""
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Description{" "}
+                                    {`(${EditData?.Bodylength?.length != undefined
+                                        ? EditData?.Bodylength?.length
+                                        : 0
+                                      })`}{" "}
+                                    <span className="ml-auto">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={descriptionVerifieds}
+                                        onChange={
+                                          handleCheckboxChangedescription
                                         }
-                                        HtmlEditorStateChange={
-                                          SortHtmlEditorCallBack
-                                        }
-                                      ></HtmlEditorCard>
-                                    </div>
-                                  )}
+                                      />
+                                      <span className="ps-1">Verified</span>
+                                    </span>
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <HtmlEditorCard
+                                    editorValue={
+                                      EditData?.Body != undefined
+                                        ? EditData?.Body
+                                        : ""
+                                    }
+                                    HtmlEditorStateChange={HtmlEditorCallBack}
+                                  ></HtmlEditorCard>
                                 </div>
                               </div>
-                            </div>
+                            </details>
 
-                            <div className="card shadow-none  mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "showl")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="sign">
-                                      {EditData?.showl ? (
-                                        <IoMdArrowDropdown />
-                                      ) : (
-                                        <IoMdArrowDropright />
-                                      )}
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Short Description{" "}
+                                    {`(${EditData
+                                        ?.Short_x0020_Description_x0020_Onlength
+                                        ?.length != undefined
+                                        ? EditData
+                                          ?.Short_x0020_Description_x0020_Onlength
+                                          ?.length
+                                        : 0
+                                      })`}{" "}
+                                    <span className="ml-auto">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={shortDescriptionVerifieds}
+                                        onChange={handleCheckboxChange}
+                                      />
+                                      <span className="ps-1">Verified</span>
                                     </span>
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      {" "}
-                                      Background
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.showl && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.BackgroundVerified === true
-                                          }
-                                          onChange={(e) =>
-                                          (EditData.BackgroundVerified =
-                                            e.target.value)
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
-                                      <textarea
-                                        className="full_width"
-                                        defaultValue={EditData?.Background}
-                                        onChange={(e) =>
-                                          (EditData.Background = e.target.value)
-                                        }
-                                      ></textarea>
-                                    </div>
-                                  )}
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <HtmlEditorCard
+                                    editorValue={
+                                      EditData?.Short_x0020_Description_x0020_On !=
+                                        undefined
+                                        ? EditData?.Short_x0020_Description_x0020_On
+                                        : ""
+                                    }
+                                    HtmlEditorStateChange={
+                                      SortHtmlEditorCallBack
+                                    }
+                                  ></HtmlEditorCard>
                                 </div>
                               </div>
-                            </div>
+                            </details>
 
-                            <div className="card shadow-none mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "shows")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="sign">
-                                      {EditData?.shows ? (
-                                        <IoMdArrowDropdown />
-                                      ) : (
-                                        <IoMdArrowDropright />
-                                      )}
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Background{" "}
+                                    {`(${EditData?.Background?.length != undefined
+                                        ? EditData?.Background?.length
+                                        : 0
+                                      })`}
+                                    <span className="ml-auto">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={BackgroundVerifieds}
+                                        onChange={handleCheckboxBackground}
+                                      />
+                                      <span className="ps-1">Verified</span>
                                     </span>
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      {" "}
-                                      Idea
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.shows && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.IdeaVerified === true
-                                          }
-                                          onChange={(e) =>
-                                          (EditData.BackgroundVerified =
-                                            e.target.value)
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
-                                      <textarea
-                                        className="full_width"
-                                        defaultValue={EditData?.Idea}
-                                        onChange={(e) =>
-                                          (EditData.Idea = e.target.value)
-                                        }
-                                      ></textarea>
-                                    </div>
-                                  )}
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <textarea
+                                    className="full_width"
+                                    defaultValue={EditData?.Background}
+                                    onChange={(e) =>
+                                      (EditData.Background = e.target.value)
+                                    }
+                                  ></textarea>
                                 </div>
                               </div>
-                            </div>
+                            </details>
 
-                            <div className="card shadow-none mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "showj")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="sign">
-                                      {EditData?.showj ? (
-                                        <IoMdArrowDropdown />
-                                      ) : (
-                                        <IoMdArrowDropright />
-                                      )}
-                                    </span>
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      {" "}
-                                      Value Added
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.showj && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.ValueAddedVerified === true
-                                          }
-                                          onChange={(e) =>
-                                          (EditData.ValueAddedVerified =
-                                            e.target.value)
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
-                                      <textarea
-                                        className="full_width"
-                                        defaultValue={EditData?.ValueAdded}
-                                        onChange={(e) =>
-                                          (EditData.ValueAdded = e.target.value)
-                                        }
-                                      ></textarea>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Idea{" "}
+                                    {`(${EditData?.Idea?.length != undefined
+                                        ? EditData?.Idea?.length
+                                        : 0
+                                      })`}{" "}
+                                    <span className="ml-auto">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={IdeaVerifieds}
+                                        onChange={handleCheckboxIdea}
+                                      />
 
-                            <div className="card shadow-none mb-2">
-                              <div
-                                className="accordion-item border-0"
-                                id="t_draggable1"
-                              >
-                                <div
-                                  className="card-header p-0 border-bottom-0 "
-                                  onClick={() =>
-                                    expendcollapsAccordion(EditData, "showm")
-                                  }
-                                >
-                                  <button
-                                    className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                                    data-bs-toggle="collapse"
-                                  >
-                                    <span className="sign">
-                                      {EditData?.showm ? (
-                                        <IoMdArrowDropdown />
-                                      ) : (
-                                        <IoMdArrowDropright />
-                                      )}
+                                      <span className="ps-1">Verified</span>
                                     </span>
-                                    <span className="fw-medium font-sans-serif text-900">
-                                      {" "}
-                                      Deliverables
-                                    </span>
-                                  </button>
-                                </div>
-                                <div className="accordion-collapse collapse show">
-                                  {EditData?.showm && (
-                                    <div
-                                      className="accordion-body pt-1"
-                                      id="testDiv1"
-                                    >
-                                      <span className="form-check text-end">
-                                        <input
-                                          type="checkbox"
-                                          defaultChecked={
-                                            EditData?.DeliverablesVerified ===
-                                            true
-                                          }
-                                        ></input>
-                                        <span className="ps-1">Verified</span>
-                                      </span>
-                                      <HtmlEditorCard
-                                        editorValue={
-                                          EditData?.Deliverables != undefined
-                                            ? EditData?.Deliverables
-                                            : ""
-                                        }
-                                        HtmlEditorStateChange={
-                                          DeliverablesHtmlEditorCallBack
-                                        }
-                                      ></HtmlEditorCard>
-                                    </div>
-                                  )}
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <textarea
+                                    className="full_width"
+                                    defaultValue={EditData?.Idea}
+                                    onChange={(e) =>
+                                      (EditData.Idea = e.target.value)
+                                    }
+                                  ></textarea>
                                 </div>
                               </div>
-                            </div>
+                            </details>
+
+                            <details>
+                              <summary className="alignCenter">
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    Value Added{" "}
+                                    {`(${EditData?.ValueAdded?.length != undefined
+                                        ? EditData?.ValueAdded?.length
+                                        : 0
+                                      })`}
+                                    <span className="ml-auto alignCenter">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={ValueAddedVerifieds}
+                                        onChange={handleCheckboxValueAdded}
+                                      />
+
+                                      <span className="ps-1">Verified</span>
+                                    </span>
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <textarea
+                                    className="full_width"
+                                    defaultValue={EditData?.ValueAdded}
+                                    onChange={(e) =>
+                                      (EditData.ValueAdded = e.target.value)
+                                    }
+                                  ></textarea>
+                                </div>
+                              </div>
+                            </details>
+
+                            <details>
+                              <summary>
+                                <label className="toggler full_width">
+                                  <div className="alignCenter">
+                                    {" "}
+                                    Deliverables{" "}
+                                    {`(${EditData?.Deliverableslength?.length !=
+                                        undefined
+                                        ? EditData?.Deliverableslength?.length
+                                        : 0
+                                      })`}
+                                    <span className="alignCenter ml-auto">
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input me-1 rounded-0"
+                                        checked={DeliverablesVerifieds}
+                                        onChange={handleCheckboxDeliverables}
+                                      />
+
+                                      <span className="ps-1">Verified</span>
+                                    </span>
+                                  </div>
+                                </label>
+                              </summary>
+                              <div className="border border-top-0 p-2">
+                                <div id="testDiv1">
+                                  <HtmlEditorCard
+                                    editorValue={
+                                      EditData?.Deliverables != undefined
+                                        ? EditData?.Deliverables
+                                        : ""
+                                    }
+                                    HtmlEditorStateChange={
+                                      DeliverablesHtmlEditorCallBack
+                                    }
+                                  ></HtmlEditorCard>
+                                </div>
+                              </div>
+                            </details>
                           </div>
                         </section>
                       </div>
-                    </div>
-                    <div className="col-sm-5 ps-0">
-                      {EditData.Id != null ?
-                        <>
-                          {SiteTypes != undefined && SiteTypes.length > 0 ?
-                            <SiteCompositionComponent
-                              AllListId={RequireData}
-                              ItemId={item.Id}
-                              siteUrls={RequireData.siteUrl}
-                              SiteTypes={SiteTypes}
-                              ClientTime={EditData.siteCompositionData != undefined ? EditData.siteCompositionData : []}
-                              SiteCompositionSettings={EditData.SiteCompositionSettings}
-                              // SmartTotalTimeData={SmartTotalTimeData}
-                              currentListName={EditData.siteType}
-                              // callBack={SiteCompositionCallBack}
-                              isServiceTask={EditData?.Portfolio_x0020_Type == "Service" ? true : false}
-                              SelectedClientCategory={selectedClientCategory}
-                            // isPortfolioConncted={ComponentTaskCheck || ServicesTaskCheck ? true : false}
-                            // SitesTaggingData={SitesTaggingData}
-                            /> : null
-                          }
-                        </>
-                        : null
-                      }
-
                     </div>
                   </div>
                 </div>
@@ -3116,68 +4489,332 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                   role="tabpanel"
                   aria-labelledby="profile-tab"
                 >
-                  <div className="col  p-2">
-                    <section className="accordionbox">
-                      <div className="accordion p-0  overflow-hidden">
-                        <div className="card shadow-none  mb-2">
-                          {/* <a className="btn btn-secondary p-0" title="Tap to expand the childs" onClick={() => (setCollapseExpend(CollapseExpend => !CollapseExpend))} >
-
-                                                        <span className="sign">{CollapseExpend ? <IoMdArrowDropdown /> : <IoMdArrowDropright />}</span>  Technical Concept
-
-                                                    </a> */}
-                          <div
-                            className="card-header p-0 border-bottom-0 "
-                            onClick={() =>
-                              setCollapseExpend(
-                                (CollapseExpend) => !CollapseExpend
-                              )
-                            }
-                          >
-                            <button
-                              className="accordion-button btn btn-link text-decoration-none d-block w-100 py-2 px-1 border-0 text-start rounded-0 shadow-none"
-                              data-bs-toggle="collapse"
-                            >
-                              <span className="sign">
-                                {CollapseExpend ? (
-                                  <IoMdArrowDropdown />
-                                ) : (
-                                  <IoMdArrowDropright />
-                                )}
-                              </span>
-                              <span className="fw-medium font-sans-serif text-900">
-                                {" "}
-                                Technical Concept
-                              </span>
-                            </button>
+                  <div className="col p-2">
+                    <details>
+                      <summary className="alignCenter">
+                        <label className="toggler full_width">
+                          <div className="alignCenter">
+                            Technical Concept{" "}
+                            {`(${EditData?.TechnicalExplanationslength?.length !=
+                                undefined
+                                ? EditData?.TechnicalExplanationslength?.length
+                                : 0
+                              })`}{" "}
+                            <span className="ml-auto">
+                              <input
+                                type="checkbox"
+                                className="form-check-input me-1 rounded-0"
+                                checked={TechnicalExplanationsVerifieds}
+                                onChange={handleCheckboxTechnicalExplanations}
+                              />
+                              <span className="ps-1">Verified</span>
+                            </span>
                           </div>
-
-                          {CollapseExpend && (
-                            <div>
-                              <span className="form-check text-end">
+                        </label>
+                      </summary>
+                      <div className="border border-top-0 p-2">
+                        {CollapseExpend && (
+                          <div>
+                            <HtmlEditorCard
+                              editorValue={
+                                EditData?.TechnicalExplanations != undefined
+                                  ? EditData?.TechnicalExplanations
+                                  : ""
+                              }
+                              HtmlEditorStateChange={
+                                TechnicalExplanationsHtmlEditorCallBack
+                              }
+                            ></HtmlEditorCard>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  </div>
+                </div>
+                <div
+                  className="tab-pane"
+                  id="help"
+                  role="tabpanel"
+                  aria-labelledby="help-tab"
+                >
+                  <div className="col p-2">
+                    <section className="accordionbox">
+                      <details>
+                        <summary>
+                          <label className="toggler full_width">
+                            <div className="alignCenter">
+                              Help Information{" "}
+                              {`(${EditData?.Help_x0020_Informationlength
+                                  ?.length != undefined
+                                  ? EditData?.Help_x0020_Informationlength
+                                    ?.length
+                                  : 0
+                                })`}
+                              <span className="alignCenter ml-auto">
                                 <input
                                   type="checkbox"
-                                  defaultValue={
-                                    EditData?.TechnicalExplanationsVerified
-                                  }
+                                  className="form-check-input me-1 rounded-0"
+                                  checked={HelpInformationVerifieds}
+                                  onChange={handleCheckboxHelpInformation}
                                 />
                                 <span className="ps-1">Verified</span>
                               </span>
-
-                              <HtmlEditorCard
-                                editorValue={
-                                  EditData?.TechnicalExplanations != undefined
-                                    ? EditData?.TechnicalExplanations
-                                    : ""
-                                }
-                                HtmlEditorStateChange={
-                                  TechnicalExplanationsHtmlEditorCallBack
-                                }
-                              ></HtmlEditorCard>
                             </div>
-                          )}
+                          </label>
+                        </summary>
+                        <div className="border border-top-0 p-2">
+                          <HtmlEditorCard
+                            editorValue={
+                              EditData?.Help_x0020_Information != undefined
+                                ? EditData?.Help_x0020_Information
+                                : ""
+                            }
+                            HtmlEditorStateChange={
+                              HelpInformationHtmlEditorCallBack
+                            }
+                          ></HtmlEditorCard>
+                        </div>
+                      </details>
+                    </section>
+                    <div className="">
+                      <div className="col-md-12">
+                        <div className="col-sm-12 mb-3 mt-10 pad0">
+                          <div className="col-sm-12 p-0">
+                            {" "}
+                            <label>Questions Description </label>
+                            <a
+                              className="pull-right hreflink"
+                              onClick={() => setIsOpenPopup(true)}
+                            >
+                              Add Questions
+                            </a>
+                          </div>
+                          <div className="borderDes p-2">
+                            {SmartHelpDetails?.filter(
+                              (elem: any) => elem?.ComponentsId != undefined
+                            ).map((item: any) =>
+                              CompoenetItem[0]?.Id ===
+                                item.ComponentsId?.results[0]
+                                ? item.ItemType === "Question" && (
+                                  <div key={item.Id}>
+                                    <details open>
+                                      <summary>
+                                        <label className="toggler full_width alignCenter">
+                                          <span className="pull-left">
+                                            {item.Title}
+                                          </span>
+
+                                          <div className="ml-auto alignCenter">
+                                            <span
+                                              className="svg__iconbox svg__icon--edit hreflink"
+                                              onClick={() =>
+                                                editQuestionHandler(item)
+                                              }
+                                            >
+                                              Edit
+                                            </span>
+                                            <span
+                                              className="svg__iconbox svg__icon--cross hreflink"
+                                              onClick={() =>
+                                                deleteHandler(item.Id)
+                                              }
+                                            >
+                                              Delete
+                                            </span>
+                                          </div>
+                                        </label>
+                                      </summary>
+                                      <div className="border border-top-0 p-2">
+                                        {item.Body?.replace(/<[^>]*>/g, "")}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )
+                                : null
+                            )}
+
+                            {SmartHelpDetails?.filter(
+                              (elem: any) => elem.ComponentsId === undefined
+                            ).map((filteredItem: any) =>
+                              filteredItem?.Components != undefined &&
+                                CompoenetItem[0]?.Id ===
+                                filteredItem?.Components[0]?.Id
+                                ? filteredItem.ItemType === "Question" && (
+                                  <div key={filteredItem.Id}>
+                                    <details open>
+                                      <summary>
+                                        <label className="toggler full_width alignCenter">
+                                          <span className="pull-left">
+                                            {filteredItem.Title}
+                                          </span>
+
+                                          <div className="ml-auto alignCenter">
+                                            <span
+                                              className="svg__iconbox svg__icon--edit hreflink"
+                                              onClick={() =>
+                                                editQuestionHandler(
+                                                  filteredItem
+                                                )
+                                              }
+                                            >
+                                              Edit
+                                            </span>
+                                            <span
+                                              className="svg__iconbox svg__icon--cross hreflink"
+                                              onClick={() =>
+                                                deleteHandler(filteredItem.Id)
+                                              }
+                                            >
+                                              Delete
+                                            </span>
+                                          </div>
+                                        </label>
+                                      </summary>
+                                      <div className="border border-top-0 p-2">
+                                        {filteredItem.Body?.replace(
+                                          /<[^>]*>/g,
+                                          ""
+                                        )}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )
+                                : null
+                            )}
+
+                            {SmartHelpDetails.filter(
+                              (elem: any) =>
+                                elem.Components &&
+                                elem.Components[0] &&
+                                CompoenetItem[0]?.Id === elem.Components[0]?.Id
+                            ).every(
+                              (elem: any) => elem.ItemType !== "Question"
+                            ) ? (
+                              <div className="text-center p-2">
+                                No Questions Description available
+                              </div>
+                            ) : null}
+                          </div>
+                          <div></div>
                         </div>
                       </div>
-                    </section>
+
+                      <div>
+                        <div className="col-sm-12 p-0">
+                          <label> Help Description </label>{" "}
+                          <a
+                            className="pull-right hreflink"
+                            onClick={() => setOpenPopup(true)}
+                          >
+                            Add Help
+                          </a>
+                        </div>
+                        <div className="borderDes p-2">
+                          {SmartHelpDetails?.filter(
+                            (elem: any) => elem?.ComponentsId != undefined
+                          ).map((item: any) =>
+                            CompoenetItem[0]?.Id ===
+                              item.ComponentsId?.results[0]
+                              ? item.ItemType === "Help" && (
+                                <div key={item.Id}>
+                                  <details open>
+                                    <summary>
+                                      <label className="toggler full_width alignCenter">
+                                        <span className="pull-left">
+                                          {item.Title}
+                                        </span>
+
+                                        <div className="ml-auto alignCenter">
+                                          <span
+                                            className="svg__iconbox svg__icon--edit hreflink"
+                                            onClick={() =>
+                                              editHelpHandler(item)
+                                            }
+                                          >
+                                            Edit
+                                          </span>
+                                          <span
+                                            className="svg__iconbox svg__icon--cross hreflink"
+                                            onClick={() =>
+                                              deleteHandler(item.Id)
+                                            }
+                                          >
+                                            Delete
+                                          </span>
+                                        </div>
+                                      </label>
+                                    </summary>
+                                    <div className="border border-top-0 p-2">
+                                      {item.Body?.replace(/<[^>]*>/g, "")}
+                                    </div>
+                                  </details>
+                                </div>
+                              )
+                              : null
+                          )}
+
+                          {SmartHelpDetails?.filter(
+                            (elem: any) => elem?.ComponentsId === undefined
+                          ).map((filteredItem: any) =>
+                            filteredItem?.Components != undefined &&
+                              CompoenetItem[0]?.Id ===
+                              filteredItem?.Components[0]?.Id
+                              ? filteredItem.ItemType === "Help" && (
+                                <div key={filteredItem.Id}>
+                                  <details open>
+                                    <summary>
+                                      <label className="toggler full_width alignCenter">
+                                        <span className="pull-left">
+                                          {filteredItem.Title}
+                                        </span>
+
+                                        <div className="ml-auto alignCenter">
+                                          <span
+                                            className="svg__iconbox svg__icon--edit hreflink"
+                                            onClick={() =>
+                                              editHelpHandler(filteredItem)
+                                            }
+                                          >
+                                            Edit
+                                          </span>
+                                          <span
+                                            className="svg__iconbox svg__icon--cross hreflink"
+                                            onClick={() =>
+                                              deleteHandler(filteredItem.Id)
+                                            }
+                                          >
+                                            Delete
+                                          </span>
+                                        </div>
+                                      </label>
+                                    </summary>
+                                    <div className="border border-top-0 p-2">
+                                      {filteredItem.Body?.replace(
+                                        /<[^>]*>/g,
+                                        ""
+                                      )}
+                                    </div>
+                                  </details>
+                                </div>
+                              )
+                              : null
+                          )}
+
+                          {SmartHelpDetails && CompoenetItem[0] ? (
+                            SmartHelpDetails.filter(
+                              (elem: any) =>
+                                elem.Components &&
+                                elem.Components[0] &&
+                                CompoenetItem[0]?.Id === elem.Components[0]?.Id
+                            ).every((elem: any) => elem.ItemType !== "Help") ? (
+                              <div className="text-center p-2">
+                                No Help Description available
+                              </div>
+                            ) : null
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div
@@ -3187,20 +4824,31 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                   aria-labelledby="image-tab"
                 >
                   <div className="col-sm-12">
-                    <ImagesC />
+                    {imagetab && (
+                      <ImagesC
+                        EditdocumentsData={EditData}
+                        setData={setEditData}
+                        AllListId={RequireData}
+                        Context={RequireData.Context}
+                        callBack={imageTabCallBack}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-            <footer className="mt-2">
-              <div className="d-flex justify-content-between align-items-center">
+            <footer
+              className="bg-f4 fixed-bottom"
+              style={{ position: "absolute" }}
+            >
+              <div className="align-items-center d-flex justify-content-between px-4 py-2">
                 <div>
                   <div className="text-left">
                     Created{" "}
                     <span ng-bind="EditData?.Created | date:'MM-DD-YYYY'">
                       {" "}
-                      {EditData?.Created != null
-                        ? moment(EditData?.Created).format("MM-DD-YYYY MM:SS")
+                      {EditData.Created
+                        ? moment(EditData.Created).format("DD/MM/YYYY")
                         : ""}
                     </span>{" "}
                     by
@@ -3213,8 +4861,8 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                   <div className="text-left">
                     Last modified{" "}
                     <span>
-                      {EditData?.Modified != null
-                        ? moment(EditData?.Modified).format("MM-DD-YYYY MM:SS")
+                      {EditData.Modified
+                        ? moment(EditData.Modified).format("DD/MM/YYYY")
                         : ""}
                     </span>{" "}
                     by{" "}
@@ -3226,25 +4874,14 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                   </div>
                   <div className="text-left">
                     <a onClick={() => deleteTask()}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        viewBox="0 0 48 48"
-                        fill="none"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
-                          d="M19.3584 5.28375C18.4262 5.83254 18.1984 6.45859 18.1891 8.49582L18.1837 9.66172H13.5918H9V10.8591V12.0565H10.1612H11.3225L11.3551 26.3309L11.3878 40.6052L11.6525 41.1094C11.9859 41.7441 12.5764 42.3203 13.2857 42.7028L13.8367 43H23.9388C33.9989 43 34.0431 42.9989 34.6068 42.7306C35.478 42.316 36.1367 41.6314 36.4233 40.8428C36.6697 40.1649 36.6735 39.944 36.6735 26.1055V12.0565H37.8367H39V10.8591V9.66172H34.4082H29.8163L29.8134 8.49582C29.8118 7.85452 29.7618 7.11427 29.7024 6.85084C29.5542 6.19302 29.1114 5.56596 28.5773 5.2569C28.1503 5.00999 27.9409 4.99826 23.9833 5.00015C19.9184 5.0023 19.8273 5.00784 19.3584 5.28375ZM27.4898 8.46431V9.66172H24H20.5102V8.46431V7.26691H24H27.4898V8.46431ZM34.4409 25.9527C34.4055 40.9816 34.4409 40.2167 33.7662 40.5332C33.3348 40.7355 14.6335 40.7206 14.2007 40.5176C13.4996 40.1889 13.5306 40.8675 13.5306 25.8645V12.0565H24.0021H34.4736L34.4409 25.9527ZM18.1837 26.3624V35.8786H19.3469H20.5102V26.3624V16.8461H19.3469H18.1837V26.3624ZM22.8367 26.3624V35.8786H24H25.1633V26.3624V16.8461H24H22.8367V26.3624ZM27.4898 26.3624V35.8786H28.6531H29.8163V26.3624V16.8461H28.6531H27.4898V26.3624Z"
-                          fill="#333333"
-                        />
-                      </svg>{" "}
-                      Delete this item
+                      <span style={{ marginLeft: '-4px' }} className="alignIcon svg__iconbox hreflink mini svg__icon--trash"></span>
+                      Delete This Item
                     </a>
                     <span>
                       {" "}
                       {EditData?.ID ? (
                         <VersionHistoryPopup
+                          RequiredListIds={RequireData}
                           taskId={EditData?.ID}
                           listId={RequireData.MasterTaskListID}
                           siteUrls={RequireData?.siteUrl}
@@ -3256,40 +4893,48 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
                   </div>
                 </div>
                 <div>
-                  <div>
+                  <div className="footer-right">
                     <span>
                       <a
+                        className="me-1"
                         target="_blank"
+                        data-interception="off"
                         href={`${RequireData.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${EditData?.Id}`}
                       >
-                        <img src="https://hhhhteams.sharepoint.com/sites/HHHH/_layouts/15/images/ichtm.gif?rev=23" />{" "}
-                        Go to Profile page
+                        {/* <img src="https://hhhhteams.sharepoint.com/sites/HHHH/_layouts/15/images/ichtm.gif?rev=23" />{" "} */}
+                        Go To Profile Page
                       </a>
                       ||
-                      <img
-                        className="mail-width mx-2"
-                        src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/32/icon_maill.png"
-                      />
+                      {/* <img
+                      className="mail-width mx-2"
+                      src="https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/32/icon_maill.png"
+                    /> */}
+                      <span className="hreflink mx-1 siteColor f-mailicons">
+                        <span
+                          title="Edit Task"
+                          className="alignIcon svg__iconbox svg__icon--mail"
+                        ></span>
+                      </span>
                       <a
-                        href={`mailto:?subject=${"Test"}&body=${EditData?.component_x0020_link
+                        href={`mailto:?subject=${"Test"}&body=${EditData?.ComponentLink
                           }`}
                       >
                         {" "}
-                        Share this task ||
+                        Share This Task ||
                       </a>
                     </span>
-                    <span className="p-1">|</span>
+
                     <a
                       className="p-1"
                       href={`${RequireData.siteUrl}/Lists/Master%20Tasks/EditForm.aspx?ID=${EditData?.Id}`}
                       target="_blank"
                       data-interception="off"
                     >
-                      Open out-of-the-box form
+                      Open Out-of-The-Box Form
                     </a>
                     <button
                       type="button"
-                      className="btn btn-primary "
+                      className="btn btn-primary ms-2 px-4"
                       onClick={(e) => SaveData()}
                     >
                       Save
@@ -3306,42 +4951,445 @@ const BuildClieantCategoryAllDataArray = (DataItem: any) => {
               </div>
             </footer>
 
-            {/* {IsComponent && item.Portfolio_x0020_Type == "Component" && (
-              <LinkedComponent
-                props={SharewebComponent}
-                Dynamic={RequireData}
-                Call={Call}
-              ></LinkedComponent>
-            )}
-            {IsComponent && item.Portfolio_x0020_Type == "Service" && (
-              <ComponentPortPolioPopup
-                props={SharewebComponent}
-                Dynamic={RequireData}
-                Call={Call}
-              ></ComponentPortPolioPopup>
-            )} */}
-            {IsComponent ?
+            {IsComponent ? (
               <ServiceComponentPortfolioPopup
-                props={SharewebComponent}
+                props={CMSToolComponent}
                 Dynamic={RequireData}
-                Call={Call}
-                ComponentType={"Service"}
-              ></ServiceComponentPortfolioPopup> : null
-            }
-            {IsService ?
-              <ServiceComponentPortfolioPopup
-                props={SharewebComponent}
-                Dynamic={RequireData}
-                Call={Call}
                 ComponentType={"Component"}
-              ></ServiceComponentPortfolioPopup> : null
-            }
+                Call={Call}
+                selectionType={"Single"}
+              />
+            ) : null}
+
+            {isopenProjectpopup ? (
+              <ServiceComponentPortfolioPopup
+                props={filterdata}
+                Dynamic={SelectD}
+                ComponentType={"Component"}
+                selectionType={"Multi"}
+                Call={(Call: any, type: any, functionType: any) => {
+                  callServiceComponent(Call, type, functionType);
+                }}
+                updateMultiLookup={updateMultiLookup}
+                showProject={isopenProjectpopup}
+              />
+            ) : null}
+
             {IsComponentPicker && (
-              <Picker props={SharewebCategory} Call={Call} AllListId={RequireData}></Picker>
+              <Picker
+                props={TaskCat}
+                Call={Call}
+                usedFor="Task-Footertable"
+                selectedCategoryData={CategoriesData}
+                AllListId={RequireData}
+              ></Picker>
             )}
           </div>
         )}
       </Panel>
+      <Panel
+        onRenderHeader={onRenderCustomHeaderQuestion}
+        isOpen={isOpenPopup}
+        isBlocking={!isOpenPopup}
+        onDismiss={() => setIsOpenPopup(false)}
+        closeButtonAriaLabel="Close"
+        type={PanelType.large}
+      >
+        <div className="modal-body clearfix">
+          <div className="input-group mb-2">
+            <label className="form-label full-width">Title</label>
+            <input
+              type="text"
+              className="form-control"
+              defaultValue={`${CompoenetItem[0]?.Title} - ${question}`}
+              onChange={(e) => setQuestion(e.target.value)}
+            ></input>
+          </div>
+          <div className="mb-2">
+            <label className="form-label">Description</label>
+            <div>
+              <HtmlEditorCard
+                editorValue={
+                  EditData.QuestionDescription != undefined
+                    ? EditData.QuestionDescription
+                    : ""
+                }
+                HtmlEditorStateChange={QuestionDescriptionEditorCallBack}
+              ></HtmlEditorCard>
+            </div>
+          </div>
+        </div>
+        <footer className="modal-footer">
+          <button className="btn btn-primary" onClick={() => AddQuestionFunc()}>
+            Save
+          </button>
+          <button
+            className="btn btn-default ms-1"
+            onClick={() => setIsOpenPopup(false)}
+          >
+            Cancel
+          </button>
+        </footer>
+      </Panel>
+
+      <Panel
+        isOpen={editPopup}
+        isBlocking={!editPopup}
+        onDismiss={() => setEditPopup(false)}
+        closeButtonAriaLabel="Close"
+        onRenderHeader={onRenderHeaderQuestionEdit}
+        type={PanelType.large}
+      >
+        <div className="modal-body clearfix">
+          <div className="input-group mb-2">
+            <label className="form-label full-width">Title</label>
+            <input
+              className="form-control"
+              type="text"
+              defaultValue={dataUpdate?.Title}
+              onChange={(e) => {
+                setQuestion(e.target.value);
+              }}
+            ></input>
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label full-width">Description</label>
+            <div>
+              <HtmlEditorCard
+                editorValue={
+                  EditData.QuestionDescription != undefined
+                    ? EditData.QuestionDescription
+                    : dataUpdate?.Body
+                }
+                HtmlEditorStateChange={QuestionDescriptionEditorCallBack}
+              ></HtmlEditorCard>
+            </div>
+          </div>
+        </div>
+        <footer className="footer-right">
+          <div className="align-items-center d-flex justify-content-between">
+            <div>
+              <div className="text-left">
+                Created{" "}
+                <span ng-bind="dataUpdate?.Created | date:'MM-DD-YYYY'">
+                  {" "}
+                  {dataUpdate?.Created
+                    ? moment(dataUpdate?.Created).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by
+                <span className="panel-title ps-1 hreflink">
+                  {dataUpdate?.Author?.Title != undefined
+                    ? dataUpdate?.Author?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                Last modified{" "}
+                <span>
+                  {dataUpdate?.Modified
+                    ? moment(dataUpdate?.Modified).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by{" "}
+                <span className="panel-title hreflink">
+                  {dataUpdate?.Editor?.Title != undefined
+                    ? dataUpdate?.Editor?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                <span className="hreflink">
+                  {" "}
+                  {dataUpdate?.ID ? (
+                    <VersionHistoryPopup
+                      taskId={dataUpdate?.ID}
+                      listId={RequireData?.SmartHelpListID}
+                      siteUrls={RequireData?.siteUrl}
+                    />
+                  ) : (
+                    ""
+                  )}
+                </span>
+              </div>
+            </div>
+            <div className="">
+              <button
+                className="me-1 btn btn-primary"
+                onClick={() => updateDetails()}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-default"
+                onClick={() => setEditPopup(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </footer>
+      </Panel>
+      <Panel
+        isOpen={openPopup}
+        isBlocking={!openPopup}
+        onDismiss={() => setOpenPopup(false)}
+        closeButtonAriaLabel="Close"
+        onRenderHeader={onRenderCustomHeaderHelp}
+        type={PanelType.large}
+      >
+        <div className="modal-body clearfix">
+          <div className="input-group mb-2">
+            <label className="form-label full-width">Title</label>
+            <input
+              type="text"
+              className="form-control"
+              defaultValue={`${CompoenetItem[0]?.Title} - ${help}`}
+              onChange={(e) => {
+                setHelp(e.target.value);
+              }}
+            ></input>
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label full-width">Description</label>
+            <div>
+              <HtmlEditorCard
+                editorValue={
+                  EditData?.TechnicalExplanations != undefined
+                    ? EditData?.TechnicalExplanations
+                    : ""
+                }
+                HtmlEditorStateChange={QuestionDescriptionEditorCallBack}
+              ></HtmlEditorCard>
+            </div>
+          </div>
+        </div>
+        <footer className="modal-footer">
+          <button
+            className="me-1 btn btn-primary"
+            onClick={() => AddHelpFunc()}
+          >
+            Save
+          </button>
+          <button
+            className="btn btn-default"
+            onClick={() => setOpenPopup(false)}
+          >
+            Cancel
+          </button>
+        </footer>
+      </Panel>
+      <Panel
+        isOpen={editHelpPopup}
+        isBlocking={!editHelpPopup}
+        onDismiss={() => setEditHelpPopup(false)}
+        closeButtonAriaLabel="Close"
+        onRenderHeader={onRenderHeaderHelpEdit}
+        type={PanelType.large}
+      >
+        <div className="modal-body clearfix">
+          <div className="input-group mb-2">
+            <label className="form-label full-width">Title</label>
+            <input
+              type="text"
+              className="form-control"
+              defaultValue={helpDataUpdate?.Title}
+              onChange={(e) => {
+                setHelp(e.target.value);
+              }}
+            ></input>
+          </div>
+          <div className="mb-2">
+            <label className="form-label">Description</label>
+            <div>
+              <HtmlEditorCard
+                editorValue={
+                  EditData.QuestionDescription != undefined
+                    ? EditData.QuestionDescription
+                    : helpDataUpdate?.Body
+                }
+                HtmlEditorStateChange={QuestionDescriptionEditorCallBack}
+              ></HtmlEditorCard>
+            </div>
+          </div>
+        </div>
+        <footer className="footer-right">
+          <div className="align-items-center d-flex justify-content-between">
+            <div>
+              <div className="text-left">
+                Created{" "}
+                <span ng-bind="helpDataUpdate?.Created | date:'MM-DD-YYYY'">
+                  {" "}
+                  {helpDataUpdate?.Created
+                    ? moment(helpDataUpdate?.Created).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by
+                <span className="panel-title ps-1 hreflink">
+                  {helpDataUpdate?.Author?.Title != undefined
+                    ? helpDataUpdate?.Author?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                Last modified{" "}
+                <span>
+                  {helpDataUpdate?.Modified
+                    ? moment(helpDataUpdate?.Modified).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by{" "}
+                <span className="panel-title hreflink">
+                  {helpDataUpdate?.Editor?.Title != undefined
+                    ? helpDataUpdate?.Editor?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                <span className="hreflink">
+                  {" "}
+                  {helpDataUpdate?.ID ? (
+                    <VersionHistoryPopup
+                      taskId={helpDataUpdate?.ID}
+                      listId={RequireData?.SmartHelpListID}
+                      siteUrls={RequireData?.siteUrl}
+                    />
+                  ) : (
+                    ""
+                  )}
+                </span>
+              </div>
+            </div>
+            <div className="">
+              <button
+                className="me-1 btn btn-primary"
+                onClick={() => updateHelpDetails()}
+              >
+                Save
+              </button>
+              <button
+                className="btn btn-default"
+                onClick={() => setEditHelpPopup(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </footer>
+      </Panel>
+      {/*change portfolio type */}
+      <Panel
+        className={`${EditData?.Portfolio_x0020_Type == "Service"
+            ? " serviepannelgreena"
+            : ""
+          }`}
+        onRenderHeader={onRenderHeaderChangeParent}
+        isOpen={changeType}
+        onDismiss={() => {
+          setChangeType(false);
+        }}
+        isBlocking={false}
+        type={PanelType.medium}
+      >
+        <div className="modal-body clearfix">
+          {portfolioTypeData?.map((value: any) => (
+            <div key={value.ID} className="SpfxCheckRadio">
+              <input
+                className="radio"
+                type="radio"
+                name="selectedTitle"
+                value={value.Title}
+                checked={selectPortfolioType.Title === value.Title}
+                onChange={() => setSelectPortfolioType(value)}
+              />
+              {value.Title}
+            </div>
+          ))}
+        </div>
+        <footer className="footer-right">
+          <div className="align-items-center d-flex justify-content-between">
+            <div>
+              <div className="text-left">
+                Created{" "}
+                <span
+                  className="hreflink"
+                  ng-bind="EditData?.Created | date:'MM-DD-YYYY'"
+                >
+                  {" "}
+                  {EditData?.Created
+                    ? moment(EditData?.Created).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by
+                <span className="panel-title ps-1 hreflink">
+                  {EditData?.Author?.Title != undefined
+                    ? EditData?.Author?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                Last modified{" "}
+                <span>
+                  {EditData?.Modified
+                    ? moment(EditData?.Modified).format("DD/MM/YYYY")
+                    : ""}
+                </span>{" "}
+                by{" "}
+                <span className="panel-title hreflink">
+                  {EditData?.Editor?.Title != undefined
+                    ? EditData?.Editor?.Title
+                    : ""}
+                </span>
+              </div>
+              <div className="text-left">
+                <span className="hreflink">
+                  {" "}
+                  {EditData?.ID ? (
+                    <VersionHistoryPopup
+                      taskId={EditData?.ID}
+                      listId={RequireData.MasterTaskListID}
+                      siteUrls={RequireData?.siteUrl}
+                    />
+                  ) : (
+                    ""
+                  )}
+                </span>
+              </div>
+            </div>
+            <div>
+              <button className="btn btn-primary" onClick={changePortfolioType}>
+                Save
+              </button>
+              <button
+                className="btn btn-default ms-1"
+                onClick={() => setChangeType(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </footer>
+      </Panel>
+      {SiteCompositionShow && EditData?.Title && (
+        <CentralizedSiteComposition
+          ItemDetails={EditData}
+          RequiredListIds={RequireData}
+          closePopupCallBack={ClosePopupCallBack}
+          usedFor={"CSF"}
+        />
+      )}
+      {Smartdatapopup && (
+        <Smartmetadatapickerin
+          props={FeatureTypeData}
+          Call={Smartmetadatafeature}
+          selectedFeaturedata={Smartdata}
+          AllListId={RequireData}
+          TaxType="Feature Type"
+          usedFor="Single"
+        ></Smartmetadatapickerin>
+      )}
     </>
   );
 }

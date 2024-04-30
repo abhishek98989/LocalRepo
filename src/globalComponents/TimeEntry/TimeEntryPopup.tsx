@@ -263,11 +263,7 @@ function TimeEntryPopup(item: any) {
                             value.AuthorTitle = val.Author.Title;
                             value.EditorTitle = val.Editor.Title;
                             value.show = true;
-                            // if (val.Created != undefined)
-                            //     //  value.TaskTimeCreatedDate = SharewebCommonFactoryService.ConvertLocalTOServerDate(val.Created, 'DD/MM/YYYY HH:mm');
-                            //     if (val.Modified != undefined)
-                                    // value.TaskTimeModifiedDate = SharewebCommonFactoryService.ConvertLocalTOServerDate(val.Modified, 'DD/MM/YYYY HH:mm');
-                                    if(!isItemExists(item.AdditionalTime,value.ID))
+                                  if(!isItemExists(item.AdditionalTime,value.ID))
                                     item.AdditionalTime.push(value);
                         })
 
@@ -532,9 +528,7 @@ function TimeEntryPopup(item: any) {
                             if (item.AdditionalTime === undefined) {
                                 item.AdditionalTime = [];
                             }
-                            // item.ServerTaskDate = angular.copy(item.TaskDate);
-                            // item.TaskDate = SharewebCommonFactoryService.ConvertLocalTOServerDate(item.TaskDate, 'DD/MM/YYYY');
-                            item.isShifted = false;
+                           item.isShifted = false;
 
                         })
                         getStructureData();
@@ -1107,6 +1101,8 @@ function TimeEntryPopup(item: any) {
                 </div>
             </div>}
 
+            {/* Add Task Time */}
+
             <Modal
                 isOpen={TaskStatuspopup}
                 onDismiss={closeTaskStatusUpdatePoup}
@@ -1128,7 +1124,6 @@ function TimeEntryPopup(item: any) {
                                 </button>
                             </div>
                             <div className="modal-body bg-f5f5 clearfix">
-
 
                                 <div className="col-sm-9"
                                     style={{ borderRight: "1px solid #dfdfdf" }}>
@@ -1320,7 +1315,6 @@ function TimeEntryPopup(item: any) {
                                     </div>
                                 </div>
                                 <div className="col-sm-3 pad0">
-
                                     <div className="col-sm-12">
 
                                         <a target="_blank" className="mb-5"
@@ -1358,14 +1352,11 @@ function TimeEntryPopup(item: any) {
                                 </button>
 
                             </div>
-
-
-
-
                         </div>
                     </div>
                 </div>
             </Modal>
+            {/* Edit Task Time */}
             <Modal
                 isOpen={TaskStatuspopup2}
                 onDismiss={closeTaskStatusUpdatePoup2}
@@ -1630,6 +1621,7 @@ function TimeEntryPopup(item: any) {
                     )
                 })}
             </Modal>
+            {/* Copy Task Time */}
             <Modal
                 isOpen={CopyTaskpopup}
                 onDismiss={closeCopyTaskpopup}
@@ -1894,6 +1886,7 @@ function TimeEntryPopup(item: any) {
                     )
                 })}
             </Modal>
+            {/* Add Additional Time */}
             <Modal
                 isOpen={AddTaskTimepopup}
                 onDismiss={closeAddTaskTimepopup}
