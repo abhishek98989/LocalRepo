@@ -1,5 +1,7 @@
+
 import * as React from "react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import ReactDOM from "react-dom";
 import * as $ from "jquery";
 import * as Moment from "moment";
 import { Web, sp } from "sp-pnp-js";
@@ -15,13 +17,12 @@ import "bootstrap/js/dist/carousel.js";
 import CommentCard from "../../globalComponents/Comments/CommentCard";
 import {
     Panel,
-    PanelType,
-    resetControlledWarnings,
+    PanelType
 } from "office-ui-fabric-react";
-import { Label, Modal } from "@fluentui/react";
+import { LuBellPlus } from "react-icons/lu";
 import { FaExpandAlt } from "react-icons/fa";
 import { RiDeleteBin6Line, RiH6 } from "react-icons/ri";
-import { SlArrowDown, SlArrowRight } from "react-icons/sl";
+import { SlArrowDown, SlArrowRight, SlUserUnfollow } from "react-icons/sl";
 import { TbReplace } from "react-icons/tb";
 import NewTameSheetComponent from "./NewTimeSheet";
 import CommentBoxComponent from "./CommentBoxComponent";
@@ -30,26 +31,16 @@ import VersionHistory from "../VersionHistroy/VersionHistory";
 import Tooltip from "../Tooltip";
 import FlorarImageUploadComponent from "../FlorarComponents/FlorarImageUploadComponent";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Table } from "reactstrap";
-import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
-import {
-    useTable,
-    useSortBy,
-    useFilters,
-    useExpanded,
-    usePagination,
-    HeaderGroup,
-} from "react-table";
-import { Filter, DefaultColumnFilter } from "../ReactTableComponents/filters";
-import ShowTaskTeamMembers from "../ShowTaskTeamMembers";
+import PageLoader from "../pageLoader";
 import EmailComponent from "../EmailComponents";
-import EditSiteComposition from "./EditSiteComposition";
 import SmartTotalTime from "./SmartTimeTotal";
 import "react-datepicker/dist/react-datepicker.css";
 import BackgroundCommentComponent from "./BackgroundCommentComponent";
 import EmailNotificationMail from "./EmailNotificationMail";
 import OnHoldCommentCard from '../Comments/OnHoldCommentCard';
 import CentralizedSiteComposition from "../SiteCompositionComponents/CentralizedSiteComposition";
+import * as GlobalFunctionForUpdateItems from '../GlobalFunctionForUpdateItems';
+import SmartPriorityHover from "./SmartPriorityHover";
 let PortfolioItemColor: any = "";
 var AllMetaData: any = [];
 var taskUsers: any = [];
@@ -59,7 +50,7 @@ var CommentBoxData: any = [];
 var SubCommentBoxData: any = [];
 var timesheetData: any = [];
 var updateFeedbackArray: any = [];
-let tempShareWebTypeData: any = [];
+let BackupTaskCategoriesData: any = [];
 var tempCategoryData: any = "";
 var SiteTypeBackupArray: any = [];
 var currentUserBackupArray: any = [];
@@ -108,7 +99,7 @@ const EditTaskPopup = (Items: any) => {
     // Items.Items.Id = Items?.Items?.ID;
     Items.Items.Id =
         Items.Items.Id != undefined ? Items.Items.Id : Items.Items.ID;
-    let ShareWebConfigData: any = [];
+    let SiteWebConfigData: any = [];
     const [TaskImages, setTaskImages] = useState([]);
     const [SmartMetaDataAllItems, setSmartMetaDataAllItems] = useState<any>([]);
     const [IsComponentPicker, setIsComponentPicker] = useState(false);
@@ -118,7 +109,7 @@ const EditTaskPopup = (Items: any) => {
     const [TaggedPortfolioData, setTaggedPortfolioData] = useState([]);
     const [linkedPortfolioData, setLinkedPortfolioData] = useState([]);
     const [CategoriesData, setCategoriesData] = useState("");
-    const [ShareWebTypeData, setShareWebTypeData] = useState([]);
+    const [TaskCategoriesData, setTaskCategoriesData] = useState([]);
     const [BasicImageData, setBasicImageData] = useState([]);
     const [AllCategoryData, setAllCategoryData] = useState([]);
     const [SearchedCategoryData, setSearchedCategoryData] = useState([]);
@@ -177,7 +168,11 @@ const EditTaskPopup = (Items: any) => {
     const [ProjectSearchKey, setProjectSearchKey] = useState("");
     const [ApproverPopupStatus, setApproverPopupStatus] = useState(false);
     const [ApproverSearchKey, setApproverSearchKey] = useState("");
+    const [BottleneckSearchKey, setBottleneckSearchKey] = useState("");
+    const [AttentionSearchKey, setAttentionSearchKey] = useState("");
     const [ApproverSearchedData, setApproverSearchedData] = useState([]);
+    const [BottleneckSearchedData, setBottleneckSearchedData] = useState([]);
+    const [AttentionSearchedData, setAttentionSearchedData] = useState([]);
     const [ApproverSearchedDataForPopup, setApproverSearchedDataForPopup] =
         useState([]);
     const [sendEmailStatus, setSendEmailStatus] = useState(false);
@@ -204,8 +199,6 @@ const EditTaskPopup = (Items: any) => {
         useState<any>("");
     const [IsUserFromHHHHTeam, setIsUserFromHHHHTeam] = useState(false);
     const [IsCopyOrMovePanel, setIsCopyOrMovePanel] = useState<any>("");
-    const [EnableSiteCompositionValidation, setEnableSiteCompositionValidation] =
-        useState(false);
     const [EstimatedDescription, setEstimatedDescription] = useState("");
     const [EstimatedDescriptionCategory, setEstimatedDescriptionCategory] =
         useState("");
@@ -214,35 +207,37 @@ const EditTaskPopup = (Items: any) => {
     const [SiteCompositionShow, setSiteCompositionShow] = useState(false);
     const [IsSendAttentionMsgStatus, setIsSendAttentionMsgStatus] =
         useState(false);
-    const [IsTaskCompleted, setIsTaskCompleted] = useState(false);
+    const [IsTaskStatusUpdated, setIsTaskStatusUpdated] = useState(false);
     const [SendCategoryName, setSendCategoryName] = useState("");
-    const [OpenEODReportPopup, setOpenEODReportPopup] = useState(false);
+    const [TeamMemberChanged, setTeamMemberChanged] = useState(false);
+    const [TeamLeaderChanged, setTeamLeaderChanged] = useState(false);
+    const [SendMsgToAuthor, setSendMsgToAuthor] = useState(false);
+    const [SendDesignEmailStatus, setSendDesignEmailStatus] = useState(false);
     const [CurrentImageIndex, setCurrentImageIndex] = useState("");
+    const [loaded, setLoaded] = useState(true);
+    const [IsImageUploaded, setIsImageUploaded] = useState(true);
+    const [WorkingAction, setWorkingAction] = useState([]);
+    const [AddDescriptionModelName, setAddDescriptionModelName] = useState("");
+    const [useFor, setUseFor] = useState("")
     let [StatusOptions, setStatusOptions] = useState([
         { value: 0, status: "0% Not Started", taskStatusComment: "Not Started" },
         { value: 1, status: "1% For Approval", taskStatusComment: "For Approval" },
         { value: 2, status: "2% Follow Up", taskStatusComment: "Follow Up" },
         { value: 3, status: "3% Approved", taskStatusComment: "Approved" },
+        { value: 4, status: "4% Checking", taskStatusComment: "Checking" },
         { value: 5, status: "5% Acknowledged", taskStatusComment: "Acknowledged" },
-        {
-            value: 10,
-            status: "10% working on it",
-            taskStatusComment: "working on it",
-        },
-        {
-            value: 80,
-            status: "80% In QA Review",
-            taskStatusComment: "In QA Review",
-        },
-        {
-            value: 90,
-            status: "90% Task completed",
-            taskStatusComment: "Task completed",
-        },
+        { value: 8, status: "8% Priority Check", taskStatusComment: "Priority Check" },
+        { value: 9, status: "9% Ready To Go", taskStatusComment: "Ready To Go" },
+        { value: 10, status: "10% working on it", taskStatusComment: "working on it" },
+        { value: 70, status: "70% Re-Open", taskStatusComment: "Re-Open" },
+        { value: 75, status: "75% Deployment Pending", taskStatusComment: "Deployment Pending" },
+        { value: 80, status: "80% In QA Review", taskStatusComment: "In QA Review" },
+        { value: 90, status: "90% Task completed", taskStatusComment: "Task completed" },
         { value: 100, status: "100% Closed", taskStatusComment: "Closed" },
     ]);
 
     const [counter, setCounter] = useState(1);
+
 
     const handlePostComment = () => {
         setCounter(counter + 1);
@@ -264,6 +259,7 @@ const EditTaskPopup = (Items: any) => {
     //     { value: 99, status: "99% Completed", taskStatusComment: "Completed" },
     //     { value: 100, status: "100% Closed", taskStatusComment: "Closed" }
     // ]
+
 
     let ItemRankArray = [
         { rankTitle: "Select Item Rank", rank: null },
@@ -326,8 +322,15 @@ const EditTaskPopup = (Items: any) => {
             SmartMetaDataListInformations();
             GetAllComponentAndServiceData("Component");
             AddImageDescriptionsIndex = undefined;
+            if (Items.Items.siteType == "Offshore Tasks") {
+                Items.Items.siteType = "Offshore%20Tasks";
+            }
         }
+
     }, [FeedBackCount]);
+
+
+
     useEffect(() => {
         setTimeout(() => {
             const panelMain: any = document.querySelector(".ms-Panel-main");
@@ -442,7 +445,7 @@ const EditTaskPopup = (Items: any) => {
                     tempArray.push(site);
                 }
                 if (site.Title !== undefined && site.Title == "Shareweb") {
-                    ShareWebConfigData = site.Configurations;
+                    SiteWebConfigData = site.Configurations;
                 }
             });
             setSiteTypes(tempArray);
@@ -675,7 +678,7 @@ const EditTaskPopup = (Items: any) => {
                     TaxonomyItems.push(item);
                 }
                 uniqueNames = TaxonomyItems.filter((val: any, id: any, array: any) => {
-                    return array.indexOf(val) == id;
+                    return array?.indexOf(val) == id;
                 });
             }
         });
@@ -874,7 +877,7 @@ const EditTaskPopup = (Items: any) => {
                 smartMeta = await web.lists
                     .getById(Items.Items.listId)
                     .items.select(
-                        "Id,Title,PriorityRank,Comments,workingThisWeek,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
+                        "Id,Title,PriorityRank,Comments,workingThisWeek,WorkingAction,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
                     )
                     .top(5000)
                     .filter(`Id eq ${Items.Items.Id}`)
@@ -886,7 +889,7 @@ const EditTaskPopup = (Items: any) => {
                 smartMeta = await web.lists
                     .getByTitle(Items.Items.listName)
                     .items.select(
-                        "Id,Title,PriorityRank,Comments,workingThisWeek,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
+                        "Id,Title,PriorityRank,Comments,workingThisWeek,WorkingAction,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
                     )
                     .top(5000)
                     .filter(`Id eq ${Items.Items.Id}`)
@@ -898,6 +901,10 @@ const EditTaskPopup = (Items: any) => {
             let statusValue: any;
             smartMeta?.map((item: any) => {
                 let saveImage = [];
+                if (item?.WorkingAction?.length > 0) {
+                    let WorkingActionData: any = JSON.parse(item.WorkingAction);
+                    setWorkingAction(WorkingActionData);
+                }
                 if (item.Categories != null) {
                     setCategoriesData(item.Categories);
                 }
@@ -922,7 +929,7 @@ const EditTaskPopup = (Items: any) => {
                     GetPortfolioSiteComposition(PortfolioId, item);
                 }
 
-                let ClientCategory = item.ClientCategory;
+                let ClientCategory = item?.ClientCategory;
                 if (ClientCategory != undefined && ClientCategory.length > 0) {
                     let selectedCC: any = [];
                     ClientCategory.map((ClientData: any) => {
@@ -979,7 +986,7 @@ const EditTaskPopup = (Items: any) => {
                     setClientTimeData([object]);
                 }
                 if (item.Body != undefined) {
-                    item.Body = item.Body.replace(/(<([^>]+)>)/gi, "");
+                    item.Body = item?.Body?.replace(/(<([^>]+)>)/gi, "");
                 }
                 if (item.BasicImageInfo != null && item.Attachments) {
                     saveImage.push(JSON.parse(item.BasicImageInfo));
@@ -1002,8 +1009,11 @@ const EditTaskPopup = (Items: any) => {
                     }
                 }
                 item.TaskId = globalCommon.GetTaskId(item);
+                item.TaskID = globalCommon.GetTaskId(item);
+
                 item.siteUrl = siteUrls;
-                item.siteType = Items.Items.siteType;
+                item.siteType = Items?.Items?.siteType;
+                item.SiteIcon = Items?.Items?.SiteIcon;
                 let AssignedUsers: any = [];
                 item.listId = Items.Items.listId;
                 if (globalSelectedProject?.Id != undefined) {
@@ -1014,7 +1024,7 @@ const EditTaskPopup = (Items: any) => {
                 item.projectPriorityOnHover = '';
                 item.taskPriorityOnHover = item?.PriorityRank;
                 item.showFormulaOnHover;
-                item.SmartPriority = globalCommon.calculateSmartPriority(item);
+                item.SmartPriority = globalCommon?.calculateSmartPriority(item);
                 // let ApproverDataTemp: any = [];
                 let TeamMemberTemp: any = [];
                 let TaskCreatorData: any = [];
@@ -1025,7 +1035,7 @@ const EditTaskPopup = (Items: any) => {
                         item.PercentComplete = statusValue;
                         if (
                             (statusValue < 70 && statusValue > 10) ||
-                            (statusValue < 80 && statusValue > 70)
+                            (statusValue < 80 && statusValue > 70 && statusValue !== 75)
                         ) {
                             setTaskStatus("In Progress");
                             setPercentCompleteStatus(
@@ -1036,10 +1046,10 @@ const EditTaskPopup = (Items: any) => {
                                 PercentCompleteStatus: `${statusValue}`,
                             });
                         } else {
-                            StatusOptions?.map((item: any) => {
-                                if (statusValue == item.value) {
-                                    setPercentCompleteStatus(item.status);
-                                    setTaskStatus(item.taskStatusComment);
+                            StatusOptions?.map((statusItem: any) => {
+                                if (statusValue == statusItem?.value) {
+                                    setPercentCompleteStatus(statusItem?.status);
+                                    setTaskStatus(statusItem?.taskStatusComment);
                                 }
                             });
                         }
@@ -1052,9 +1062,9 @@ const EditTaskPopup = (Items: any) => {
                 }
 
                 if (item.Author != undefined && item.Author != null) {
-                    taskUsers.map((userData: any) => {
-                        if (item.Author.Id == userData?.AssingedToUserId) {
-                            TaskCreatorData.push(userData);
+                    taskUsers?.map((userData: any) => {
+                        if (item.Author?.Id == userData?.AssingedToUserId) {
+                            TaskCreatorData?.push(userData);
                             userData.Approver?.map((AData: any) => {
                                 // ApproverDataTemp.push(AData);
                                 TaskCreatorApproverBackupArray.push(AData);
@@ -1065,13 +1075,13 @@ const EditTaskPopup = (Items: any) => {
                         let tempArray: any = [];
                         const TaskApproverBackupTemp = TaskApproverBackupArray?.filter(
                             (val: any, id: any, array: any) => {
-                                return array.indexOf(val) == id;
+                                return array?.indexOf(val) == id;
                             }
                         );
                         const TaskCreatorApproverBackupTemp =
                             TaskCreatorApproverBackupArray?.filter(
                                 (val: any, id: any, array: any) => {
-                                    return array.indexOf(val) == id;
+                                    return array?.indexOf(val) == id;
                                 }
                             );
 
@@ -1138,9 +1148,15 @@ const EditTaskPopup = (Items: any) => {
                     TaskApproverBackupArray.map((itemData: any) => {
                         currentUserBackupArray?.map((currentUser: any) => {
                             taskUsers?.map((userData: any) => {
-                                if (userData?.AssingedToUserId == itemData.Id) {
-                                    ApprovarDataId = userData?.Approver[0].Id;
-                                }
+                                if (userData?.AssingedToUserId == itemData.Id)
+                                    try {
+                                        if (userData?.Approver?.length > 0) {
+                                            ApprovarDataId = userData?.Approver[0]?.Id;
+                                        }
+                                    }
+                                    catch (error) {
+                                        console.log("Error :", error.message);
+                                    }
                             });
                             if (
                                 itemData.Id == currentUser.AssingedToUserId ||
@@ -1156,7 +1172,9 @@ const EditTaskPopup = (Items: any) => {
                             currentUserBackupArray?.map((current: any) => {
                                 taskUsers?.map((userData: any) => {
                                     if (userData?.AssingedToUserId == Approver?.Id) {
-                                        ApprovarDataId = userData?.Approver[0].Id;
+                                        if (userData?.Approver?.length > 0) {
+                                            ApprovarDataId = userData?.Approver[0].Id;
+                                        }
                                     }
                                 });
                                 if (
@@ -1189,7 +1207,7 @@ const EditTaskPopup = (Items: any) => {
                 ) {
                     const finalData = TaskCreatorApproverBackupArray?.filter(
                         (val: any, id: any, array: any) => {
-                            return array.indexOf(val) == id;
+                            return array?.indexOf(val) == id;
                         }
                     );
                     TaskCreatorApproverBackupArray = finalData;
@@ -1210,9 +1228,9 @@ const EditTaskPopup = (Items: any) => {
                 ) {
                     let tempArray: any = [];
                     tempArray = item.TaskCategories;
-                    setShareWebTypeData(item.TaskCategories);
+                    setTaskCategoriesData(item.TaskCategories);
                     tempArray?.map((tempData: any) => {
-                        tempShareWebTypeData.push(tempData);
+                        BackupTaskCategoriesData.push(tempData);
                     });
                 }
                 if (item.RelevantPortfolio?.length > 0) {
@@ -1226,7 +1244,7 @@ const EditTaskPopup = (Items: any) => {
                     let Count: any = 0;
                     let feedbackArray = message[0]?.FeedBackDescriptions;
                     if (feedbackArray != undefined && feedbackArray.length > 0) {
-                        let CommentBoxText = feedbackArray[0].Title?.replace(
+                        let CommentBoxText = feedbackArray[0]?.Title?.replace(
                             /(<([^>]+)>)/gi,
                             ""
                         );
@@ -1374,7 +1392,7 @@ const EditTaskPopup = (Items: any) => {
         let CallBackData = await globalCommon.GetServiceAndComponentAllData(
             PropsObject
         );
-        if (CallBackData.AllData != undefined && CallBackData.AllData.length > 0) {
+        if (CallBackData?.AllData != undefined && CallBackData?.AllData?.length > 0) {
             GlobalServiceAndComponentData = CallBackData.AllData;
             SetAllProjectData(CallBackData?.FlatProjectData);
             AllProjectBackupArray = CallBackData?.FlatProjectData;
@@ -1500,7 +1518,7 @@ const EditTaskPopup = (Items: any) => {
                                 LinkedPortfolioDataBackup.concat(DataItem);
                             const finalData = LinkedPortfolioDataBackup?.filter(
                                 (val: any, id: any, array: any) => {
-                                    return array.indexOf(val) == id;
+                                    return array?.indexOf(val) == id;
                                 }
                             );
                             setLinkedPortfolioData(finalData);
@@ -1522,9 +1540,9 @@ const EditTaskPopup = (Items: any) => {
                                 ...updatedItem,
                                 SmartPriority: SmartPriority
                             }
-                            EditDataBackup=updatedItem;
+                            EditDataBackup = updatedItem;
                             setEditData(updatedItem);
-                             globalSelectedProject = DataItem[0];
+                            globalSelectedProject = DataItem[0];
 
                         } else {
                             setTaggedPortfolioData(DataItem);
@@ -1564,39 +1582,61 @@ const EditTaskPopup = (Items: any) => {
     const setSelectedCategoryData = (selectCategoryData: any, usedFor: any) => {
         setIsComponentPicker(false);
         let uniqueIds: any = {};
-        let checkForOnHold: any = tempShareWebTypeData?.some((category: any) => category.Title === "On-Hold")
+        let checkForOnHoldAndBottleneck: any = BackupTaskCategoriesData?.some((category: any) => category.Title === "On-Hold" && category.Title === "Bottleneck");
+        let checkForDesign: any = BackupTaskCategoriesData?.some((category: any) => category.Title === "Design");
         if (usedFor == "For-Panel") {
             let TempArrya: any = [];
             selectCategoryData?.map((selectedData: any) => {
-                if (selectedData.Title == "On-Hold" && !checkForOnHold) {
+                if ((selectedData.Title == "On-Hold" || selectedData.Title == "Bottleneck") && !checkForOnHoldAndBottleneck) {
                     onHoldCategory.push(selectedData);
                     setOnHoldPanel(true);
+                    setSendCategoryName(selectedData.Title)
                 } else {
                     TempArrya.push(selectedData);
                 }
+                if (!checkForDesign && selectedData.Title == "Design") {
+                    setSendDesignEmailStatus(true);
+                } else {
+                    setSendDesignEmailStatus(false);
+                }
+                if (selectedData?.IsSendAttentionEmail?.Id != undefined) {
+                    setIsSendAttentionMsgStatus(true);
+                    userSendAttentionEmails.push(selectedData?.IsSendAttentionEmail?.EMail);
+                    setSendCategoryName("Attention");
+                }
+                if (selectedData?.Title == "Bottleneck") {
+                    setIsSendAttentionMsgStatus(true);
+                    if (EditData?.TaskAssignedUsers?.length > 0) {
+                        EditData?.TaskAssignedUsers?.map((AssignedUser: any, Index: any) => {
+                            userSendAttentionEmails.push(AssignedUser.Email);
+                        });
+                    }
+                    setSendCategoryName(selectedData?.Title);
+                }
             })
-            tempShareWebTypeData = TempArrya;
+            BackupTaskCategoriesData = TempArrya;
         } else {
             selectCategoryData.forEach((existingData: any) => {
-                if (existingData.Title == "On-Hold" && !checkForOnHold) {
+                if ((existingData.Title == "On-Hold" || existingData.Title == "Bottleneck") && !checkForOnHoldAndBottleneck) {
                     onHoldCategory.push(existingData);
                     setOnHoldPanel(true);
+                    setSendCategoryName(existingData.Title)
                 } else {
-                    tempShareWebTypeData.push(existingData);
+                    BackupTaskCategoriesData.push(existingData);
                 }
             });
         }
-        const result: any = tempShareWebTypeData.filter((item: any) => {
+        const result: any = BackupTaskCategoriesData.filter((item: any) => {
             if (!uniqueIds[item.Id]) {
                 uniqueIds[item.Id] = true;
                 return true;
             }
             return false;
         });
-        tempShareWebTypeData = result;
+        BackupTaskCategoriesData = result;
         let updatedItem = {
             ...EditDataBackup,
-            TaskCategories: tempShareWebTypeData,
+            TaskCategories: BackupTaskCategoriesData,
         };
         let SmartPriority = globalCommon.calculateSmartPriority(updatedItem)
         updatedItem = {
@@ -1604,7 +1644,7 @@ const EditTaskPopup = (Items: any) => {
             SmartPriority: SmartPriority
         }
         setEditData(updatedItem);
-        EditDataBackup=updatedItem;
+        EditDataBackup = updatedItem;
         setPhoneStatus(result?.some((category: any) => category.Title === "Phone"));
         setEmailStatus(result?.some((category: any) => category.Title === "Email Notification"));
         setImmediateStatus(result?.some((category: any) => category.Title === "Immediate"));
@@ -1618,7 +1658,7 @@ const EditTaskPopup = (Items: any) => {
             setApproverData([]);
         }
         if (usedFor === "For-Panel" || usedFor === "For-Auto-Search") {
-            setShareWebTypeData(result);
+            setTaskCategoriesData(result);
             if (usedFor === "For-Auto-Search") {
                 setSearchedCategoryData([]);
                 setCategorySearchKey("");
@@ -1635,16 +1675,16 @@ const EditTaskPopup = (Items: any) => {
         setOnHoldPanel(false);
         if (usedFor == "Save") {
             let uniqueIds: any = {};
-            tempShareWebTypeData.push(onHoldCategory[0]);
-            const result: any = tempShareWebTypeData.filter((item: any) => {
+            BackupTaskCategoriesData.push(onHoldCategory[0]);
+            const result: any = BackupTaskCategoriesData.filter((item: any) => {
                 if (!uniqueIds[item.Id]) {
                     uniqueIds[item.Id] = true;
                     return true;
                 }
                 return false;
             });
-            tempShareWebTypeData = result;
-            setShareWebTypeData(result);
+            BackupTaskCategoriesData = result;
+            setTaskCategoriesData(result);
         }
         onHoldCategory = [];
     }, []);
@@ -1674,11 +1714,11 @@ const EditTaskPopup = (Items: any) => {
     const removeCategoryItem = (TypeCategory: any, TypeId: any) => {
         let tempString: any;
         let tempArray2: any = [];
-        tempShareWebTypeData = [];
-        ShareWebTypeData?.map((dataType: any) => {
+        BackupTaskCategoriesData = [];
+        TaskCategoriesData?.map((dataType: any) => {
             if (dataType.Id != TypeId) {
                 tempArray2.push(dataType);
-                tempShareWebTypeData.push(dataType);
+                BackupTaskCategoriesData.push(dataType);
             }
         });
         if (tempArray2 != undefined && tempArray2.length > 0) {
@@ -1691,7 +1731,7 @@ const EditTaskPopup = (Items: any) => {
         }
         setCategoriesData(tempString);
         tempCategoryData = tempString;
-        setShareWebTypeData(tempArray2);
+        setTaskCategoriesData(tempArray2);
     };
     const CategoryChange = (e: any, typeValue: any, IdValue: any) => {
         isApprovalByStatus = false;
@@ -1736,10 +1776,10 @@ const EditTaskPopup = (Items: any) => {
                 setCategoriesData(category);
                 tempCategoryData = category;
                 if (
-                    tempShareWebTypeData != undefined &&
-                    tempShareWebTypeData.length > 0
+                    BackupTaskCategoriesData != undefined &&
+                    BackupTaskCategoriesData.length > 0
                 ) {
-                    tempShareWebTypeData.map((tempItem: any) => {
+                    BackupTaskCategoriesData.map((tempItem: any) => {
                         if (tempItem.Title == type) {
                             CheckTaagedCategory = false;
                         }
@@ -1752,14 +1792,14 @@ const EditTaskPopup = (Items: any) => {
                     AutoCompleteItemsArray.map((dataItem: any) => {
                         if (dataItem.Title == type) {
                             if (CheckTaagedCategory) {
-                                ShareWebTypeData.push(dataItem);
-                                tempShareWebTypeData.push(dataItem);
-                               
+                                TaskCategoriesData.push(dataItem);
+                                BackupTaskCategoriesData.push(dataItem);
+
                             }
                         }
                     });
                 }
-                // setSearchedCategoryData(tempShareWebTypeData);
+                // setSearchedCategoryData(BackupTaskCategoriesData);
                 if (type == "Phone") {
                     setPhoneStatus(true);
                 }
@@ -1787,7 +1827,7 @@ const EditTaskPopup = (Items: any) => {
                     // }
                     const finalData = tempArray.filter(
                         (val: any, id: any, array: any) => {
-                            return array.indexOf(val) == id;
+                            return array?.indexOf(val) == id;
                         }
                     );
 
@@ -1822,14 +1862,14 @@ const EditTaskPopup = (Items: any) => {
         }
         let updatedItem = {
             ...EditDataBackup,
-            TaskCategories: tempShareWebTypeData,
+            TaskCategories: BackupTaskCategoriesData,
         };
         let SmartPriority = globalCommon.calculateSmartPriority(updatedItem)
         updatedItem = {
             ...updatedItem,
             SmartPriority: SmartPriority
         }
-        EditDataBackup=updatedItem;
+        EditDataBackup = updatedItem;
         setEditData(updatedItem);
     };
 
@@ -1873,7 +1913,11 @@ const EditTaskPopup = (Items: any) => {
                 let temp: any = [];
                 temp.push(user);
                 setCurrentUserData(temp);
-                currentUserBackupArray.push(user);
+                user.UserImage =
+                    user.Item_x0020_Cover?.Url?.length > 0
+                        ? user.Item_x0020_Cover?.Url
+                        : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
+                    currentUserBackupArray.push(user);
                 if (user.UserGroupId == 7) {
                     setIsUserFromHHHHTeam(true);
                 }
@@ -2048,6 +2092,7 @@ const EditTaskPopup = (Items: any) => {
         let value = Number(e.target.value);
         if (value <= 100) {
             if (StatusInput.length > 0) {
+                setIsTaskStatusUpdated(true);
                 if (StatusInput == 0) {
                     setTaskStatus("Not Started");
                     setPercentCompleteStatus("0% Not Started");
@@ -2103,6 +2148,8 @@ const EditTaskPopup = (Items: any) => {
                         EditData.TeamMembers?.length > 0
                     ) {
                         setWorkingMemberFromTeam(EditData.TeamMembers, "Development", 0);
+                    } else if (EditData.ResponsibleTeam?.length > 0) {
+                        setWorkingMemberFromTeam(EditData.ResponsibleTeam, "Development", 0);
                     }
                     StatusOptions?.map((item: any) => {
                         if (StatusInput == item.value) {
@@ -2120,6 +2167,14 @@ const EditTaskPopup = (Items: any) => {
                             setTaskStatus(item.taskStatusComment);
                         }
                     });
+                }
+                if (StatusInput == 8) {
+                    let CheckForTaskCategories: any = EditDataBackup.TaskCategories?.some((category: any) => category.Title === "Development" || category.Title === "Improvement")
+                    if (CheckForTaskCategories) {
+                        let AuthorId: any = EditDataBackup?.Author?.Id;
+                        setWorkingMember(AuthorId);
+                        setSendMsgToAuthor(true);
+                    }
                 }
                 if (StatusInput == 10) {
                     EditData.CompletedDate = undefined;
@@ -2148,8 +2203,7 @@ const EditTaskPopup = (Items: any) => {
                 if (StatusInput == 90) {
                     EditData.IsTodaysTask = false;
                     EditData.workingThisWeek = false;
-                    setIsTaskCompleted(true);
-                    if (EditData.siteType == "Offshore Tasks") {
+                    if (EditData.siteType == "Offshore%20Tasks") {
                         setWorkingMember(36);
                     } else if (DesignStatus) {
                         setWorkingMember(301);
@@ -2212,6 +2266,7 @@ const EditTaskPopup = (Items: any) => {
             setPercentCompleteStatus(StatusData.status);
             setTaskStatus(StatusData.taskStatusComment);
             setPercentCompleteCheck(false);
+            setIsTaskStatusUpdated(true);
             if (StatusData.value == 1) {
                 let tempArray: any = [];
                 if (
@@ -2230,7 +2285,7 @@ const EditTaskPopup = (Items: any) => {
                     });
                 }
                 const finalData = tempArray.filter((val: any, id: any, array: any) => {
-                    return array.indexOf(val) == id;
+                    return array?.indexOf(val) == id;
                 });
                 setTaskAssignedTo(finalData);
                 setTaskTeamMembers(finalData);
@@ -2276,6 +2331,15 @@ const EditTaskPopup = (Items: any) => {
             if (StatusData.value == 5) {
                 EditData.CompletedDate = undefined;
                 EditData.IsTodaysTask = false;
+                setTeamLeaderChanged(true);
+            }
+            if (StatusData.value == 8) {
+                let CheckForTaskCategories: any = EditDataBackup.TaskCategories?.some((category: any) => category.Title === "Development" || category.Title === "Improvement")
+                if (CheckForTaskCategories) {
+                    let AuthorId: any = EditDataBackup?.Author?.Id;
+                    setWorkingMember(AuthorId);
+                    setSendMsgToAuthor(true);
+                }
             }
             if (StatusData.value == 10) {
                 EditData.CompletedDate = undefined;
@@ -2300,10 +2364,9 @@ const EditTaskPopup = (Items: any) => {
                 });
             }
             if (StatusData.value == 90) {
-                setIsTaskCompleted(true);
                 EditData.IsTodaysTask = false;
                 EditData.workingThisWeek = false;
-                if (EditData.siteType == "Offshore Tasks") {
+                if (EditData.siteType == "Offshore%20Tasks") {
                     setWorkingMember(36);
                 } else if (DesignStatus) {
                     setWorkingMember(301);
@@ -2380,13 +2443,13 @@ const EditTaskPopup = (Items: any) => {
     const setModalIsOpenToFalse = () => {
         Items.Call("Close");
         // callBack();
-        tempShareWebTypeData = [];
+        BackupTaskCategoriesData = [];
         AllMetaData = [];
         taskUsers = [];
         CommentBoxData = [];
         SubCommentBoxData = [];
         updateFeedbackArray = [];
-        tempShareWebTypeData = [];
+        BackupTaskCategoriesData = [];
         tempCategoryData = [];
         SiteTypeBackupArray = [];
         currentUserBackupArray = [];
@@ -2410,6 +2473,9 @@ const EditTaskPopup = (Items: any) => {
     // ******************** This is Task All Details Update Function  ***************************
 
     const UpdateTaskInfoFunction = async (usedFor: any) => {
+        let TaskShuoldBeUpdate = true;
+        let DataJSONUpdate: any = await MakeUpdateDataJSON();
+        let taskPercentageValue: any = DataJSONUpdate?.PercentComplete ? DataJSONUpdate?.PercentComplete : 0;
         if (isApprovalByStatus == true) {
             let web = new Web(siteUrls);
             await web.lists
@@ -2423,74 +2489,7 @@ const EditTaskPopup = (Items: any) => {
                 });
         }
 
-        if (IsSendAttentionMsgStatus) {
-            let txtComment = `You have been tagged as ${SendCategoryName} in the below task by ${Items.context.pageContext._user.displayName}`;
-            let TeamMsg =
-                txtComment +
-                `</br> <a href=${window.location.href}>${EditData.TaskId}-${EditData.Title}</a>`;
-            if (SendCategoryName == "Bottleneck") {
-                let sendUserEmail: any = [];
-                TaskAssignedTo?.map((userDtl: any) => {
-                    taskUsers?.map((allUserItem: any) => {
-                        if (userDtl.Id == allUserItem.AssingedToUserId) {
-                            sendUserEmail.push(allUserItem.Email);
-                        }
-                    });
-                });
-                if (sendUserEmail?.length > 0) {
-                    await globalCommon.SendTeamMessage(
-                        sendUserEmail,
-                        TeamMsg,
-                        Items.context
-                    );
-                }
-            } else {
-                await globalCommon.SendTeamMessage(
-                    userSendAttentionEmails,
-                    TeamMsg,
-                    Items.context
-                );
-            }
-        }
 
-        // if (IsTaskCompleted) {
-        //     let taskComplete = `Hi Robert, </br> Below task has been marked to 90% by ${Items.context.pageContext._user.displayName}. Please review.`;
-        //     let TeamEmail =
-        //         taskComplete +
-        //         `</br> <a href=${siteUrls + "/SitePages/Task-Profile.aspx?taskId=" + EditData.Id + "&Site=" + Items.Items.siteType}>${EditData.TaskId}-${EditData.Title}</a>`;
-        //     let sendEmail: any = ["robert.ungethuem@hochhuth-consulting.de"];
-        //     if (sendEmail?.length > 0) {
-        //         await globalCommon.SendTeamMessage(
-        //             sendEmail,
-        //             TeamEmail,
-        //             Items.context
-        //         );
-        //     }
-        // }
-
-        let TaskShuoldBeUpdate = true;
-        let DataJSONUpdate: any = await MakeUpdateDataJSON();
-        if (EnableSiteCompositionValidation) {
-            if (SiteCompositionPrecentageValue > 100) {
-                TaskShuoldBeUpdate = false;
-                SiteCompositionPrecentageValue = 0;
-                alert("site composition allocation should not be more than 100%");
-            }
-            if (
-                SiteCompositionPrecentageValue.toFixed(0) < 100 &&
-                SiteCompositionPrecentageValue > 0
-            ) {
-                SiteCompositionPrecentageValue = 0;
-                let conformationSTatus = confirm(
-                    "Site composition should not be less than 100% if you still want to do it click on OK"
-                );
-                if (conformationSTatus) {
-                    TaskShuoldBeUpdate = true;
-                } else {
-                    TaskShuoldBeUpdate = false;
-                }
-            }
-        }
         if (TaskShuoldBeUpdate) {
             try {
                 let web = new Web(siteUrls);
@@ -2555,24 +2554,24 @@ const EditTaskPopup = (Items: any) => {
                             TaskDetailsFromCall = await web.lists
                                 .getById(Items.Items.listId)
                                 .items.select(
-                                    "Id,Title,PriorityRank,workingThisWeek,waitForResponse,Approvee/Id,Approvee/Title,SiteCompositionSettings,BasicImageInfo,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title"
+                                    "Id,Title,PriorityRank,Comments,workingThisWeek,WorkingAction,Project/Id,Project/Title,Project/PriorityRank,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
                                 )
                                 .top(5000)
                                 .filter(`Id eq ${Items.Items.Id}`)
                                 .expand(
-                                    "AssignedTo,Author,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio,Approvee"
+                                    "AssignedTo,Author,ParentTask,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,Project,Approvee"
                                 )
                                 .get();
                         } else {
                             TaskDetailsFromCall = await web.lists
                                 .getById(Items.Items.listName)
                                 .items.select(
-                                    "Id,Title,PriorityRank,workingThisWeek,Approvee/Id,Approvee/Title,waitForResponse,SiteCompositionSettings,BasicImageInfo,ClientTime,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,RelevantPortfolio/Title,RelevantPortfolio/Id,Portfolio/Title,Portfolio/Id,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title"
+                                    "Id,Title,PriorityRank,Comments,Project/Id,WorkingAction,Project/Title,Project/PriorityRank,workingThisWeek,Approvee/Id,Approvee/Title,EstimatedTime,EstimatedTimeDescription,waitForResponse,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,BasicImageInfo,Sitestagging,Attachments,AttachmentFiles,Priority,Mileage,CompletedDate,FeedBack,Status,ItemRank,IsTodaysTask,Body,ComponentLink,Portfolio/Title,Portfolio/Id,Portfolio/PortfolioStructureID,PercentComplete,Categories,TaskLevel,TaskLevel,ClientActivity,ClientActivityJson,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title, ParentTask/TaskID,ParentTask/Id,TaskID"
                                 )
                                 .top(5000)
                                 .filter(`Id eq ${Items.Items.Id}`)
                                 .expand(
-                                    "AssignedTo,Author,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,RelevantPortfolio,Approvee"
+                                    "AssignedTo,Author,ParentTask,Editor,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory,Project,Approvee"
                                 )
                                 .get();
                         }
@@ -2580,35 +2579,9 @@ const EditTaskPopup = (Items: any) => {
                         TaskDetailsFromCall[0].TaskId = globalCommon.GetTaskId(
                             TaskDetailsFromCall[0]
                         );
-                        if (ApproverData != undefined && ApproverData.length > 0) {
-                            taskUsers.forEach((val: any) => {
-                                if (
-                                    ApproverData[0]?.Id == val?.AssignedToUserId &&
-                                    ApproverData[0].Company == undefined
-                                ) {
-                                    EditData.TaskApprovers = ApproverData;
-                                }
-                            });
-                        }
-                        if (ApproverData != undefined && ApproverData.length > 0) {
-                            taskUsers.forEach((val: any) => {
-                                if (
-                                    ApproverData[0]?.AssignedToUserId == val?.AssignedToUserId &&
-                                    ApproverData[0].Company != undefined
-                                ) {
-                                    EditData.TaskApprovers = ApproverData;
-                                }
-                            });
-                        }
-                        if (ApproverData != undefined && ApproverData.length > 0) {
-                            if (
-                                ApproverData[0].Id == currentUserId &&
-                                currentUserId != EditData?.Author.Id
-                            ) {
-                                EditData.TaskApprovers = EditData.TaskCreatorData;
-                                //EditData.TaskApprovers.push(EditData?.Author)
-                            }
-                        }
+                        TaskDetailsFromCall[0].TaskID = globalCommon.GetTaskId(
+                            TaskDetailsFromCall[0]
+                        );
 
                         if (
                             TaskDetailsFromCall != undefined &&
@@ -2624,16 +2597,333 @@ const EditTaskPopup = (Items: any) => {
                             TaskDetailsFromCall[0].siteType = EditData.siteType;
                             TaskDetailsFromCall[0].siteUrl = siteUrls;
                             TaskDetailsFromCall[0].siteIcon = Items.Items.SiteIcon;
+                            TaskDetailsFromCall[0].PercentComplete = (TaskDetailsFromCall[0].PercentComplete * 100).toFixed(0);
+                            TaskDetailsFromCall[0].Comments = JSON.parse(TaskDetailsFromCall[0].Comments)
                         }
-                        // if(TaskDetailsFromCall[0].TaskID == null && TaskDetailsFromCall[0].TaskID ==  undefined){
-                        //     TaskDetailsFromCall[0].TaskID = 'T'+ TaskDetailsFromCall[0].Id
-                        // }
+                        let UpdatedDataObject: any = TaskDetailsFromCall[0]
+                        let NewSmartPriority: any = globalCommon.calculateSmartPriority(UpdatedDataObject)
+                        UpdatedDataObject.SmartPriority = NewSmartPriority;
+                        UpdatedDataObject.siteUrl = siteUrls;
+                        UpdatedDataObject.CommentsArray = UpdatedDataObject?.Comments != null ? typeof UpdatedDataObject?.CommentsArray === "object" ? JSON.parse(UpdatedDataObject?.Comments) : UpdatedDataObject?.Comments : null
+                        let WorkingActionData = UpdatedDataObject?.WorkingAction?.length > 0 ? JSON.parse(UpdatedDataObject?.WorkingAction) : [];
+                        WorkingActionData?.map((ItemData: any) => {
+                            ItemData.InformationData?.map(async (InfoItem: any) => {
+                                if (InfoItem.NotificationSend == false) {
+                                    InfoItem.NotificationSend = true;
+                                    let DataForNotification: any = {
+                                        ReceiverName: InfoItem.TaggedUsers?.Title,
+                                        sendUserEmail: [InfoItem.TaggedUsers?.Email],
+                                        Context: Items.context,
+                                        ActionType: ItemData.Title,
+                                        ReasonStatement: InfoItem.Comment,
+                                        UpdatedDataObject: UpdatedDataObject
+                                    }
+                                    await GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                        console.log("Ms Teams Notifications send")
+                                    })
+                                }
+                            })
+                        })
+                        if (WorkingActionData?.length > 0) {
+                            setWorkingAction([...WorkingActionData])
+                            UpdateWorkinActionJSON(WorkingActionData);
+                        }
+                        const uniqueIds: any = {};
+                        const result = BackupTaskCategoriesData.filter((item: any) => {
+                            if (!uniqueIds[item.Id]) {
+                                uniqueIds[item.Id] = true;
+                                return true;
+                            }
+                            return false;
+                        });
+                        const TaskCategories = result.map((item: any) => item.Title).join(', ');
+                        const CheckForInformationRequestCategory: any = TaskCategories.includes("Information Request");
+                        let checkStatusUpdate = Number(taskPercentageValue) * 100;
 
-                        let CalculateStatusPercentages: any = TaskDetailsFromCall[0]
-                            .PercentComplete
-                            ? TaskDetailsFromCall[0].PercentComplete * 100
+
+                        // This is used for send MS Teams Notification 
+                       
+                            try {
+                                const sendUserEmails: string[] = [];
+                                let AssignedUserName = '';
+                                const addEmailAndUserName = (userItem: any) => {
+                                    if (userItem?.AssingedToUserId !== currentUserId) {
+                                        sendUserEmails.push(userItem.Email);
+                                        AssignedUserName = AssignedUserName ? "Team" : userItem?.Title;
+                                    }
+                                };
+
+                                if (SendMsgToAuthor || (checkStatusUpdate === 90 && CheckForInformationRequestCategory)) {
+                                    taskUsers?.forEach((allUserItem: any) => {
+                                        if (UpdatedDataObject?.Author?.Id === allUserItem?.AssingedToUserId) {
+                                            addEmailAndUserName(allUserItem);
+                                        }
+                                    });
+                                } else {
+                                    const usersToCheck = TeamLeaderChanged && TeamMemberChanged ? TaskResponsibleTeam?.concat(TaskAssignedTo) :
+                                        TeamLeaderChanged ? UpdatedDataObject?.ResponsibleTeam :
+                                            TeamMemberChanged || IsTaskStatusUpdated ? TaskAssignedTo : [];
+
+                                    usersToCheck.forEach((userDtl: any) => {
+                                        taskUsers?.forEach((allUserItem: any) => {
+                                            if (userDtl.Id === allUserItem?.AssingedToUserId) {
+                                                addEmailAndUserName(allUserItem);
+                                            }
+                                        });
+                                    });
+                                }
+                                let CommonMsg = '';
+                                const sendMSGCheck = (checkStatusUpdate === 80 || checkStatusUpdate === 70) && IsTaskStatusUpdated;
+                                const SendUserEmailFinal: any = sendUserEmails?.filter((item: any, index: any) => sendUserEmails?.indexOf(item) === index);
+
+                                if (SendMsgToAuthor || (checkStatusUpdate === 90 && CheckForInformationRequestCategory)) {
+                                    CommonMsg = ` Task created from your end has been set to 8%. Please take necessary action.`;
+                                    let functionType: any = '';
+                                    if (checkStatusUpdate === 90 && CheckForInformationRequestCategory) {
+                                        functionType = "Information-Request"
+                                    } else {
+                                        functionType = "Priority-Check"
+                                    }
+                                    let RequiredDataForNotification: any = {
+                                        ItemDetails: UpdatedDataObject,
+                                        ReceiverEmail: SendUserEmailFinal,
+                                        Context: Context,
+                                        usedFor: functionType,
+                                        ReceiverName: AssignedUserName
+                                    }
+                                    GlobalFunctionForUpdateItems.SendEmailNotificationForIRCTasksAndPriorityCheck(RequiredDataForNotification);
+                                } 
+                                
+                                else if (TeamMemberChanged && TeamLeaderChanged) {
+                                    CommonMsg = `You have been marked as TL/working member in the below task. Please take necessary action.`;
+                                } else if (TeamMemberChanged) {
+                                    CommonMsg = `You have been marked as a working member on the below task. Please take necessary action (Analyse the points in the task, fill up the Estimation, Set to 10%).`;
+                                } else if (TeamLeaderChanged) {
+                                    CommonMsg = `You have been marked as a Lead on the below task. Please take necessary action.`;
+                                } else if (IsTaskStatusUpdated) {
+                                    switch (checkStatusUpdate) {
+                                        case 80:
+                                            CommonMsg = `Below task has been set to 80%, please review it.`;
+                                            break;
+                                        case 70:
+                                            CommonMsg = `Below task has been re-opened. Please review it and take necessary action on priority basis.`;
+                                            break;
+                                    }
+                                }
+                                
+                                const emailMessage = GlobalFunctionForUpdateItems?.GenerateMSTeamsNotification(UpdatedDataObject);
+                                const containerDiv = document.createElement('div');
+                                const reactElement = React.createElement(emailMessage?.type, emailMessage?.props);
+                                ReactDOM.render(reactElement, containerDiv);
+
+                                const SendMessage = `<p><b>Hi ${AssignedUserName},</b> </p></br><p>${CommonMsg}</p> 
+                                </br> 
+                                    ${containerDiv.innerHTML}
+                                    <p>
+                                    Task Link:  
+                                    <a href=${siteUrls + "/SitePages/Task-Profile.aspx?taskId=" + UpdatedDataObject?.Id + "&Site=" + UpdatedDataObject?.siteType}>
+                                     Click-here
+                                    </a>
+                                    </p>
+                                    <p></p>
+                                    <b>
+                                    Thanks, </br>
+                                    Task Management Team
+                                    </b>
+                                    `;
+
+
+                                if ((sendMSGCheck || SendMsgToAuthor || TeamMemberChanged || TeamLeaderChanged) && ((Number(taskPercentageValue) * 100) + 1 <= 85 || taskPercentageValue == 0)) {
+                                    if (sendUserEmails.length > 0) {
+                                        // await sendTeamMessagePromise(SendUserEmailFinal, SendMessage, Items.context)
+                                        globalCommon.SendTeamMessage(SendUserEmailFinal, SendMessage, Items.context).then(() => {
+                                            console.log("MS Teams Message Send Succesfully !!!!")
+                                        }).catch((error) => {
+                                            console.log("MS Teams Message Not Send !!!!", error.message)
+                                        })
+                                    }
+                                }
+                            } catch (error) {
+                                console.log("Error", error.message);
+                            }
+                        
+                        let Createtordata: any = []
+                        if (IsTaskStatusUpdated  && (checkStatusUpdate == 80 || checkStatusUpdate == 5) && UpdatedDataObject?.Categories?.indexOf('Immediate') != -1) {
+                            taskUsers?.forEach((allUserItem: any) => {
+                                if (UpdatedDataObject?.Author?.Id === allUserItem?.AssingedToUserId) {
+                                    Createtordata.push(allUserItem);
+                                }
+
+                            });
+
+                            Createtordata?.map((InfoItem: any) => {
+                                let DataForNotification: any = {
+                                    ReceiverName: InfoItem?.Title,
+                                    sendUserEmail: [InfoItem?.Email],
+                                    Context: Items.context,
+                                    ActionType: "Immediate",
+                                    ReasonStatement: '',
+                                    UpdatedDataObject: UpdatedDataObject
+                                }
+                                GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                    console.log("Ms Teams Notifications send")
+                                })
+
+                            })
+
+
+
+                        }
+                        if (Items?.pageType == 'createTask' && checkStatusUpdate == 0 && UpdatedDataObject?.Categories?.indexOf('Immediate') != -1) {
+                            taskUsers?.forEach((allUserItem: any) => {
+                                if (UpdatedDataObject?.Author?.Id === allUserItem?.AssingedToUserId) {
+                                    Createtordata.push(allUserItem);
+                                }
+
+                            });
+
+                            Createtordata?.map((InfoItem: any) => {
+                                let DataForNotification: any = {
+                                    ReceiverName: InfoItem?.Title,
+                                    sendUserEmail: [InfoItem?.Email],
+                                    Context: Items.context,
+                                    ActionType: "Immediate",
+                                    ReasonStatement: '',
+                                    UpdatedDataObject: UpdatedDataObject
+                                }
+                                GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                    console.log("Ms Teams Notifications send")
+                                })
+
+                            })
+
+
+
+                        }
+
+                        if (IsTaskStatusUpdated && checkStatusUpdate == 90 && UpdatedDataObject?.Categories?.indexOf('Design') != -1) {
+                            taskUsers?.forEach((allUserItem: any) => {
+                                if (UpdatedDataObject?.Author?.Id === allUserItem.AssingedToUserId) {
+                                    Createtordata.push(allUserItem);
+                                }
+
+                            });
+
+                            Createtordata?.map((InfoItem: any) => {
+
+                                let DataForNotification: any = {
+                                    ReceiverName: 'kristina',
+                                    sendUserEmail: ['kristina.kovach@hochhuth-consulting.de'],
+                                    Context: Items.context,
+                                    ActionType: "Design",
+                                    ReasonStatement: "",
+                                    UpdatedDataObject: UpdatedDataObject
+                                }
+                                GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                    console.log("Ms Teams Notifications send")
+                                })
+
+                            })
+
+
+
+                        }
+
+                        if (Items?.pageType == 'createTask' && checkStatusUpdate == 0 && UpdatedDataObject?.Categories?.indexOf('User Experience - UX') != -1) {
+                            taskUsers?.forEach((allUserItem: any) => {
+                                if (UpdatedDataObject?.Author?.Id === allUserItem.AssingedToUserId) {
+                                    Createtordata.push(allUserItem);
+                                }
+
+                            });
+
+                            Createtordata?.map((InfoItem: any) => {
+
+                                let DataForNotification: any = {
+                                    ReceiverName: 'Robert',
+                                    sendUserEmail: ['robert.ungethuem@hochhuth-consulting.de'],
+                                    Context: Items.context,
+                                    ActionType: "User Experience - UX",
+                                    ReasonStatement: "",
+                                    UpdatedDataObject: UpdatedDataObject
+                                }
+                                GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                    console.log("Ms Teams Notifications send")
+                                })
+
+                            })
+
+
+
+                        }
+
+                        if (checkStatusUpdate == 90 && UpdatedDataObject?.Categories?.indexOf('User Experience - UX') != -1) {
+                            taskUsers?.forEach((allUserItem: any) => {
+                                if (UpdatedDataObject?.Author?.Id === allUserItem.AssingedToUserId) {
+                                    Createtordata.push(allUserItem);
+                                }
+
+                            });
+
+                            Createtordata?.map((InfoItem: any) => {
+
+                                let DataForNotification: any = {
+                                    ReceiverName: 'kristina',
+                                    sendUserEmail: ['kristina.kovach@hochhuth-consulting.de'],
+                                    Context: Items.context,
+                                    ActionType: "User Experience - UX",
+                                    ReasonStatement: "",
+                                    UpdatedDataObject: UpdatedDataObject
+                                }
+                                GlobalFunctionForUpdateItems.SendMSTeamsNotificationForWorkingActions(DataForNotification).then(() => {
+                                    console.log("Ms Teams Notifications send")
+                                })
+
+                            })
+
+
+
+                        }
+
+
+                        if (ApproverData != undefined && ApproverData.length > 0) {
+                            taskUsers.forEach((val: any) => {
+                                if (
+                                    ApproverData[0]?.Id == val?.AssingedToUserId &&
+                                    ApproverData[0].Company == undefined
+                                ) {
+                                    EditData.TaskApprovers = ApproverData;
+                                }
+                            });
+                        }
+                        if (ApproverData != undefined && ApproverData.length > 0) {
+                            taskUsers.forEach((val: any) => {
+                                if (
+                                    ApproverData[0]?.AssingedToUserId == val?.AssingedToUserId &&
+                                    ApproverData[0].Company != undefined
+                                ) {
+                                    EditData.TaskApprovers = ApproverData;
+                                }
+                            });
+                        }
+                        if (ApproverData != undefined && ApproverData.length > 0) {
+                            if (
+                                ApproverData[0].Id == currentUserId &&
+                                currentUserId != EditData?.Author.Id
+                            ) {
+                                EditData.TaskApprovers = EditData.TaskCreatorData;
+                                //EditData.TaskApprovers.push(EditData?.Author)
+                            }
+                        }
+                        let spaceIndex = EditData.TaskCreatorData[0]?.Title?.lastIndexOf(' ');
+                        if (spaceIndex !== -1) {
+                            TaskDetailsFromCall[0].CreatorTitle = EditData.TaskCreatorData[0]?.Title?.substring(0, spaceIndex);
+                        } else {
+                            console.log("No last name found");
+                        }
+                        let CalculateStatusPercentages: any = TaskDetailsFromCall[0].PercentComplete ? TaskDetailsFromCall[0].PercentComplete
                             : 0;
-                        if (CalculateStatusPercentages == 90 && EmailStatus == true) {
+                        if (IsTaskStatusUpdated && CalculateStatusPercentages == 90 && EmailStatus == true) {
                             setLastUpdateTaskData(TaskDetailsFromCall[0]);
                             ValueStatus = "90";
                             setSendEmailNotification(true);
@@ -2642,13 +2932,13 @@ const EditTaskPopup = (Items: any) => {
                         if (usedFor == "Image-Tab") {
                             GetExtraLookupColumnData();
                         } else {
-                            tempShareWebTypeData = [];
+                            BackupTaskCategoriesData = [];
                             AllMetaData = [];
                             taskUsers = [];
                             CommentBoxData = [];
                             SubCommentBoxData = [];
                             updateFeedbackArray = [];
-                            tempShareWebTypeData = [];
+                            BackupTaskCategoriesData = [];
                             tempCategoryData = "";
                             SiteTypeBackupArray = [];
                             currentUserBackupArray = [];
@@ -2660,9 +2950,8 @@ const EditTaskPopup = (Items: any) => {
                             TempSmartInformationIds = [];
                             userSendAttentionEmails = [];
                             SiteCompositionPrecentageValue = 0;
-                            let CalculateStatusPercentage: any = TaskDetailsFromCall[0]
-                                .PercentComplete
-                                ? TaskDetailsFromCall[0].PercentComplete * 100
+
+                            let CalculateStatusPercentage: any = TaskDetailsFromCall[0].PercentComplete ? TaskDetailsFromCall[0].PercentComplete
                                 : 0;
                             isApprovalByStatus = false;
                             if (Items.sendApproverMail != undefined) {
@@ -2680,16 +2969,18 @@ const EditTaskPopup = (Items: any) => {
                                 }
                             }
                             if (
-                                (CalculateStatusPercentage == 5 ||
-                                    CalculateStatusPercentage == 10 ||
-                                    CalculateStatusPercentage == 80 ||
-                                    CalculateStatusPercentage == 90) &&
-                                ImmediateStatus
-                            ) {
+                                (CalculateStatusPercentage == 5 || CalculateStatusPercentage == 10 || CalculateStatusPercentage == 80 ||
+                                    CalculateStatusPercentage == 90) && ImmediateStatus && EditData.PercentComplete != CalculateStatusPercentage) {
                                 ValueStatus = CalculateStatusPercentage;
                                 setSendEmailNotification(true);
                                 Items.StatusUpdateMail = true;
-                            } else {
+                            }
+                            if (TaskDetailsFromCall[0]?.Categories?.indexOf('Immediate') != -1 && CalculateStatusPercentage == 0 && Items?.pageType == 'createTask') {
+                                ValueStatus = CalculateStatusPercentage;
+                                setSendEmailNotification(true);
+                                Items.StatusUpdateMail = true;
+                            }
+                            else {
                                 setSendEmailComponentStatus(false);
                                 Items.StatusUpdateMail = false;
                             }
@@ -2714,9 +3005,21 @@ const EditTaskPopup = (Items: any) => {
                                     dataEditor.data.SiteIcon = Items?.Items?.SiteIcon;
                                     dataEditor.data.DisplayCreateDate =
                                         Items?.Items?.DisplayCreateDate;
+                                    dataEditor.data.DisplayDueDate = Moment(EditData?.DueDate).format("DD/MM/YYYY");
+                                    if (dataEditor.data.DisplayDueDate == "Invalid date" || "") {
+                                        dataEditor.data.DisplayDueDate = dataEditor.data.DisplayDueDate.replaceAll(
+                                            "Invalid date",
+                                            ""
+                                        );
+                                    }
+                                    dataEditor.data.PercentComplete = Number(UpdateTaskInfo.PercentCompleteStatus);
                                     dataEditor.data.FeedBack = JSON.stringify(
                                         dataEditor.data.FeedBack
                                     );
+                                    let portfoliostructureIds = AllProjectBackupArray?.filter((item: any) => item?.Id === (selectedProject?.length > 0 ? selectedProject[0].Id : ""));
+                                    const structureiddata = portfoliostructureIds?.length > 0 ? portfoliostructureIds[0]?.PortfolioStructureID : "";
+
+                                    dataEditor.data.projectStructerId = structureiddata;
                                     Items.Call(dataEditor, "UpdatedData");
                                 } else {
                                     Items.Call(DataJSONUpdate, "UpdatedData");
@@ -2732,14 +3035,12 @@ const EditTaskPopup = (Items: any) => {
         }
     };
 
-    const MakeUpdateDataJSON = async () => {
-        // const attachments = await web.lists.getByTitle('TimesheetListNewId')
-        // .items.getById(Items.Items.Id)
-        // .attachmentFiles.get();
 
+    const MakeUpdateDataJSON = async () => {
         var UploadImageArray: any = [];
         var ApprovalData: any = [];
-
+        // const uniqueObjects = [];
+        // const idSet = new Set();
         if (TaskImages != undefined && TaskImages.length > 0) {
             TaskImages?.map((imgItem: any) => {
                 if (imgItem.ImageName != undefined && imgItem.ImageName != null) {
@@ -2765,7 +3066,10 @@ const EditTaskPopup = (Items: any) => {
         let PrecentStatus: any = UpdateTaskInfo.PercentCompleteStatus
             ? Number(UpdateTaskInfo.PercentCompleteStatus)
             : 0;
-
+        if (PrecentStatus == 3) {
+            setTaskAssignedTo([])
+            TaskAssignedTo = []
+        }
         if (PrecentStatus == 1) {
             let tempArrayApprover: any = [];
 
@@ -2798,7 +3102,7 @@ const EditTaskPopup = (Items: any) => {
             if (ApproverData == undefined && ApproverData.length == 0) {
                 const finalData = tempArrayApprover.filter(
                     (val: any, id: any, array: any) => {
-                        return array.indexOf(val) == id;
+                        return array?.indexOf(val) == id;
                     }
                 );
                 TaskAssignedTo = finalData;
@@ -2822,13 +3126,20 @@ const EditTaskPopup = (Items: any) => {
                 EditData.TaskApprovers = ApproverData;
                 ApproverData?.map((ApproverInfo) => {
                     if (ApproverInfo.Id == undefined) {
-                        ApproverInfo.Id = ApproverInfo.AssignedToUserId;
+                        ApproverInfo.Id = ApproverInfo.AssingedToUserId;
                     }
                 });
                 ApprovalData = ApproverData;
             }
         }
         if (CommentBoxData?.length > 0 || SubCommentBoxData?.length > 0) {
+            // for (const obj of SubCommentBoxData) {
+            //     if (!idSet.has(obj?.Title)) {
+            //         idSet.add(obj?.Title);
+            //         uniqueObjects.push(obj);
+            //     }
+            // }
+            // SubCommentBoxData = uniqueObjects;
             if (CommentBoxData?.length == 0 && SubCommentBoxData?.length > 0) {
                 let message = JSON.parse(EditData.FeedBack);
                 let feedbackArray: any = [];
@@ -2888,15 +3199,29 @@ const EditTaskPopup = (Items: any) => {
                 updateFeedbackArray[0].FeedBackDescriptions = result;
             }
         } else {
-            updateFeedbackArray = JSON.parse(EditData.FeedBack);
+            updateFeedbackArray = JSON.parse(EditData?.FeedBack);
         }
         // FeedBackBackupArray = [];
-        if (tempShareWebTypeData != undefined && tempShareWebTypeData?.length > 0) {
-            tempShareWebTypeData.map((typeData: any) => {
+        let CategoriesTitle: any = "";
+        let uniqueIds: any = {};
+
+        const result: any = BackupTaskCategoriesData.filter((item: any) => {
+            if (!uniqueIds[item.Id]) {
+                uniqueIds[item.Id] = true;
+                return true;
+            }
+            return false;
+        });
+        if (result != undefined && result?.length > 0) {
+            result.map((typeData: any) => {
                 CategoryTypeID.push(typeData.Id);
+                if (CategoriesTitle?.length > 2) {
+                    CategoriesTitle = CategoriesTitle + ";" + typeData.Title;
+                } else {
+                    CategoriesTitle = typeData.Title;
+                }
             });
         }
-
         if (TaggedPortfolioData != undefined && TaggedPortfolioData?.length > 0) {
             TaggedPortfolioData?.map((com: any) => {
                 smartComponentsIds = com.Id;
@@ -2910,22 +3235,37 @@ const EditTaskPopup = (Items: any) => {
 
         if (TaskAssignedTo != undefined && TaskAssignedTo?.length > 0) {
             TaskAssignedTo?.map((taskInfo) => {
-                AssignedToIds.push(taskInfo.Id);
+                if (taskInfo.AssingedToUserId != undefined) {
+                    AssignedToIds.push(taskInfo.AssingedToUserId);
+                }
+                else {
+                    AssignedToIds.push(taskInfo.Id);
+                }
+
             });
         }
 
         if (ApproverData != undefined && ApproverData?.length > 0) {
             ApproverData?.map((ApproverInfo) => {
-                if (ApproverInfo.Id == undefined) {
-                    ApproverInfo.Id = ApproverInfo.ID;
+                if (ApproverInfo.AssingedToUserId != undefined) {
+                    ApproverIds.push(ApproverInfo.AssingedToUserId)
                 }
-                ApproverIds.push(ApproverInfo.Id);
+                else {
+                    ApproverIds.push(ApproverInfo.Id);
+                }
+
             });
         }
 
         if (TaskTeamMembers != undefined && TaskTeamMembers?.length > 0) {
             TaskTeamMembers?.map((taskInfo) => {
-                TeamMemberIds.push(taskInfo.Id);
+                if (taskInfo.AssingedToUserId != undefined) {
+                    TeamMemberIds.push(taskInfo.AssingedToUserId)
+                }
+                else {
+                    TeamMemberIds.push(taskInfo.Id);
+                }
+
             });
         }
 
@@ -2946,7 +3286,13 @@ const EditTaskPopup = (Items: any) => {
 
         if (TaskResponsibleTeam != undefined && TaskResponsibleTeam?.length > 0) {
             TaskResponsibleTeam?.map((taskInfo) => {
-                ResponsibleTeamIds.push(taskInfo.Id);
+                if (taskInfo.AssingedToUserId != undefined) {
+                    ResponsibleTeamIds.push(taskInfo.AssingedToUserId)
+                }
+                else {
+                    ResponsibleTeamIds.push(taskInfo.Id);
+                }
+
             });
         }
         if (
@@ -2988,7 +3334,7 @@ const EditTaskPopup = (Items: any) => {
                     : EditData.PercentComplete
                         ? EditData.PercentComplete / 100
                         : 0,
-            Categories: CategoriesData ? CategoriesData : null,
+            Categories: CategoriesTitle ? CategoriesTitle : null,
             PortfolioId: smartComponentsIds === "" ? null : smartComponentsIds,
             RelevantPortfolioId: {
                 results:
@@ -3002,6 +3348,7 @@ const EditTaskPopup = (Items: any) => {
                         ? CategoryTypeID
                         : [],
             },
+
             DueDate: EditData.DueDate
                 ? Moment(EditData.DueDate).format("MM-DD-YYYY")
                 : null,
@@ -3063,6 +3410,7 @@ const EditTaskPopup = (Items: any) => {
             EstimatedTimeDescription: EditData.EstimatedTimeDescriptionArray
                 ? JSON.stringify(EditData.EstimatedTimeDescriptionArray)
                 : null,
+            WorkingAction: WorkingAction?.length > 0 ? JSON.stringify(WorkingAction) : null
         };
         return UpdateDataObject;
     };
@@ -3080,7 +3428,7 @@ const EditTaskPopup = (Items: any) => {
                 ...updatedItem,
                 SmartPriority: SmartPriority
             }
-            EditDataBackup=updatedItem;
+            EditDataBackup = updatedItem;
             setEditData(updatedItem);
             // setEditData({ ...EditData, PriorityRank: e.target.value });
         } else {
@@ -3121,9 +3469,17 @@ const EditTaskPopup = (Items: any) => {
             const timesheetDatass = teamConfigData;
             console.log(timesheetDatass);
         } else {
-            // if (ChangeTaskUserStatus) {
+
             if (teamConfigData?.AssignedTo?.length > 0) {
                 let tempArray: any = [];
+                if (teamConfigData?.AssignedTo?.length === EditDataBackup.AssignedTo?.length) {
+                    let checkSendNotification: any = areTitlesSame(teamConfigData?.AssignedTo, EditDataBackup.AssignedTo);
+                    if (!checkSendNotification) {
+                        setTeamMemberChanged(true);
+                    }
+                } else {
+                    setTeamMemberChanged(true);
+                }
                 teamConfigData.AssignedTo?.map((arrayData: any) => {
                     if (arrayData.AssingedToUser != null) {
                         tempArray.push(arrayData.AssingedToUser);
@@ -3154,6 +3510,14 @@ const EditTaskPopup = (Items: any) => {
             }
             if (teamConfigData?.ResponsibleTeam?.length > 0) {
                 let tempArray: any = [];
+                if (teamConfigData?.ResponsibleTeam?.length === EditDataBackup.ResponsibleTeam?.length) {
+                    let checkSendNotification: any = areTitlesSame(teamConfigData?.ResponsibleTeam, EditDataBackup.ResponsibleTeam);
+                    if (!checkSendNotification) {
+                        // setTeamLeaderChanged(true);
+                    }
+                } else {
+                    // setTeamLeaderChanged(true);
+                }
                 teamConfigData.ResponsibleTeam?.map((arrayData: any) => {
                     if (arrayData.AssingedToUser != null) {
                         tempArray.push(arrayData.AssingedToUser);
@@ -3167,9 +3531,26 @@ const EditTaskPopup = (Items: any) => {
                 setTaskResponsibleTeam([]);
                 EditData.ResponsibleTeam = [];
             }
-            // }
+
         }
     }, []);
+
+
+    function areTitlesSame(CurrentDataArray: any, PrevDataArray: any) {
+        if (CurrentDataArray.length > 0 && PrevDataArray.length > 0) {
+            if (CurrentDataArray.length !== PrevDataArray.length) {
+                return false;
+            }
+            for (let i = 0; i < CurrentDataArray.length; i++) {
+                if (CurrentDataArray[i].Title !== PrevDataArray[i].Title) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     // *************** This is footer section share This task function ***************
 
@@ -3373,7 +3754,7 @@ const EditTaskPopup = (Items: any) => {
                     PhoneCount = PhoneCount + 1;
                 }
             });
-            if (ApprovedStatusCount == 0 && EditDataBackup?.PercentComplete != 0) {
+            if (ApprovedStatusCount == 0 && EditDataBackup?.PercentComplete > 0 && EditDataBackup?.PercentComplete < 5 && IsTaskStatusUpdated) {
                 let teamMember = [];
                 let AssignedTo = [];
                 if (EditDataBackup?.Categories?.includes("Approval")) {
@@ -3402,7 +3783,7 @@ const EditTaskPopup = (Items: any) => {
             else {
                 let teamMember = [];
                 let AssignedTo = [];
-                if (EditDataBackup?.Categories?.includes("Approval") && EditDataBackup?.PercentComplete != 0) {
+                if (EditDataBackup?.Categories?.includes("Approval") && EditDataBackup?.PercentComplete > 0 && EditDataBackup?.PercentComplete <  5  && IsTaskStatusUpdated) {
                     teamMember.push(currentUserBackupArray?.[0]?.AssingedToUser)
                     AssignedTo.push(currentUserBackupArray?.[0]?.AssingedToUser)
                     setTaskAssignedTo(AssignedTo)
@@ -3458,6 +3839,9 @@ const EditTaskPopup = (Items: any) => {
             onUploadImageFunction(TaskImages, [arrayIndex]);
         }
     };
+
+    // this is used for hadneling the upload and replace image functions 
+
     const onUploadImageFunction = async (
         imageList: ImageListType,
         addUpdateIndex: number[] | undefined
@@ -3466,9 +3850,11 @@ const EditTaskPopup = (Items: any) => {
         let fileName: any = "";
         let tempArray: any = [];
         let SiteUrl = siteUrls;
-
-        if (Items.Items.siteType == "Offshore Tasks") {
-            Items.Items.siteType = "SharewebQA";
+        let CurrentSiteName: any = '';
+        if (Items.Items.siteType == "Offshore%20Tasks") {
+            CurrentSiteName = "SharewebQA";
+        } else {
+            CurrentSiteName = Items.Items.siteType;
         }
 
         imageList?.map(async (imgItem: any, index: number) => {
@@ -3482,7 +3868,7 @@ const EditTaskPopup = (Items: any) => {
                     "-Image" +
                     imageIndex +
                     "-" +
-                    EditData.Title?.replace(/["/':?]/g, "")?.slice(0, 40) +
+                    EditData.Title?.replace(/["/':?%]/g, "")?.slice(0, 40) +
                     " " +
                     timeStamp +
                     ".jpg";
@@ -3499,7 +3885,7 @@ const EditTaskPopup = (Items: any) => {
                     imageDataUrl:
                         SiteUrl +
                         "/Lists/" +
-                        Items.Items.siteType +
+                        CurrentSiteName +
                         "/Attachments/" +
                         EditData?.Id +
                         "/" +
@@ -3542,204 +3928,247 @@ const EditTaskPopup = (Items: any) => {
             }
         }
     };
-    const UploadImageFunction = (Data: any, imageName: any, DataJson: any) => {
-        let listId = Items.Items.listId;
-        let listName = Items.Items.listName;
-        let Id = Items.Items.Id;
-        var src = Data.data_url?.split(",")[1];
-        var byteArray = new Uint8Array(
-            atob(src)
-                ?.split("")
-                ?.map(function (c) {
-                    return c.charCodeAt(0);
-                })
-        );
-        const data: any = byteArray;
-        var fileData = "";
-        for (var i = 0; i < byteArray.byteLength; i++) {
-            fileData += String.fromCharCode(byteArray[i]);
-        }
-        setTimeout(() => {
-            if (Items.Items.listId != undefined) {
-                (async () => {
-                    let web = new Web(siteUrls);
-                    let item = web.lists.getById(listId).items.getById(Id);
-                    item.attachmentFiles.add(imageName, data).then(() => {
-                        console.log("Attachment added");
-                        UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
-                        EditData.UploadedImage = DataJson;
-                    });
-                    setUploadBtnStatus(false);
-                })().catch(console.log);
-            } else {
-                (async () => {
-                    let web = new Web(siteUrls);
-                    let item = web.lists.getByTitle(listName).items.getById(Id);
-                    item.attachmentFiles.add(imageName, data).then(() => {
-                        console.log("Attachment added");
-                        UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
-                        EditData.UploadedImage = DataJson;
-                    });
-                    setUploadBtnStatus(false);
-                })().catch(console.log);
+
+    // this is used for upload image on backend side 
+
+    const UploadImageFunction = (Data: any, imageName: any, DataJson: any): Promise<any> => {
+        return new Promise<void>(async (resolve, reject) => {
+            setIsImageUploaded(false);
+            let listId = Items.Items.listId;
+            let listName = Items.Items.listName;
+            let Id = Items.Items.Id;
+            var src = Data.data_url?.split(",")[1];
+            var byteArray = new Uint8Array(
+                atob(src)
+                    ?.split("")
+                    ?.map(function (c) {
+                        return c.charCodeAt(0);
+                    })
+            );
+            const data = byteArray;
+            var fileData = "";
+            for (var i = 0; i < byteArray.byteLength; i++) {
+                fileData += String.fromCharCode(byteArray[i]);
             }
-        }, 2500);
+            setTimeout(() => {
+                if (Items.Items.listId != undefined) {
+                    (async () => {
+                        try {
+                            let web = new Web(siteUrls);
+                            let item = web.lists.getById(listId).items.getById(Id);
+                            await item.attachmentFiles.add(imageName, data);
+                            console.log("Attachment added");
+                            UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
+                            EditData.UploadedImage = DataJson;
+                            setUploadBtnStatus(false);
+                            resolve();
+                        } catch (error) {
+                            reject(error);
+                        }
+                    })();
+                } else {
+                    (async () => {
+                        try {
+                            let web = new Web(siteUrls);
+                            let item = web.lists.getByTitle(listName).items.getById(Id);
+                            await item.attachmentFiles.add(imageName, data);
+                            console.log("Attachment added");
+                            UpdateBasicImageInfoJSON(DataJson, "Upload", 0);
+                            EditData.UploadedImage = DataJson;
+                            setUploadBtnStatus(false);
+                            resolve();
+                        } catch (error) {
+                            reject(error);
+                        }
+                    })();
+                }
+            }, 2000);
+        });
     };
 
-    const UpdateBasicImageInfoJSON = async (
-        JsonData: any,
-        usedFor: any,
-        ImageIndex: any
-    ) => {
-        var UploadImageArray: any = [];
-        if (JsonData != undefined && JsonData.length > 0) {
-            JsonData?.map((imgItem: any, Index: any) => {
-                if (imgItem.ImageName != undefined && imgItem.ImageName != null) {
-                    if (
-                        imgItem.imageDataUrl != undefined &&
-                        imgItem.imageDataUrl != null
-                    ) {
-                        let TimeStamp: any = Moment(new Date().toLocaleString());
-                        let ImageUpdatedURL: any;
-                        if (usedFor == "Update" && Index == ImageIndex) {
-                            ImageUpdatedURL = imgItem.imageDataUrl + "?Updated=" + TimeStamp;
+
+    // this is a common function for updating the basic inmage info on Backend side when we upload image, replace image, and remove image
+
+    const UpdateBasicImageInfoJSON = (JsonData: any, usedFor: string, ImageIndex: any) => {
+        return new Promise<void>(async (resolve, reject) => {
+            var UploadImageArray: any = [];
+
+            if (JsonData != undefined && JsonData.length > 0) {
+                JsonData?.map((imgItem: any, Index: any) => {
+                    if (imgItem.ImageName != undefined && imgItem.ImageName != null) {
+                        if (
+                            imgItem.imageDataUrl != undefined &&
+                            imgItem.imageDataUrl != null
+                        ) {
+                            let TimeStamp = Moment(new Date().toLocaleString());
+                            let ImageUpdatedURL;
+                            if (usedFor == "Update" && Index == ImageIndex) {
+                                ImageUpdatedURL = imgItem.imageDataUrl + "?Updated=" + TimeStamp;
+                            } else {
+                                ImageUpdatedURL = imgItem.imageDataUrl;
+                            }
+                            let tempObject = {
+                                ImageName: imgItem.ImageName,
+                                ImageUrl: ImageUpdatedURL,
+                                UploadeDate: imgItem.UploadeDate,
+                                UserName: imgItem.UserName,
+                                UserImage: imgItem.UserImage,
+                                Description: imgItem.Description != undefined ? imgItem.Description : "",
+                            };
+                            UploadImageArray.push(tempObject);
                         } else {
-                            ImageUpdatedURL = imgItem.imageDataUrl;
+                            let TimeStamp = Moment(new Date().toLocaleString());
+                            let ImageUpdatedURL;
+                            if (usedFor == "Update" && Index == ImageIndex) {
+                                ImageUpdatedURL = imgItem.ImageUrl + "?Updated=" + TimeStamp;
+                            } else {
+                                ImageUpdatedURL = imgItem.ImageUrl;
+                            }
+                            imgItem.Description = imgItem.Description != undefined ? imgItem.Description : "";
+                            imgItem.ImageUrl = ImageUpdatedURL;
+                            UploadImageArray.push(imgItem);
                         }
-                        let tempObject: any = {
-                            ImageName: imgItem.ImageName,
-                            ImageUrl: ImageUpdatedURL,
-                            UploadeDate: imgItem.UploadeDate,
-                            UserName: imgItem.UserName,
-                            UserImage: imgItem.UserImage,
-                            Description:
-                                imgItem.Description != undefined ? imgItem.Description : "",
-                        };
-                        UploadImageArray.push(tempObject);
-                    } else {
-                        let TimeStamp: any = Moment(new Date().toLocaleString());
-                        let ImageUpdatedURL: any;
-                        if (usedFor == "Update" && Index == ImageIndex) {
-                            ImageUpdatedURL = imgItem.ImageUrl + "?Updated=" + TimeStamp;
-                        } else {
-                            ImageUpdatedURL = imgItem.ImageUrl;
-                        }
-                        imgItem.Description =
-                            imgItem.Description != undefined ? imgItem.Description : "";
-                        imgItem.ImageUrl = ImageUpdatedURL;
-                        UploadImageArray.push(imgItem);
                     }
-                }
-            });
-        }
-        if (UploadImageArray != undefined && UploadImageArray.length > 0) {
+                });
+            }
+
             try {
                 let web = new Web(siteUrls);
                 await web.lists
                     .getById(Items.Items.listId)
                     .items.getById(Items.Items.Id)
-                    .update({ BasicImageInfo: JSON.stringify(UploadImageArray) })
-                    .then((res: any) => {
-                        console.log("Image JSON Updated !!");
-                        AddImageDescriptionsIndex = undefined;
+                    .update({ BasicImageInfo: UploadImageArray?.length > 0 ? JSON.stringify(UploadImageArray) : null }).then(() => {
+                        setIsImageUploaded(true);
                     });
+                console.log("Image JSON Updated !!");
+                AddImageDescriptionsIndex = undefined;
+                resolve();
             } catch (error) {
                 console.log("Error Message :", error);
+                reject(error);
             }
-        }
+        });
     };
-    const RemoveImageFunction = (
-        imageIndex: number,
-        imageName: any,
-        FunctionType: any
-    ) => {
-        let tempArray: any = [];
-        if (FunctionType == "Remove") {
-            TaskImages?.map((imageData: any, index: number) => {
-                if (index != imageIndex) {
-                    tempArray.push(imageData);
-                }
-            });
-            setTaskImages(tempArray);
-        }
-        if (Items.Items.listId != undefined) {
-            (async () => {
-                let web = new Web(siteUrls);
-                let item = web.lists
-                    .getById(Items.Items.listId)
-                    .items.getById(Items.Items.Id);
-                item.attachmentFiles
-                    .getByName(imageName)
-                    .recycle()
-                    .then(() => {
-                        UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
+
+
+    // this is used for deleteing a image and update data on backend side
+
+    const RemoveImageFunction = (imageIndex: any, imageName: any, FunctionType: any) => {
+        return new Promise<void>(async (resolve, reject) => {
+            let tempArray: any = [];
+            setIsImageUploaded(false);
+            if (FunctionType == "Remove") {
+                TaskImages?.map((imageData, index) => {
+                    if (index != imageIndex) {
+                        tempArray.push(imageData);
+                    }
+                });
+                setTaskImages(tempArray);
+            }
+            if (Items.Items.listId != undefined) {
+                (async () => {
+                    try {
+                        let web = new Web(siteUrls);
+                        let item = web.lists
+                            .getById(Items.Items.listId)
+                            .items.getById(Items.Items.Id);
+                        await item.attachmentFiles.getByName(imageName).recycle();
+                        await UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
                         EditData.UploadedImage = tempArray;
                         console.log("Attachment deleted");
-                    });
-            })().catch(console.log);
-        } else {
-            (async () => {
-                let web = new Web(siteUrls);
-                let item = web.lists
-                    .getByTitle(Items.Items.listName)
-                    .items.getById(Items.Items.Id);
-                item.attachmentFiles
-                    .getByName(imageName)
-                    .recycle()
-                    .then(() => {
-                        UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
+                        resolve();
+                    } catch (error) {
+                        console.log("Error deleting attachment:", error);
+                        reject(error);
+                    }
+                })();
+            } else {
+                (async () => {
+                    try {
+                        let web = new Web(siteUrls);
+                        let item = web.lists
+                            .getByTitle(Items.Items.listName)
+                            .items.getById(Items.Items.Id);
+                        await item.attachmentFiles.getByName(imageName).recycle();
+                        await UpdateBasicImageInfoJSON(tempArray, "Upload", 0);
                         EditData.UploadedImage = tempArray;
                         console.log("Attachment deleted");
-                    });
-            })().catch(console.log);
-        }
+                        resolve();
+                    } catch (error) {
+                        console.log("Error deleting attachment:", error);
+                        reject(error);
+                    }
+                })();
+            }
+        });
     };
+
+    // this is used for replace a image and update data on backend side
+
     const ReplaceImageFunction = (Data: any, ImageIndex: any) => {
-        let ImageName = EditData?.UploadedImage[ImageIndex]?.ImageName;
-        var src = Data?.data_url?.split(",")[1];
-        var byteArray = new Uint8Array(
-            atob(src)
-                ?.split("")
-                ?.map(function (c) {
-                    return c.charCodeAt(0);
-                })
-        );
-        const data: any = byteArray;
-        var fileData = "";
-        for (var i = 0; i < byteArray.byteLength; i++) {
-            fileData += String.fromCharCode(byteArray[i]);
-        }
-        if (siteUrls != undefined) {
-            (async () => {
-                let web = new Web(siteUrls);
-                let item = web.lists
-                    .getById(Items.Items.listId)
-                    .items.getById(Items.Items.Id);
-                item.attachmentFiles.getByName(ImageName).setContent(data);
-                console.log("Attachment Updated");
-                UpdateBasicImageInfoJSON(EditData.UploadedImage, "Update", ImageIndex);
-            })().catch(console.log);
-        } else {
-            (async () => {
-                let web = new Web(siteUrls);
-                let item = web.lists
-                    .getById(Items.Items.listName)
-                    .items.getById(Items.Items.Id);
-                item.attachmentFiles.getByName(ImageName).setContent(data);
-                console.log("Attachment Updated");
-                UpdateBasicImageInfoJSON(EditData.UploadedImage, "Update", ImageIndex);
-            })().catch(console.log);
-        }
-        setTaskImages(EditData.UploadedImage);
+        return new Promise<void>(async (resolve, reject) => {
+            setIsImageUploaded(false);
+            let ImageName = EditData?.UploadedImage[ImageIndex]?.ImageName;
+            var src = Data?.data_url?.split(",")[1];
+            var byteArray = new Uint8Array(
+                atob(src)
+                    ?.split("")
+                    ?.map(function (c) {
+                        return c.charCodeAt(0);
+                    })
+            );
+            const data = byteArray;
+            var fileData = "";
+            for (var i = 0; i < byteArray.byteLength; i++) {
+                fileData += String.fromCharCode(byteArray[i]);
+            }
+            if (siteUrls != undefined) {
+                (async () => {
+                    try {
+                        let web = new Web(siteUrls);
+                        let item = web.lists
+                            .getById(Items.Items.listId)
+                            .items.getById(Items.Items.Id);
+                        await item.attachmentFiles.getByName(ImageName).setContent(data);
+                        console.log("Attachment Updated");
+                        await UpdateBasicImageInfoJSON(EditData.UploadedImage, "Update", ImageIndex);
+                        setTaskImages(EditData.UploadedImage);
+                        resolve();
+                    } catch (error) {
+                        console.log("Error updating attachment:", error);
+                        reject(error);
+                    }
+                })();
+            } else {
+                (async () => {
+                    try {
+                        let web = new Web(siteUrls);
+                        let item = web.lists
+                            .getById(Items.Items.listName)
+                            .items.getById(Items.Items.Id);
+                        await item.attachmentFiles.getByName(ImageName).setContent(data);
+                        console.log("Attachment Updated");
+                        await UpdateBasicImageInfoJSON(EditData.UploadedImage, "Update", ImageIndex);
+                        setTaskImages(EditData.UploadedImage);
+                        resolve();
+                    } catch (error) {
+                        console.log("Error updating attachment:", error);
+                        reject(error);
+                    }
+                })();
+            }
+        });
     };
+
+    //  This is used for opening the Image Hover Model 
 
     const MouseHoverImageFunction = (e: any, HoverImageData: any) => {
         e.preventDefault();
         setHoverImageModal("Block");
-        // let tempArray:any =[];
-        // tempArray.push(HoverImageData)
         setHoverImageData([HoverImageData]);
     };
+
+
     const MouseOutImageFunction = (e: any) => {
         e.preventDefault();
         setHoverImageModal("None");
@@ -3783,76 +4212,7 @@ const EditTaskPopup = (Items: any) => {
         setImageCustomizePopup(false);
         setModalIsOpen(true);
         UpdateTaskInfoFunction("Image-Tab");
-        // GetExtraLookupColumnData();
-        // if (CommentBoxData?.length > 0 || SubCommentBoxData?.length > 0) {
-        //     if (CommentBoxData?.length == 0 && SubCommentBoxData?.length > 0) {
-        //         let message = JSON.parse(EditData.FeedBack);
-        //         let feedbackArray: any = [];
-        //         if (message != null) {
-        //             feedbackArray = message[0]?.FeedBackDescriptions
-        //         }
-        //         let tempArray: any = [];
-        //         if (feedbackArray[0] != undefined) {
-        //             tempArray.push(feedbackArray[0])
-        //         } else {
-        //             let tempObject: any =
-        //             {
-        //                 "Title": '<p> </p>',
-        //                 "Completed": false,
-        //                 "isAddComment": false,
-        //                 "isShowComment": false,
-        //                 "isPageType": '',
-        //             }
-        //             tempArray.push(tempObject);
-        //         }
-
-        //         CommentBoxData = tempArray;
-        //         let result: any = [];
-        //         if (SubCommentBoxData == "delete") {
-        //             result = tempArray
-        //         } else {
-        //             result = tempArray.concat(SubCommentBoxData);
-        //         }
-        //         updateFeedbackArray[0].FeedBackDescriptions = result;
-        //     }
-        //     if (CommentBoxData?.length > 0 && SubCommentBoxData?.length == 0) {
-        //         let result: any = [];
-        //         if (SubCommentBoxData == "delete") {
-        //             result = CommentBoxData;
-        //         } else {
-        //             let message = JSON.parse(EditData.FeedBack);
-        //             if (message != null) {
-        //                 let feedbackArray = message[0]?.FeedBackDescriptions;
-        //                 feedbackArray?.map((array: any, index: number) => {
-        //                     if (index > 0) {
-        //                         SubCommentBoxData.push(array);
-        //                     }
-        //                 })
-        //                 result = CommentBoxData.concat(SubCommentBoxData);
-        //             } else {
-        //                 result = CommentBoxData;
-        //             }
-        //         }
-        //         updateFeedbackArray[0].FeedBackDescriptions = result;
-        //     }
-        //     if (CommentBoxData?.length > 0 && SubCommentBoxData?.length > 0) {
-        //         let result: any = [];
-        //         if (SubCommentBoxData == "delete") {
-        //             result = CommentBoxData
-        //         } else {
-        //             result = CommentBoxData.concat(SubCommentBoxData)
-        //         }
-        //         updateFeedbackArray[0].FeedBackDescriptions = result;
-        //     }
-        // } else {
-        //     updateFeedbackArray = JSON.parse(EditData.FeedBack);
-        // }
-        // let AllEditData: any = updateFeedbackArray[0].FeedBackDescriptions
-        // AllEditData.FeedBackArray = updateFeedbackArray;
         FeedBackCount++;
-        // console.log(updateFeedbackArray)
-        // setEditData((prev: any) => ({ ...prev, FeedBackArray: AllEditData }))
-        // console.log(EditData)
     };
 
     const CommonClosePopupFunction = () => {
@@ -3899,17 +4259,18 @@ const EditTaskPopup = (Items: any) => {
 
     // *************** this is used for adding description for images functions ******************
 
-    const openAddImageDescriptionFunction = (
-        Index: any,
-        Data: any,
-        type: any
-    ) => {
+    const openAddImageDescriptionFunction = (Index: any, Data: any, type: any) => {
         setAddImageDescriptions(true);
-        // setAddImageDescriptionsIndex(Index);
-        setAddImageDescriptionsDetails(
-            Data.Description != undefined ? Data.Description : ""
-        );
+        setAddDescriptionModelName(type);
         AddImageDescriptionsIndex = Index;
+        if (type == "Bottleneck" || type == "Attention") {
+            setAddImageDescriptionsDetails(Data.Comment != undefined ? Data.Comment : "")
+        }
+        if (type == "Image") {
+            setAddImageDescriptionsDetails(
+                Data.Description != undefined ? Data.Description : ""
+            );
+        }
     };
     const closeAddImageDescriptionFunction = () => {
         setAddImageDescriptions(false);
@@ -3917,13 +4278,33 @@ const EditTaskPopup = (Items: any) => {
         AddImageDescriptionsIndex = undefined;
     };
 
-    const UpdateImageDescription = (e: any) => {
-        TaskImages[AddImageDescriptionsIndex].Description = e.target.value;
+    const UpdateImageDescription = (e: any, UsedFor: string) => {
+        if (UsedFor == "Image") {
+            TaskImages[AddImageDescriptionsIndex].Description = e.target.value;
+        }
+        if (UsedFor == "Bottleneck" || UsedFor == "Attention") {
+            let copyWorkAction: any = [...WorkingAction];
+            if (copyWorkAction?.length > 0) {
+                copyWorkAction?.map((DataItem: any) => {
+                    if (DataItem.Title == UsedFor) {
+                        DataItem.InformationData?.map((InfoData: any, Index: number) => {
+                            if (Index == AddImageDescriptionsIndex) {
+                                InfoData.Comment = e.target.value;
+                            }
+                        })
+                    }
+                })
+            }
+            console.log("Comment Added in working aaray", copyWorkAction)
+            setWorkingAction([...copyWorkAction])
+        }
         setAddImageDescriptionsDetails(e.target.value);
     };
 
-    const SaveImageDescription = () => {
-        UpdateBasicImageInfoJSON(TaskImages, "Upload", 0);
+    const SaveImageDescription = (usedFor: string) => {
+        if (usedFor == "Image") {
+            UpdateBasicImageInfoJSON(TaskImages, "Upload", 0);
+        }
         closeAddImageDescriptionFunction();
     };
 
@@ -3978,19 +4359,41 @@ const EditTaskPopup = (Items: any) => {
 
     const copyAndMoveTaskFunctionOnBackendSide = async (FunctionsType: any) => {
         loadTime();
-        //   var SiteId = "Task" + Items.Items.siteType;
-        //   let web = new Web(siteUrls);
-        //   const TimeEntry = await web.lists.getByTitle('TimesheetListNewId').items.select(`${SiteId}/Id`).expand(`${SiteId}`)
-        //   .filter(`${SiteId}/Id eq '${Items?.Items?.Id}'`)
-        //  .get();
-
+        let SelectedSiteImage: any = '';
         let TaskDataJSON: any = await MakeUpdateDataJSON();
         if (SiteTypes != undefined && SiteTypes.length > 0) {
             SiteTypes.map((dataItem: any) => {
                 if (dataItem.isSelected == true) {
                     SelectedSite = dataItem.Title;
+                    SelectedSiteImage = dataItem?.Item_x005F_x0020_Cover?.Url
                 }
             });
+        }
+        let TempSitesTaggingData: any = [];
+        let TempCCDataIds: any = [];
+        if (SelectedSite?.toLowerCase() !== "shareweb") {
+            let TempObject: any = {
+                Title: SelectedSite,
+                ClienTimeDescription: "100",
+                SiteImages: SelectedSiteImage,
+                Date: Moment(new Date()).format("DD/MM/YYYY")
+            }
+            TempSitesTaggingData.push(TempObject);
+        } else {
+            TempSitesTaggingData = ClientTimeData;
+        }
+
+        if (selectedClientCategoryData?.length > 0) {
+            selectedClientCategoryData?.map((selectedCC: any) => {
+                if (SelectedSite?.toLowerCase() !== "shareweb") {
+                    if (selectedCC.siteName == SelectedSite) {
+                        TempCCDataIds.push(selectedCC.Id)
+                    }
+                } else {
+                    TempCCDataIds.push(selectedCC.Id);
+                }
+
+            })
         }
         let UpdatedJSON = {
             Comments: EditData.Comments,
@@ -4001,7 +4404,16 @@ const EditTaskPopup = (Items: any) => {
                         ? TempSmartInformationIds
                         : [],
             },
+            Sitestagging: TempSitesTaggingData?.length > 0 ? JSON.stringify(TempSitesTaggingData) : null,
+            ClientCategoryId: {
+                results:
+                    TempCCDataIds?.length > 0
+                        ? TempCCDataIds
+                        : [],
+            },
+            TaskTypeId: EditData.TaskType?.Id ? EditData.TaskType?.Id : null
         };
+
         TaskDataJSON = { ...TaskDataJSON, ...UpdatedJSON };
         try {
             if (SelectedSite.length > 0) {
@@ -4011,47 +4423,14 @@ const EditTaskPopup = (Items: any) => {
                     .items.add(TaskDataJSON)
                     .then(async (res: any) => {
                         newGeneratedId = res.data.Id;
-                        //    const attachmentss = await web.lists.getById(Items?.Items?.listId)
-                        //     .items.getById(Items.Items.Id)
-                        //     .attachmentFiles.get();
-
-                        // const imageData = await attachmentss.download();
-                        // for (const attachment of attachments) {
-                        //     await web.lists.getByTitle(SelectedSite)
-                        //       .items.getById(newGeneratedId)
-                        //       .attachmentFiles.add(attachment?.FileName, imageData);
-                        //   }
-
-                        // for (const attachmentName of attachmentss) {
-                        //     var attachmentEndpoint = web.lists.getById(Items?.Items?.listId)
-                        //       .items.getById(Items.Items.Id)
-                        //       .attachmentFiles.getByName(attachmentName.FileName).toUrl();
-
-                        //     const response = await fetch(attachmentEndpoint);
-                        //     const attachmentData = await response.arrayBuffer();
-
-                        //     var uint8Arrayw:any = new Uint8Array(attachmentData);
-                        //var uint8Arrayss = new Uint8Array(response.arrayBuffer());
-
-                        // var byteArray = new Uint8Array(atob(uint8Arrayw)?.split("")?.map(function (c) {
-                        //     return c.charCodeAt(0);
-                        // }));
-                        // const data: any = byteArray
-                        // var fileData = '';
-                        // for (var i = 0; i < byteArray.byteLength; i++) {
-                        //     fileData += String.fromCharCode(byteArray[i]);
-                        // }
-
-                        //    const MyImage = await web.lists.getByTitle(SelectedSite)
-                        //       .items.getById(newGeneratedId)
-                        //       .attachmentFiles.add(attachmentName?.FileName, uint8Arrayw);
-
-                        //       console.log(MyImage)
-                        //   }
                         await CopyImageData(SelectedSite, res.data);
                         CopydocumentData(SelectedSite, res.data);
 
                         if (FunctionsType == "Copy-Task") {
+                            setLoaded(true)
+                            if (timesheetData != undefined && timesheetData.length > 0) {
+                                await moveTimeSheet(SelectedSite, res.data, 'copy');
+                            }
                             newGeneratedId = res.data.Id;
                             console.log(`Task Copied Successfully on ${SelectedSite} !!!!!`);
                             let url = `${siteUrls}/SitePages/Task-Profile.aspx?taskId=${newGeneratedId}&Site=${SelectedSite}`;
@@ -4059,7 +4438,7 @@ const EditTaskPopup = (Items: any) => {
                         } else {
                             console.log(`Task Moved Successfully on ${SelectedSite} !!!!!`);
                             if (timesheetData != undefined && timesheetData.length > 0) {
-                                await moveTimeSheet(SelectedSite, res.data);
+                                await moveTimeSheet(SelectedSite, res.data, 'move');
                             } else {
                                 Items.Items.Action = "Move";
                                 deleteItemFunction(Items.Items.Id, "Move");
@@ -4071,7 +4450,6 @@ const EditTaskPopup = (Items: any) => {
             console.log("Copy-Task Error :", error);
         }
         closeCopyAndMovePopup();
-        // Items.Call();
     };
 
     const CopydocumentData = async (NewList: any, NewItem: any) => {
@@ -4103,7 +4481,7 @@ const EditTaskPopup = (Items: any) => {
             });
     };
     const CopyImageData = async (NewList: any, NewItem: any) => {
-
+        setLoaded(false)
         var attachmentFileName: any = "";
         let web = new Web(siteUrls);
         const response = await web.lists
@@ -4116,125 +4494,113 @@ const EditTaskPopup = (Items: any) => {
     };
     const SaveImageDataOnLoop = async (response: any, NewList: any, NewItem: any) => {
         let tempArrayJsonData: any = [];
-        var count = 0;
+        let arrangedArray: any = []
         let currentUserDataObject: any;
-        if (currentUserBackupArray != null && currentUserBackupArray.length > 0) {
-            currentUserDataObject = currentUserBackupArray[0];
-        }
-        var fetchPromises = response?.AttachmentFiles?.map(
-            async (value: any, index: any) => {
-                const sourceEndpoint = `${siteUrls}/_api/web/lists/getbytitle('${Items?.Items?.siteType}')/items(${Items?.Items?.Id})/AttachmentFiles/getByFileName('${value.FileName}')/$value`;
+        for (let index = 0; index < response?.AttachmentFiles?.length; index++) {
+            const value = response.AttachmentFiles[index];
+            const sourceEndpoint = `${siteUrls}/_api/web/lists/getbytitle('${Items?.Items?.siteType}')/items(${Items?.Items?.Id})/AttachmentFiles/getByFileName('${value.FileName}')/$value`;
 
-                try {
-                    const response = await fetch(sourceEndpoint, {
-                        method: "GET",
-                        headers: {
-                            Accept: "application/json;odata=nometadata",
-                        },
-                    }).then(async (response) => {
-                        if (response.ok) {
-                            count++;
-                            const binaryData = await response.arrayBuffer();
-                            console.log("Binary Data:", binaryData);
-                            var uint8Array = new Uint8Array(binaryData);
-                            console.log(uint8Array);
+            try {
+                const response = await fetch(sourceEndpoint, {
+                    method: "GET",
+                    headers: {
+                        Accept: "application/json;odata=nometadata",
+                    },
+                });
 
-                            console.log(uint8Array);
-                            let fileName: any = "";
-                            let date = new Date();
-                            let timeStamp = date.getTime();
-                            let imageIndex = index + 1;
-                            var file =
-                                "T" +
-                                NewItem.Id +
-                                "-Image" +
-                                imageIndex +
-                                "-" +
-                                NewItem.Title?.replace(/["/':?]/g, "")?.slice(0, 40) +
-                                " " +
-                                timeStamp +
-                                ".jpg";
+                if (response.ok) {
+                    const binaryData = await response.arrayBuffer();
+                    console.log("Binary Data:", binaryData);
+                    var uint8Array = new Uint8Array(binaryData);
+                    console.log(uint8Array);
 
-                            // Your existing code for creating ImgArray
-                            let ImgArray = {
-                                ImageName: file,
-                                UploadeDate: Moment(new Date()).format("DD/MM/YYYY"),
-                                ImageUrl:
-                                    siteUrls +
-                                    "/Lists/" +
-                                    NewList +
-                                    "/Attachments/" +
-                                    NewItem?.Id +
-                                    "/" +
-                                    file,
-                                UserImage:
-                                    currentUserDataObject != undefined &&
-                                        currentUserDataObject.Item_x0020_Cover?.Url?.length > 0
-                                        ? currentUserDataObject.Item_x0020_Cover?.Url
-                                        : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
-                                UserName:
-                                    currentUserDataObject != undefined &&
-                                        currentUserDataObject.Title?.length > 0
-                                        ? currentUserDataObject.Title
-                                        : Items.context.pageContext._user.displayName,
-                                Description: "",
-                            };
-                            tempArrayJsonData.push(ImgArray);
+                    console.log(uint8Array);
+                    let fileName: any = "";
+                    let date = new Date();
+                    let timeStamp = date.getTime();
+                    let imageIndex = index + 1;
+                    var file =
+                        "T" +
+                        NewItem.Id +
+                        "-Image" +
+                        imageIndex +
+                        "-" +
+                        NewItem.Title?.replace(/["/':?]/g, "")?.slice(0, 40) +
+                        " " +
+                        timeStamp +
+                        ".jpg";
 
+                    // Your existing code for creating ImgArray
+                    let ImgArray = {
+                        ImageName: file,
+                        UploadeDate: Moment(new Date()).format("DD/MM/YYYY"),
+                        ImageUrl:
+                            siteUrls +
+                            "/Lists/" +
+                            NewList +
+                            "/Attachments/" +
+                            NewItem?.Id +
+                            "/" +
+                            file,
+                        UserImage:
+                            currentUserDataObject != undefined &&
+                                currentUserDataObject.Item_x0020_Cover?.Url?.length > 0
+                                ? currentUserDataObject.Item_x0020_Cover?.Url
+                                : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
+                        UserName:
+                            currentUserDataObject != undefined &&
+                                currentUserDataObject.Title?.length > 0
+                                ? currentUserDataObject.Title
+                                : Items.context.pageContext._user.displayName,
+                        Description: "",
+                    };
+                    tempArrayJsonData.push(ImgArray);
 
+                    if (tempArrayJsonData.length > 9) {
+                        arrangedArray = tempArrayJsonData.slice(tempArrayJsonData?.length - 9).concat(tempArrayJsonData.slice(0, tempArrayJsonData?.length - 9));
+                    } else {
+                        arrangedArray = tempArrayJsonData
+                    }
+                    const item = await sp.web.lists.getByTitle(NewList).items.getById(NewItem?.Id).get();
+                    const currentETag = item ? item['@odata.etag'] : null;
+                    await sp.web.lists.getByTitle(NewList).items.getById(NewItem?.Id).attachmentFiles.add(file, uint8Array),
+                        currentETag, { headers: { "If-Match": currentETag } }
 
-                            // -----------------------Add Attachments-----------------------------------------------------------------------
-                            // await sp.web.lists.getByTitle(NewList).items.getById(NewItem.Id).attachmentFiles.add(file, uint8Array).then((res)=>{
-                            //     count++;
-                            //     console.log(res)
-                            // });
-
-                            const item = await sp.web.lists.getByTitle(NewList).items.getById(NewItem?.Id).get();
-
-
-                            const currentETag: any = item ? item['@odata.etag'] : null;
-                            await sp.web.lists.getByTitle(NewList).items.getById(NewItem?.Id).attachmentFiles.add(file, uint8Array),
-                                currentETag, { headers: { "If-Match": currentETag } }
-
-                        } else {
-                            console.error("Error:", response.statusText);
-                        }
-                    })
-
-
-                } catch (error) {
-                    console.log(error, "HHHH Time");
+                    count++;
+                } else {
+                    console.error("Error:", response.statusText);
                 }
+            } catch (error) {
+                console.log(error, "HHHH Time");
             }
-        );
-
-        // Wait for all promises to resolve
-        try {
-
-            await Promise.all(fetchPromises);
-            // Call another function after all promises are resolved
-            await SaveJSONData(NewList, NewItem, tempArrayJsonData);
-
-
-        } catch (error) {
-            console.error("Error updating client category:", error);
         }
+
+        // Call another function after all attachments are added
+        await SaveJSONData(NewList, NewItem, arrangedArray);
     };
     const SaveJSONData = async (NewList: any, NewItem: any, tempArrayJsonData: any) => {
+        let arraydata = []
+        let c = 1
+        for (let i = 0; i < tempArrayJsonData.length; i++) {
+            tempArrayJsonData[i].ImageName = tempArrayJsonData[i].ImageName.replace(/Image(\d+)/, `Image${c}`);
+            c++
+            arraydata.push(tempArrayJsonData[i])
+        }
+        console.log(arraydata)
         let web = new Web(siteUrls);
         var Data = await web.lists
             .getByTitle(NewList)
             .items.getById(NewItem.Id)
             .update({
                 BasicImageInfo:
-                    tempArrayJsonData != undefined && tempArrayJsonData.length > 0
-                        ? JSON.stringify(tempArrayJsonData)
-                        : JSON.stringify(tempArrayJsonData),
+                    arraydata != undefined && arraydata.length > 0
+                        ? JSON.stringify(arraydata)
+                        : JSON.stringify(arraydata),
             });
         console.log(Data);
     };
 
-    const moveTimeSheet = async (SelectedSite: any, newItem: any) => {
+    const moveTimeSheet = async (SelectedSite: any, newItem: any, type: any) => {
         newGeneratedId = newItem.Id;
         var TimesheetConfiguration: any = [];
         var folderUri = "";
@@ -4269,8 +4635,9 @@ const EditTaskPopup = (Items: any) => {
                 })
                 .then((res) => {
                     count++;
-                    if (count == timesheetData.length) {
+                    if (count == timesheetData.length && type == 'move') {
                         Items.Items.Action = "Move";
+                        setLoaded(true)
                         deleteItemFunction(Items.Items.Id, "Move");
                     }
                 });
@@ -4309,10 +4676,10 @@ const EditTaskPopup = (Items: any) => {
             ...updatedItem,
             SmartPriority: SmartPriority
         }
-        EditDataBackup=updatedItem;
+        EditDataBackup = updatedItem;
         setEditData(updatedItem);
-         globalSelectedProject = data;
-       
+        globalSelectedProject = data;
+
     };
 
     // ************ this is for Approver Popup Function And Approver Related All Functions section **************
@@ -4335,41 +4702,110 @@ const EditTaskPopup = (Items: any) => {
     };
 
     const UpdateApproverFunction = () => {
-        var data = ApproverData;
-        setApproverPopupStatus(false);
-        setTaskAssignedTo(ApproverData);
-        setApproverData(data);
-        setTaskTeamMembers(ApproverData);
-        StatusOptions?.map((item: any) => {
-            if (item.value == 1) {
-                Items.sendApproverMail = true;
-                setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: "1" });
-                setPercentCompleteStatus(item.status);
-                setTaskStatus(item.taskStatusComment);
+        var data: any = ApproverData;
+        if (useFor == "Bottleneck" || useFor == "Attention") {
+            let CreatorData: any = currentUserBackupArray[0];
+            let copyWorkAction: any = [...WorkingAction]
+            if (data?.length > 0) {
+                data?.map((selectedData: any) => {
+                    if (selectedData?.Id != undefined) {
+                        let CreateObject: any = {
+                            CreatorName: CreatorData?.Title,
+                            CreatorImage: CreatorData.UserImage,
+                            CreatorID: CreatorData.Id,
+                            TaggedUsers: {
+                                Title: selectedData.Title,
+                                Email: selectedData.Email,
+                                AssingedToUserId: selectedData.AssingedToUserId,
+                                userImage: selectedData.Item_x0020_Cover?.Url,
+                            },
+                            NotificationSend: false,
+                            Comment: '',
+                            CreatedOn: Moment(new Date()).tz("Europe/Berlin").format("DD/MM/YYYY"),
+                        }
+                        if (copyWorkAction?.length > 0) {
+                            copyWorkAction?.map((DataItem: any) => {
+                                if (DataItem.Title == useFor) {
+                                    CreateObject.Id = DataItem.InformationData?.length;
+                                    DataItem.InformationData.push(CreateObject);
+                                }
+                            })
+                        } else {
+                            let TempArrya: any = [
+                                {
+                                    Title: "Bottleneck",
+                                    InformationData: []
+                                },
+                                {
+                                    Title: "Attention",
+                                    InformationData: []
+                                }
+                            ]
+                            TempArrya?.map((TempItem: any) => {
+                                if (TempItem.Title == useFor) {
+                                    CreateObject.Id = TempItem.InformationData?.length;
+                                    TempItem.InformationData.push(CreateObject);
+                                }
+                            })
+
+                            copyWorkAction = TempArrya;
+                        }
+                    }
+
+                })
             }
-        });
+
+
+            setWorkingAction([...copyWorkAction]);
+            console.log("Bottleneck All Details:", copyWorkAction)
+            setUseFor("")
+            setApproverPopupStatus(false)
+            setApproverData([])
+        }
+        else {
+            setApproverPopupStatus(false);
+            setTaskAssignedTo(ApproverData);
+            setApproverData(data);
+            setTaskTeamMembers(ApproverData);
+            StatusOptions?.map((item: any) => {
+                if (item.value == 1) {
+                    Items.sendApproverMail = true;
+                    setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: "1" });
+                    setPercentCompleteStatus(item.status);
+                    setTaskStatus(item.taskStatusComment);
+                }
+            });
+        }
+
     };
 
     const selectApproverFunction = (selectedData: any) => {
-        selectedData.Id = selectedData.AssingedToUserId;
-        setApproverData([selectedData]);
+        let checkduplicateData: any = ApproverData.filter((data: any) => data?.AssingedToUserId == selectedData?.AssingedToUserId)
+        if (checkduplicateData?.length == 0) {
+            setApproverData([...ApproverData, selectedData]);
+        }
     };
-    // const removeApproverFunction = (Title: any, Id: any) => {
-    //     let tempArray: any = [];
-    //     if (ApproverBackupArray != null && ApproverBackupArray.length > 0) {
-    //         ApproverBackupArray?.map((item: any) => {
-    //             if (item.Id == Id) {
-    //                 tempArray.push(item);
-    //             }
-    //         })
-    //     }
-    //     setApproverData(tempArray);
-    // }
+
+
 
     const autoSuggestionsForApprover = (e: any, type: any) => {
         let searchedKey: any = e.target.value;
-        setApproverSearchKey(e.target.value);
+        if (type == "Bottleneck") {
+            setBottleneckSearchKey(e.target.value)
+        }
+        if (type == "Attention") {
+            setAttentionSearchKey(e.target.value)
+        }
+        if (type == "OnTaskPopup") {
+            setApproverSearchKey(e.target.value);
+        }
+        if (type == "OnPanel") {
+            setApproverSearchKey(e.target.value);
+        }
+
+        BottleneckSearchKey
         let tempArray: any = [];
+
         if (searchedKey?.length > 0) {
             AllEmployeeData?.map((itemData: any) => {
                 if (itemData.Child != undefined && itemData.Child.length > 0) {
@@ -4384,49 +4820,132 @@ const EditTaskPopup = (Items: any) => {
                     });
                 }
             });
+
             if (type == "OnTaskPopup") {
                 setApproverSearchedData(tempArray);
-            } else {
+            }
+            if (type == "Bottleneck") {
+                setBottleneckSearchedData(tempArray);
+            }
+            if (type == "Attention") {
+                setAttentionSearchedData(tempArray);
+            }
+            if (type == "OnPanel") {
                 setApproverSearchedDataForPopup(tempArray);
             }
         } else {
             setApproverSearchedData([]);
+            setBottleneckSearchedData([]);
+            setAttentionSearchedData([]);
             setApproverSearchedDataForPopup([]);
         }
     };
 
-    const SelectApproverFromAutoSuggestion = (ApproverData: any) => {
-        selectApproverFunction(ApproverData);
+
+
+    const SelectApproverFromAutoSuggestion = (ApproverData: any, usedFor: string) => {
         setApproverSearchedData([]);
         setApproverSearchedDataForPopup([]);
+        setAttentionSearchedData([]);
         setApproverSearchKey("");
-        setTaskAssignedTo([ApproverData]);
-        setTaskTeamMembers([ApproverData]);
-        TaskApproverBackupArray = [ApproverData];
-        StatusOptions?.map((item: any) => {
-            if (item.value == 1) {
-                Items.sendApproverMail = true;
-                setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: "1" });
-                setPercentCompleteStatus(item.status);
-                setTaskStatus(item.taskStatusComment);
+        setBottleneckSearchKey("");
+        setAttentionSearchKey("");
+        setBottleneckSearchedData([]);
+        if (usedFor == "Bottleneck" || usedFor == "Attention") {
+            let CreatorData: any = currentUserBackupArray[0];
+            let copyWorkAction: any = [...WorkingAction]
+            let CreateObject: any = {
+                CreatorName: CreatorData?.Title,
+                CreatorImage: CreatorData.UserImage,
+                CreatorID: CreatorData.Id,
+                TaggedUsers: {
+                    Title: ApproverData.Title,
+                    Email: ApproverData.Email,
+                    AssingedToUserId: ApproverData.AssingedToUserId,
+                    userImage: ApproverData.Item_x0020_Cover?.Url,
+                },
+                NotificationSend: false,
+                Comment: '',
+                CreatedOn: Moment(new Date()).tz("Europe/Berlin").format("DD/MM/YYYY"),
             }
-        });
-        let ApproverHistoryObject: any = {
-            ApproverName: ApproverData.Title,
-            ApprovedDate: Moment(new Date())
-                .tz("Europe/Berlin")
-                .format("DD MMM YYYY HH:mm"),
-            ApproverId: ApproverData.AssingedToUserId,
-            ApproverImage:
-                ApproverData.Item_x0020_Cover != undefined ||
-                    ApproverData.Item_x0020_Cover != null
-                    ? ApproverData.Item_x0020_Cover.Url
-                    : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
-            ApproverSuffix: ApproverData.Suffix,
-            ApproverEmail: ApproverData.Email,
-        };
-        ApproverHistoryData.push(ApproverHistoryObject);
+            if (copyWorkAction?.length > 0) {
+                copyWorkAction?.map((DataItem: any) => {
+                    if (DataItem.Title == usedFor) {
+                        CreateObject.Id = DataItem.InformationData?.length;
+                        DataItem.InformationData.push(CreateObject);
+                    }
+                })
+            } else {
+                let TempArrya: any = [
+                    {
+                        Title: "Bottleneck",
+                        InformationData: []
+                    },
+                    {
+                        Title: "Attention",
+                        InformationData: []
+                    }
+                ]
+                TempArrya?.map((TempItem: any) => {
+                    if (TempItem.Title == usedFor) {
+                        CreateObject.Id = TempItem.InformationData?.length;
+                        TempItem.InformationData.push(CreateObject);
+                    }
+                })
+                copyWorkAction = TempArrya;
+            }
+            setWorkingAction([...copyWorkAction]);
+            console.log("Bottleneck All Details:", copyWorkAction)
+        } else {
+            let ApproverHistoryObject: any
+            selectApproverFunction(ApproverData);
+            setTaskAssignedTo([ApproverData]);
+            setTaskTeamMembers([ApproverData]);
+            TaskApproverBackupArray = [ApproverData];
+            if (useFor == "Bottleneck" || useFor == "Attention") {
+                ApproverHistoryObject = {
+                    ApproverName: ApproverData.Title,
+                    ApprovedDate: Moment(new Date())
+                        .tz("Europe/Berlin")
+                        .format("DD MMM YYYY HH:mm"),
+                    ApproverId: ApproverData.AssingedToUserId,
+                    ApproverImage:
+                        ApproverData.Item_x0020_Cover != undefined ||
+                            ApproverData.Item_x0020_Cover != null
+                            ? ApproverData.Item_x0020_Cover.Url
+                            : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
+                    ApproverSuffix: ApproverData.Suffix,
+                    ApproverEmail: ApproverData.Email,
+                };
+            } else {
+                StatusOptions?.map((item: any) => {
+                    if (item.value == 1) {
+                        Items.sendApproverMail = true;
+                        setUpdateTaskInfo({ ...UpdateTaskInfo, PercentCompleteStatus: "1" });
+                        setPercentCompleteStatus(item.status);
+                        setTaskStatus(item.taskStatusComment);
+                    }
+                });
+                ApproverHistoryObject = {
+                    ApproverName: ApproverData.Title,
+                    ApprovedDate: Moment(new Date())
+                        .tz("Europe/Berlin")
+                        .format("DD MMM YYYY HH:mm"),
+                    ApproverId: ApproverData.AssingedToUserId,
+                    ApproverImage:
+                        ApproverData.Item_x0020_Cover != undefined ||
+                            ApproverData.Item_x0020_Cover != null
+                            ? ApproverData.Item_x0020_Cover.Url
+                            : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
+                    ApproverSuffix: ApproverData.Suffix,
+                    ApproverEmail: ApproverData.Email,
+                };
+            }
+
+            ApproverHistoryData.push(ApproverHistoryObject);
+        }
     };
+
 
     // *********** this is for Send Email Notification for Approval Category Task Functions ****************************
 
@@ -4435,6 +4954,7 @@ const EditTaskPopup = (Items: any) => {
         setSendEmailNotification(false);
         Items.Call(items);
     }, []);
+
     // ************************ this is for Site Composition Component Section Functions ***************************
 
     const SmartTotalTimeCallBack = useCallback((TotalTime: any) => {
@@ -4451,49 +4971,8 @@ const EditTaskPopup = (Items: any) => {
         setSiteCompositionShow(false);
     };
 
-    const EODReportComponentCallback = () => {
-        setOpenEODReportPopup(false);
-    };
 
-    // const SiteCompositionCallBack = useCallback((Data: any, Type: any) => {
-    //     if (Data.ClientTime != undefined && Data.ClientTime.length > 0) {
-    //         setEnableSiteCompositionValidation(true)
-    //         let tempArray: any = [];
-    //         Data.ClientTime?.map((ClientTimeItems: any) => {
-    //             if (ClientTimeItems.ClientCategory != undefined || ClientTimeItems.siteIcons?.length > 0 || ClientTimeItems.siteIcons?.Url.length > 0) {
-    //                 let newObject: any = {
-    //                     SiteName: ClientTimeItems.SiteName,
-    //                     ClienTimeDescription: ClientTimeItems.ClienTimeDescription,
-    //                     localSiteComposition: true
-    //                 }
-    //                 tempArray.push(newObject);
-    //             } else {
-    //                 tempArray.push(ClientTimeItems);
-    //             }
-    //         })
-    //         const finalData = tempArray.filter((val: any, id: any, array: any) => {
-    //             return array.indexOf(val) == id;
-    //         })
-    //         setClientTimeData(finalData);
-    //     } else {
-    //         if (Type == "dataDeleted") {
-    //             setClientTimeData([{}])
-    //         }
-    //     }
-    //     if (Data.selectedClientCategory != undefined && Data.selectedClientCategory.length > 0) {
-    //         setSelectedClientCategory(Data.selectedClientCategory);
-    //     } else {
-    //         if (Type == "dataDeleted") {
-    //             setSelectedClientCategory([]);
-    //         }
-    //     }
-    //     if (Data.SiteCompositionSettings != undefined && Data.SiteCompositionSettings.length > 0) {
-    //         setSiteCompositionSetting(Data.SiteCompositionSettings);
-    //     }
-    //     console.log("Site Composition final Call back Data =========", Data);
-    // }, [])
 
-    // This is for the Upadte Estimated Time Descriptions  section Functions
 
     const UpdateEstimatedTimeDescriptions = (e: any) => {
         if (e.target.name == "Description") {
@@ -4569,7 +5048,80 @@ const EditTaskPopup = (Items: any) => {
     };
 
 
+    const removeAssignedMember = (value: any) => {
+        const afterItemDelete: any = ApproverData.filter((item: any) => item.Title != value.Title)
+        setApproverData(afterItemDelete)
+    }
 
+    // this is used for updating workingAction JSON Data on Backedn Side 
+
+    const UpdateWorkinActionJSON = async (DataForUpdate: any) => {
+
+        try {
+            let web = new Web(siteUrls);
+            await web.lists
+                .getById(Items.Items.listId)
+                .items.getById(Items.Items.Id)
+                .update({ WorkingAction: DataForUpdate?.length > 0 ? JSON.stringify(DataForUpdate) : null })
+        } catch (error) {
+            console.log("Error", error.message)
+        }
+    }
+
+    // this is used for bottleneck and Attehntion category task functionality
+
+    const BottleneckAndAttentionFunction = (InfoData: any, Index: number, usedFor: string, ActionType: string) => {
+        if (usedFor == "Reminder") {
+            if (InfoData?.NotificationSend == true) {
+                let RequiredData: any = {
+                    ReceiverName: InfoData.TaggedUsers?.Title,
+                    sendUserEmail: [InfoData.TaggedUsers?.Email],
+                    Context: Context,
+                    ActionType: ActionType,
+                    ReasonStatement: InfoData.Comment,
+                    UpdatedDataObject: EditDataBackup,
+                }
+                GlobalFunctionForUpdateItems.MSTeamsReminderMessage(RequiredData);
+                alert("The reminder has been sent to the user.");
+            } else {
+                alert(`This user has not been tagged as a ${ActionType} yet, so you cannot send a reminder now.`);
+            }
+        }
+        if (usedFor == "Remove") {
+            let CopyWorkingActionData: any = [...WorkingAction];
+            let TempWorkingActionData: any = removeDataFromInformationData(CopyWorkingActionData, ActionType, Index);
+            console.log("Updated Data after removing User:", TempWorkingActionData);
+            setWorkingAction([...TempWorkingActionData])
+        }
+    }
+
+    //    This is used to remove the Tagged User Data form Bottleneck and attention
+
+    function removeDataFromInformationData(dataArray: any, titleToRemove: any, indexToRemove: any) {
+        return dataArray.map((item: any) => {
+            if (item.Title === titleToRemove && Array.isArray(item.InformationData)) {
+                item.InformationData.splice(indexToRemove, 1);
+            }
+            return item;
+        });
+    }
+    //  This is the end of the function 
+    const openBottleneckPopup = (usefor: any) => {
+        let selectedtagMember: any = [];
+        setUseFor(usefor)
+        setApproverPopupStatus(true)
+        WorkingAction?.map((WAItemData: any, ItemIndex: number) => {
+            if (WAItemData.Title == usefor && WAItemData?.InformationData?.length > 0) {
+                WAItemData?.InformationData?.map((item: any) => {
+                    item.Id = item?.TaggedUsers?.AssingedToUserId;
+                    selectedtagMember.push(item?.TaggedUsers)
+                })
+
+            }
+
+        })
+        setApproverData(selectedtagMember)
+    }
     const onRenderCustomHeaderMain = () => {
         return (
             <>
@@ -4645,7 +5197,7 @@ const EditTaskPopup = (Items: any) => {
                         : "d-flex full-width pb-1"
                 }
             >
-                <div className="subheading">Add Image Descriptions</div>
+                <div className="subheading">Add {AddDescriptionModelName} Descriptions</div>
                 <Tooltip ComponentId="1683" isServiceTask={ServicesTaskCheck} />
             </div>
         );
@@ -4674,7 +5226,7 @@ const EditTaskPopup = (Items: any) => {
                         : "d-flex full-width pb-1"
                 }
             >
-                <div className="subheading siteColor">Select Approver</div>
+                <div className="subheading siteColor"> {useFor != "" ? `Select${useFor}` : `Select Approver`}</div>
                 <Tooltip ComponentId="1683" isServiceTask={ServicesTaskCheck} />
             </div>
         );
@@ -4689,7 +5241,7 @@ const EditTaskPopup = (Items: any) => {
                         : "bg-f4 fixed-bottom"
                 }
             >
-                <div className="align-items-center d-flex justify-content-between me-3 px-4 py-2">
+                <div className="align-items-center d-flex justify-content-between px-4 py-2">
                     <div>
                         <div className="">
                             Created{" "}
@@ -4748,6 +5300,7 @@ const EditTaskPopup = (Items: any) => {
                                         taskId={EditData.Id}
                                         listId={Items.Items.listId}
                                         siteUrls={siteUrls}
+                                        RequiredListIds={AllListIdData}
                                     />
                                 ) : null}
                             </span>
@@ -4786,28 +5339,19 @@ const EditTaskPopup = (Items: any) => {
                                 Share This Task
                             </span>{" "}
                             ||
-                            {Items.Items.siteType == "Offshore Tasks" ? (
-                                <a
-                                    target="_blank"
-                                    className="mx-2"
-                                    data-interception="off"
-                                    href={`${siteUrls}/Lists/SharewebQA/EditForm.aspx?ID=${EditData.ID}`}
-                                >
-                                    Open Out-Of-The-Box Form
-                                </a>
-                            ) : (
-                                <a
-                                    target="_blank"
-                                    className="mx-2"
-                                    data-interception="off"
-                                    href={`${siteUrls}/Lists/${Items.Items.siteType}/EditForm.aspx?ID=${EditData.ID}`}
-                                >
-                                    Open Out-Of-The-Box Form
-                                </a>
-                            )}
+
+                            <a
+                                target="_blank"
+                                className="mx-2"
+                                data-interception="off"
+                                href={`${siteUrls}/Lists/${Items.Items.siteType}/EditForm.aspx?ID=${EditData.ID}`}
+                            >
+                                Open Out-Of-The-Box Form
+                            </a>
+
                             <span>
                                 <button
-                                    className="btn btn-primary mx-1 px-3"
+                                    className={IsImageUploaded ? "btn btn-primary mx-1 px-3" : "btn btn-primary disabled mx-1 px-3"}
                                     onClick={UpdateTaskInfoFunction}
                                 >
                                     Save
@@ -4835,7 +5379,7 @@ const EditTaskPopup = (Items: any) => {
                         : "bg-f4 fixed-bottom"
                 }
             >
-                <div className="align-items-center d-flex justify-content-between me-3 px-4 py-2">
+                <div className="align-items-center d-flex justify-content-between px-4 py-2">
                     <div>
                         <div className="">
                             Created{" "}
@@ -4890,6 +5434,7 @@ const EditTaskPopup = (Items: any) => {
                                         taskId={EditData.Id}
                                         listId={Items.Items.listId}
                                         siteUrls={siteUrls}
+                                        RequiredListIds={AllListIdData}
                                     />
                                 ) : null}
                             </span>
@@ -4950,7 +5495,6 @@ const EditTaskPopup = (Items: any) => {
     };
 
 
-
     return (
         <div
             className={
@@ -4959,6 +5503,7 @@ const EditTaskPopup = (Items: any) => {
                     : `${EditData.Id}`
             }
         >
+
             {/* ***************** this is status panel *********** */}
             <Panel
                 onRenderHeader={onRenderStatusPanelHeader}
@@ -5069,6 +5614,7 @@ const EditTaskPopup = (Items: any) => {
                     Context={Context}
                     callback={editTaskPopupCallBack}
                     usedFor="Task-Popup"
+                    CommentFor={SendCategoryName}
                 />
                 : null}
 
@@ -5082,6 +5628,7 @@ const EditTaskPopup = (Items: any) => {
                 onRenderFooter={onRenderCustomFooterMain}
             >
                 <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
+                    {!loaded ? <PageLoader /> : ''}
                     <div className="modal-body mb-5">
                         <ul className="fixed-Header nav nav-tabs" id="myTab" role="tablist">
                             <button
@@ -5202,11 +5749,11 @@ const EditTaskPopup = (Items: any) => {
                                                         type="date"
                                                         className="form-control"
                                                         max="9999-12-31"
-                                                        min={
-                                                            EditData.Created
-                                                                ? Moment(EditData.Created).format("YYYY-MM-DD")
-                                                                : ""
-                                                        }
+                                                        // min={
+                                                        //     EditData.Created
+                                                        //         ? Moment(EditData.Created).format("YYYY-MM-DD")
+                                                        //         : ""
+                                                        // }
                                                         defaultValue={
                                                             EditData.StartDate
                                                                 ? Moment(EditData.StartDate).format(
@@ -5239,11 +5786,11 @@ const EditTaskPopup = (Items: any) => {
                                                         className="form-control"
                                                         placeholder="Enter Due Date"
                                                         max="9999-12-31"
-                                                        min={
-                                                            EditData.Created
-                                                                ? Moment(EditData.Created).format("YYYY-MM-DD")
-                                                                : ""
-                                                        }
+                                                        // min={
+                                                        //     EditData.Created
+                                                        //         ? Moment(EditData.Created).format("YYYY-MM-DD")
+                                                        //         : ""
+                                                        // }
                                                         defaultValue={
                                                             EditData.DueDate
                                                                 ? Moment(EditData.DueDate).format("YYYY-MM-DD")
@@ -5268,11 +5815,11 @@ const EditTaskPopup = (Items: any) => {
                                                         type="date"
                                                         className="form-control"
                                                         max="9999-12-31"
-                                                        min={
-                                                            EditData.Created
-                                                                ? Moment(EditData.Created).format("YYYY-MM-DD")
-                                                                : ""
-                                                        }
+                                                        // min={
+                                                        //     EditData.Created
+                                                        //         ? Moment(EditData.Created).format("YYYY-MM-DD")
+                                                        //         : ""
+                                                        // }
                                                         defaultValue={
                                                             EditData.CompletedDate
                                                                 ? Moment(EditData.CompletedDate).format(
@@ -5357,8 +5904,6 @@ const EditTaskPopup = (Items: any) => {
                                                             }
                                                             placeholder="Search Portfolio Item"
                                                         />
-
-
                                                     )}
                                                     <span className="input-group-text">
                                                         <span
@@ -5372,34 +5917,35 @@ const EditTaskPopup = (Items: any) => {
                                                             className="svg__iconbox svg__icon--editBox"
                                                         ></span>
                                                     </span>
+                                                    {SearchedServiceCompnentData?.length > 0 ? (
+                                                        <div className="SmartTableOnTaskPopup">
+                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                {SearchedServiceCompnentData.map((Item: any) => {
+                                                                    return (
+                                                                        <li
+                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                                                            key={Item.id}
+                                                                            onClick={() =>
+                                                                                setSelectedServiceAndCompnentData(
+                                                                                    Item,
+                                                                                    "Single"
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <a>{Item.Path}</a>
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ul>
+                                                        </div>
+                                                    ) : null}
                                                 </div>
-                                                {SearchedServiceCompnentData?.length > 0 ? (
-                                                    <div className="SmartTableOnTaskPopup">
-                                                        <ul className="list-group">
-                                                            {SearchedServiceCompnentData.map((Item: any) => {
-                                                                return (
-                                                                    <li
-                                                                        className="hreflink list-group-item rounded-0 list-group-item-action"
-                                                                        key={Item.id}
-                                                                        onClick={() =>
-                                                                            setSelectedServiceAndCompnentData(
-                                                                                Item,
-                                                                                "Single"
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        <a>{Item.Path}</a>
-                                                                    </li>
-                                                                );
-                                                            })}
-                                                        </ul>
-                                                    </div>
-                                                ) : null}
+
                                                 <div className="input-group mb-2">
                                                     <label className="form-label full-width">
                                                         Categories
                                                     </label>
-                                                    {ShareWebTypeData?.length > 1 ? <>
+                                                    {TaskCategoriesData?.length > 1 ? <>
                                                         <input
                                                             type="text"
                                                             className="form-control"
@@ -5409,12 +5955,12 @@ const EditTaskPopup = (Items: any) => {
                                                             onChange={(e) => autoSuggestionsForCategory(e)}
                                                         />
                                                         {SearchedCategoryData?.length > 0 ? (
-                                                            <div className="SmartTableOnTaskPopup w-100" style={{ marginTop: "53px" }}>
-                                                                <ul className="list-group">
+                                                            <div className="SmartTableOnTaskPopup">
+                                                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
                                                                     {SearchedCategoryData.map((item: any) => {
                                                                         return (
                                                                             <li
-                                                                                className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                                                className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
                                                                                 key={item.id}
                                                                                 onClick={() =>
                                                                                     setSelectedCategoryData(
@@ -5430,7 +5976,7 @@ const EditTaskPopup = (Items: any) => {
                                                                 </ul>
                                                             </div>
                                                         ) : null}
-                                                        {ShareWebTypeData?.map(
+                                                        {TaskCategoriesData?.map(
                                                             (type: any, index: number) => {
                                                                 if (
                                                                     type.Title != "Phone" &&
@@ -5463,10 +6009,10 @@ const EditTaskPopup = (Items: any) => {
                                                             }
                                                         )}</> :
                                                         <>
-                                                            {ShareWebTypeData?.length == 1 ?
+                                                            {TaskCategoriesData?.length == 1 ?
 
                                                                 <div className="full-width">
-                                                                    {ShareWebTypeData?.map((CategoryItem: any) => {
+                                                                    {TaskCategoriesData?.map((CategoryItem: any) => {
                                                                         return (
                                                                             <div className="full-width replaceInput alignCenter">
                                                                                 <a
@@ -5492,12 +6038,12 @@ const EditTaskPopup = (Items: any) => {
                                                                         onChange={(e) => autoSuggestionsForCategory(e)}
                                                                     />
                                                                     {SearchedCategoryData?.length > 0 ? (
-                                                                        <div className="SmartTableOnTaskPopup  w-100">
-                                                                            <ul className="list-group">
+                                                                        <div className="SmartTableOnTaskPopup">
+                                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
                                                                                 {SearchedCategoryData.map((item: any) => {
                                                                                     return (
                                                                                         <li
-                                                                                            className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
                                                                                             key={item.id}
                                                                                             onClick={() =>
                                                                                                 setSelectedCategoryData(
@@ -5580,10 +6126,10 @@ const EditTaskPopup = (Items: any) => {
                                                             />
                                                             <label>Immediate</label>
                                                         </div>
-                                                        {/* {ShareWebTypeData != undefined &&
-                                                            ShareWebTypeData?.length > 0 ? (
+                                                        {/* {TaskCategoriesData != undefined &&
+                                                            TaskCategoriesData?.length > 0 ? (
                                                             <div>
-                                                                {ShareWebTypeData?.map(
+                                                                {TaskCategoriesData?.map(
                                                                     (type: any, index: number) => {
                                                                         if (
                                                                             type.Title != "Phone" &&
@@ -5663,78 +6209,128 @@ const EditTaskPopup = (Items: any) => {
                                                     </div>
                                                     {ApprovalStatus ? (
                                                         <div>
-                                                            <div className="col">
-                                                                <div className="input-group">
-                                                                    <label className="form-label full-width"></label>
-                                                                    {ApproverData != undefined &&
-                                                                        ApproverData.length > 0 ? (
-                                                                        <>
-                                                                            {ApproverData.map(
-                                                                                (Approver: any, index: number) => {
+                                                            <div className="input-group mb-2">
+                                                                <label className="form-label full-width"></label>
+                                                                {ApproverData?.length > 1 ? <>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="form-control"
+                                                                        placeholder="Search Approver's Name Here"
+                                                                        value={ApproverSearchKey}
+                                                                        onChange={(e) =>
+                                                                            autoSuggestionsForApprover(e, "OnTaskPopup")
+                                                                        }
+                                                                    />
+                                                                    {ApproverSearchedData?.length > 0 ? (
+                                                                        <div className="SmartTableOnTaskPopup">
+                                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                                {ApproverSearchedData.map((item: any) => {
                                                                                     return (
-                                                                                        <div className="full-width replaceInput alignCenter">
-                                                                                            <a
-                                                                                                className="hreflink"
-                                                                                                target="_blank"
-                                                                                                data-interception="off"
-                                                                                            >
-                                                                                                {Approver.Title}
-                                                                                            </a>
-                                                                                        </div>
+                                                                                        <li
+                                                                                            className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                                                                            key={item.id}
+                                                                                            onClick={() =>
+                                                                                                SelectApproverFromAutoSuggestion(
+                                                                                                    item, "Approver"
+                                                                                                )
+                                                                                            }
+                                                                                        >
+                                                                                            <a>{item.NewLabel}</a>
+                                                                                        </li>
                                                                                     );
-                                                                                }
-                                                                            )}
-                                                                        </>
-                                                                    ) :
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control"
-                                                                            placeholder="Search Approver's Name Here"
-                                                                            value={ApproverSearchKey}
-                                                                            onChange={(e) =>
-                                                                                autoSuggestionsForApprover(
-                                                                                    e,
-                                                                                    "OnTaskPopup"
-                                                                                )
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    <span
-                                                                        className="input-group-text mt--10"
-                                                                        onClick={OpenApproverPopupFunction}
-                                                                        title="Approver Data Popup"
-                                                                    >
-                                                                        <span className="svg__iconbox svg__icon--editBox mt--10"></span>
-                                                                    </span>
-                                                                </div>
-                                                                {ApproverSearchedData?.length > 0 ? (
-                                                                    <div className="SmartTableOnTaskPopup">
-                                                                        <ul className="list-group">
-                                                                            {ApproverSearchedData.map((item: any) => {
-                                                                                return (
-                                                                                    <li
-                                                                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
-                                                                                        key={item.id}
-                                                                                        onClick={() =>
-                                                                                            SelectApproverFromAutoSuggestion(
-                                                                                                item
-                                                                                            )
-                                                                                        }
+                                                                                })}
+                                                                            </ul>
+                                                                        </div>
+                                                                    ) : null}
+                                                                    {ApproverData?.map(
+                                                                        (type: any, index: number) => {
+
+                                                                            return (
+                                                                                <div className="block w-100">
+                                                                                    <a
+                                                                                        style={{ color: "#fff !important" }}
+                                                                                        className="textDotted"
                                                                                     >
-                                                                                        <a>{item.NewLabel}</a>
-                                                                                    </li>
-                                                                                );
-                                                                            })}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : null}
+                                                                                        {type.Title}
+                                                                                    </a>
+                                                                                    <span
+                                                                                        onClick={() => removeAssignedMember(type)}
+                                                                                        className="bg-light hreflink ml-auto svg__icon--cross svg__iconbox"
+                                                                                    ></span>
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                    )}</> :
+                                                                    <>
+                                                                        {ApproverData?.length == 1 ?
+
+                                                                            <div className="full-width">
+
+                                                                                {ApproverData.map(
+                                                                                    (Approver: any, index: number) => {
+                                                                                        return (
+                                                                                            <div className="full-width replaceInput alignCenter">
+                                                                                                <a
+                                                                                                    className="hreflink"
+                                                                                                    target="_blank"
+                                                                                                    data-interception="off"
+                                                                                                >
+                                                                                                    {Approver.Title}
+                                                                                                </a>
+                                                                                            </div>
+                                                                                        );
+                                                                                    }
+                                                                                )}
+                                                                            </div>
+                                                                            :
+                                                                            <>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control"
+                                                                                    id="txtApprover"
+                                                                                    // onChange={(e) => autoSuggestionsForCategory(e)}
+                                                                                    placeholder="Search Name Here!"
+                                                                                    value={ApproverSearchKey}
+                                                                                    onChange={(e) => autoSuggestionsForApprover(e, "OnTaskPopup")}
+                                                                                />
+                                                                                {ApproverSearchedDataForPopup?.length > 0 ? (
+                                                                                    <div className="SmartTableOnTaskPopup">
+                                                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                                            {ApproverSearchedDataForPopup.map((item: any) => {
+                                                                                                return (
+                                                                                                    <li
+                                                                                                        className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                                                                        key={item.id}
+                                                                                                        onClick={() => SelectApproverFromAutoSuggestion(item, "Approver")}
+                                                                                                    >
+                                                                                                        <a>{item.NewLabel}</a>
+                                                                                                    </li>
+                                                                                                );
+                                                                                            })}
+                                                                                        </ul>
+                                                                                    </div>
+                                                                                ) : null}
+                                                                            </>
+                                                                        }
+                                                                    </>
+
+                                                                }
+
+                                                                <span
+                                                                    className="input-group-text mt--10"
+                                                                    onClick={OpenApproverPopupFunction}
+                                                                    title="Approver Data Popup"
+                                                                >
+                                                                    <span className="svg__iconbox svg__icon--editBox mt--10"></span>
+                                                                </span>
                                                             </div>
                                                             <div className="Approval-History-section my-2">
                                                                 {ApproverHistoryData != undefined &&
                                                                     ApproverHistoryData.length > 1 ? (
                                                                     <div className="border p-1">
                                                                         <div className="siteBdrBottom">
-                                                                            <p className="mb-1">Prev-Approver</p>
+                                                                            <p className="mb-1">Previous Approver</p>
                                                                         </div>
                                                                         {ApproverHistoryData.map(
                                                                             (HistoryData: any, index: any) => {
@@ -5868,11 +6464,13 @@ const EditTaskPopup = (Items: any) => {
                                                     <div className="col-md-6">
                                                         <div className="input-group">
                                                             <label className="form-label full-width">SmartPriority</label>
-                                                            <div className="bg-e9 w-100 py-1 px-2">
+                                                            <div className="bg-e9 w-100 py-1 px-2" style={{border:'1px solid #CDD4DB'}}>
                                                                 <span className={EditData?.SmartPriority != undefined ? "hover-text hreflink m-0 siteColor sxsvc" : "hover-text hreflink m-0 siteColor cssc"}>
                                                                     <>{EditData?.SmartPriority != undefined ? EditData?.SmartPriority : 0}</>
                                                                     <span className="tooltip-text pop-right">
-                                                                        {EditData?.showFormulaOnHover != undefined ? EditData?.showFormulaOnHover : ""}
+                                                                        {EditData?.showFormulaOnHover != undefined ?
+                                                
+                                                                        <SmartPriorityHover editValue={EditData}/> : ""}
                                                                     </span>
                                                                 </span>
                                                             </div>
@@ -5948,31 +6546,32 @@ const EditTaskPopup = (Items: any) => {
                                                                 className="svg__iconbox svg__icon--editBox"
                                                             ></span>
                                                         </span>
+                                                        {SearchedLinkedPortfolioData?.length > 0 ? (
+                                                            <div className="SmartTableOnTaskPopup">
+                                                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                    {SearchedLinkedPortfolioData.map(
+                                                                        (Item: any) => {
+                                                                            return (
+                                                                                <li
+                                                                                    className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                                                                    key={Item.id}
+                                                                                    onClick={() =>
+                                                                                        setSelectedServiceAndCompnentData(
+                                                                                            Item,
+                                                                                            "Multi"
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <a>{Item.Path}</a>
+                                                                                </li>
+                                                                            );
+                                                                        }
+                                                                    )}
+                                                                </ul>
+                                                            </div>
+                                                        ) : null}
                                                     </div>
-                                                    {SearchedLinkedPortfolioData?.length > 0 ? (
-                                                        <div className="SmartTableOnTaskPopup">
-                                                            <ul className="list-group">
-                                                                {SearchedLinkedPortfolioData.map(
-                                                                    (Item: any) => {
-                                                                        return (
-                                                                            <li
-                                                                                className="hreflink list-group-item rounded-0 list-group-item-action"
-                                                                                key={Item.id}
-                                                                                onClick={() =>
-                                                                                    setSelectedServiceAndCompnentData(
-                                                                                        Item,
-                                                                                        "Multi"
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <a>{Item.Path}</a>
-                                                                            </li>
-                                                                        );
-                                                                    }
-                                                                )}
-                                                            </ul>
-                                                        </div>
-                                                    ) : null}
+
                                                     {linkedPortfolioData?.length > 0 ? (
                                                         <div className="full-width">
                                                             {linkedPortfolioData?.map(
@@ -6024,7 +6623,7 @@ const EditTaskPopup = (Items: any) => {
                                                                                         title={ProjectData.Title}
                                                                                         data-interception="off"
                                                                                         className="textDotted hreflink"
-                                                                                        href={`${siteUrls}/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}
+                                                                                        href={`${siteUrls}/SitePages/Project-Management-Profile.aspx?ProjectId=${ProjectData.Id}`}
                                                                                     >
                                                                                         {ProjectData.Title}
                                                                                     </a>
@@ -6050,27 +6649,26 @@ const EditTaskPopup = (Items: any) => {
                                                         >
                                                             <span className="svg__iconbox svg__icon--editBox"></span>
                                                         </span>
+                                                        {SearchedProjectData?.length > 0 ? (
+                                                            <div className="SmartTableOnTaskPopup">
+                                                                <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                    {SearchedProjectData.map((item: any) => {
+                                                                        return (
+                                                                            <li
+                                                                                className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                                                                key={item.id}
+                                                                                onClick={() =>
+                                                                                    SelectProjectFromAutoSuggestion([item])
+                                                                                }
+                                                                            >
+                                                                                <a>{item?.Path}</a>
+                                                                            </li>
+                                                                        );
+                                                                    })}
+                                                                </ul>
+                                                            </div>
+                                                        ) : null}
                                                     </div>
-                                                    {SearchedProjectData?.length > 0 ? (
-                                                        <div className="SmartTableOnTaskPopup">
-                                                            <ul className="list-group">
-                                                                {SearchedProjectData.map((item: any) => {
-                                                                    return (
-                                                                        <li
-                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
-                                                                            key={item.id}
-                                                                            onClick={() =>
-                                                                                SelectProjectFromAutoSuggestion([item])
-                                                                            }
-                                                                        >
-                                                                            <a>{item?.Path}</a>
-                                                                        </li>
-                                                                    );
-                                                                })}
-                                                            </ul>
-                                                        </div>
-                                                    ) : null}
-
                                                 </div>
                                             </div>
                                         </div>
@@ -6167,7 +6765,7 @@ const EditTaskPopup = (Items: any) => {
                                                                                                 <span className="mx-2">
                                                                                                     {Number(
                                                                                                         SiteDtls.ClienTimeDescription
-                                                                                                    ).toFixed(2)}
+                                                                                                    ).toFixed(1)}
                                                                                                     %
                                                                                                 </span>
                                                                                             )}
@@ -6244,6 +6842,7 @@ const EditTaskPopup = (Items: any) => {
                                                     </span> : null} */}
                                             </div>
                                         </div>
+
                                         <div className="row">
                                             <div className="col mt-2 time-status">
                                                 <div>
@@ -6366,7 +6965,7 @@ const EditTaskPopup = (Items: any) => {
                                                     </ul>
                                                 </div>
                                             </div>
-                                            <div className="col mt-2 ps-0">
+                                            <div className="col mt-2">
                                                 <div className="input-group">
                                                     <label className="form-label full-width">
                                                         {EditData.TaskAssignedUsers?.length > 0
@@ -6540,7 +7139,235 @@ const EditTaskPopup = (Items: any) => {
                                         </div> */}
                                     </div>
                                     <div className="col-md-4">
-                                        <div className="full_width ">
+                                        {/* This is used for bottleneck  */}
+                                        <div className="col ps-0">
+                                            <div className="input-group">
+                                                <label className="form-label full-width ">
+                                                    Bottleneck
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={BottleneckSearchKey}
+                                                    className="form-control"
+                                                    placeholder="Tag user for Bottleneck"
+                                                    onChange={(e) => autoSuggestionsForApprover(e, "Bottleneck")}
+                                                />
+                                                <span
+                                                    className="input-group-text"
+                                                    // onClick={() => openTaskStatusUpdatePopup(EditData, "Status")}
+                                                    onClick={() => openBottleneckPopup("Bottleneck")}
+                                                >
+                                                    <span
+                                                        title="Add Comment"
+                                                        className="svg__iconbox svg__icon--editBox"
+                                                    ></span>
+                                                </span>
+                                                {BottleneckSearchedData?.length > 0 ? (
+                                                    <div className="SmartTableOnTaskPopup">
+                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                            {BottleneckSearchedData.map((item: any) => {
+                                                                return (
+                                                                    <li
+                                                                        className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                                                        key={item.id}
+                                                                        onClick={() =>
+                                                                            SelectApproverFromAutoSuggestion(
+                                                                                item, "Bottleneck"
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <a>{item.NewLabel}</a>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            {WorkingAction?.map((WAItemData: any, ItemIndex: number) => {
+                                                if (WAItemData.Title == "Bottleneck" && WAItemData?.InformationData?.length > 0) {
+                                                    return (
+                                                        <div className="border p-1 mt-1">
+                                                            {WAItemData?.InformationData?.map((InfoData: any, InfoIndex: number) => {
+                                                                return (
+                                                                    <div className="align-content-center alignCenter justify-content-between py-1">
+                                                                        <div className="alignCenter">
+                                                                            <img
+                                                                                className="ProirityAssignedUserPhoto m-0"
+                                                                                title={InfoData.TaggedUsers?.Title}
+                                                                                src={
+                                                                                    InfoData.TaggedUsers.userImage !=
+                                                                                        undefined &&
+                                                                                        InfoData.TaggedUsers.userImage.length >
+                                                                                        0
+                                                                                        ? InfoData.TaggedUsers.userImage
+                                                                                        : ""
+                                                                                }
+                                                                            />
+                                                                            <span className="ms-1">{InfoData?.TaggedUsers?.Title}</span>
+                                                                        </div>
+
+                                                                        <div className="alignCenter">
+                                                                            <span
+                                                                                className="hover-text m-1"
+                                                                                onClick={() => BottleneckAndAttentionFunction(InfoData, InfoIndex, "Reminder", WAItemData.Title)}
+                                                                            >
+                                                                                <LuBellPlus></LuBellPlus>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    Send reminder notifications
+                                                                                </span>
+                                                                            </span>
+                                                                            <span
+                                                                                className="m-0 img-info hover-text"
+                                                                                onClick={() =>
+                                                                                    openAddImageDescriptionFunction(
+                                                                                        InfoIndex,
+                                                                                        InfoData,
+                                                                                        "Bottleneck"
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <span className="svg__iconbox svg__icon--comment"></span>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    {InfoData.Comment != undefined &&
+                                                                                        InfoData.Comment?.length > 1
+                                                                                        ? InfoData.Comment
+                                                                                        : "Add Comment"}
+                                                                                </span>
+                                                                            </span>
+                                                                            <span
+                                                                                className="hover-text m-0 alignIcon"
+                                                                                onClick={() => BottleneckAndAttentionFunction(InfoData, InfoIndex, "Remove", WAItemData.Title)}
+                                                                            >
+                                                                                <span className="svg__iconbox svg__icon--cross"></span>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    Remove user from bottleneck
+                                                                                </span>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )
+                                                }
+                                            })}
+                                        </div>
+                                        {/* This is used for Attentions  */}
+                                        <div className="col mt-2 ps-0">
+                                            <div className="input-group">
+                                                <label className="form-label full-width ">
+                                                    Attention
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={AttentionSearchKey}
+                                                    className="form-control"
+                                                    placeholder="Tag user for attention"
+                                                    onChange={(e) => autoSuggestionsForApprover(e, "Attention")}
+                                                />
+                                                <span
+                                                    className="input-group-text"
+                                                    // onClick={() => openTaskStatusUpdatePopup(EditData, "Status")}
+                                                    onClick={() => openBottleneckPopup("Attention")}
+                                                >
+                                                    <span
+                                                        title="Add Comment"
+                                                        className="svg__iconbox svg__icon--editBox"
+                                                    ></span>
+                                                </span>
+                                                {AttentionSearchedData?.length > 0 ? (
+                                                    <div className="SmartTableOnTaskPopup">
+                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                            {AttentionSearchedData.map((item: any) => {
+                                                                return (
+                                                                    <li
+                                                                        className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                                                        key={item.id}
+                                                                        onClick={() =>
+                                                                            SelectApproverFromAutoSuggestion(
+                                                                                item, "Attention"
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <a>{item.NewLabel}</a>
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            {WorkingAction?.map((WAItemData: any, ItemIndex: number) => {
+                                                if (WAItemData.Title == "Attention" && WAItemData?.InformationData?.length > 0) {
+                                                    return (
+                                                        <div className="border p-1 mt-1">
+                                                            {WAItemData?.InformationData?.map((InfoData: any, InfoIndex: number) => {
+                                                                return (
+                                                                    <div className="align-content-center alignCenter justify-content-between py-1">
+                                                                        <div className="alignCenter">
+                                                                            <img
+                                                                                className="ProirityAssignedUserPhoto m-0"
+                                                                                title={InfoData.TaggedUsers?.Title}
+                                                                                src={
+                                                                                    InfoData.TaggedUsers.userImage !=
+                                                                                        undefined &&
+                                                                                        InfoData.TaggedUsers.userImage?.length >
+                                                                                        0
+                                                                                        ? InfoData.TaggedUsers.userImage
+                                                                                        : ""
+                                                                                }
+                                                                            />
+                                                                            <span className="ms-1">{InfoData?.TaggedUsers?.Title}</span>
+                                                                        </div>
+
+                                                                        <div className="alignCenter">
+                                                                            <span
+                                                                                onClick={() => BottleneckAndAttentionFunction(InfoData, InfoIndex, "Reminder", WAItemData.Title)}
+                                                                                className="hover-text m-1"
+                                                                            >
+                                                                                <LuBellPlus></LuBellPlus>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    Send reminder notifications
+                                                                                </span>
+                                                                            </span>
+                                                                            <span
+                                                                                className="m-0 img-info hover-text"
+                                                                                onClick={() =>
+                                                                                    openAddImageDescriptionFunction(
+                                                                                        InfoIndex,
+                                                                                        InfoData,
+                                                                                        "Attention"
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <span className="svg__iconbox svg__icon--comment"></span>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    {InfoData.Comment != undefined &&
+                                                                                        InfoData.Comment?.length > 1
+                                                                                        ? InfoData.Comment
+                                                                                        : "Add Comment"}
+                                                                                </span>
+                                                                            </span>
+                                                                            <span
+                                                                                className="hover-text m-0 alignIcon"
+                                                                                onClick={() => BottleneckAndAttentionFunction(InfoData, InfoIndex, "Remove", WAItemData.Title)}
+                                                                            >
+                                                                                <span className="svg__iconbox svg__icon--cross"></span>
+                                                                                <span className="tooltip-text pop-left">
+                                                                                    Remove user from bottleneck
+                                                                                </span>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )
+                                                }
+                                            })}
+                                        </div>
+                                        <div className="full_width mt-2">
                                             <CommentCard
                                                 siteUrl={siteUrls}
                                                 listName={Items?.Items?.siteType}
@@ -6694,7 +7521,7 @@ const EditTaskPopup = (Items: any) => {
                                                                                     openAddImageDescriptionFunction(
                                                                                         index,
                                                                                         ImageDtl,
-                                                                                        "Opne-Model"
+                                                                                        "Image"
                                                                                     )
                                                                                 }
                                                                             >
@@ -6739,7 +7566,7 @@ const EditTaskPopup = (Items: any) => {
                                                                 />
                                                             </div>
                                                         ) : null}
-                                                        {TaskImages?.length == 0 ? (
+                                                        {TaskImages?.length == 0 && EditData?.Id != undefined ? (
                                                             <div>
                                                                 <FlorarImageUploadComponent
                                                                     callBack={FlorarImageUploadComponentCallBack}
@@ -6801,7 +7628,7 @@ const EditTaskPopup = (Items: any) => {
                                                         Context: Context,
                                                         siteType: Items.Items.siteType,
                                                     }}
-                                                    taskCreatedCallback={GetExtraLookupColumnData}
+                                                    taskCreatedCallback={UpdateTaskInfoFunction}
                                                 />
                                             </>
                                         ) : null}
@@ -6864,7 +7691,7 @@ const EditTaskPopup = (Items: any) => {
                     {IsComponentPicker && (
                         <Picker
                             props={EditData}
-                            selectedCategoryData={ShareWebTypeData}
+                            selectedCategoryData={TaskCategoriesData}
                             usedFor="Task-Popup"
                             siteUrls={siteUrls}
                             AllListId={AllListIdData}
@@ -6880,6 +7707,7 @@ const EditTaskPopup = (Items: any) => {
                             RequiredListIds={AllListIdData}
                             closePopupCallBack={closeSiteCompsotionPanelFunction}
                             usedFor={"AWT"}
+                            ColorCode={PortfolioItemColor}
                         />
                     ) : null}
                     {sendEmailComponentStatus ? (
@@ -7214,10 +8042,8 @@ const EditTaskPopup = (Items: any) => {
                         >
                             <div className="image-section row">
                                 {ShowTaskDetailsStatus ? (
-                                    <div>
-                                        <h6
-                                            className="siteColor mb-3"
-                                            style={{ cursor: "pointer" }}
+                                    <div className="p-0 mt--5">
+                                        <h6 className="mb-1 mt--10 text-end siteColor hreflink"
                                             onClick={() =>
                                                 setShowTaskDetailsStatus(
                                                     ShowTaskDetailsStatus ? false : true
@@ -7288,13 +8114,13 @@ const EditTaskPopup = (Items: any) => {
                                                                     type="date"
                                                                     className="form-control"
                                                                     max="9999-12-31"
-                                                                    min={
-                                                                        EditData.Created
-                                                                            ? Moment(EditData.Created).format(
-                                                                                "YYYY-MM-DD"
-                                                                            )
-                                                                            : ""
-                                                                    }
+                                                                    // min={
+                                                                    //     EditData.Created
+                                                                    //         ? Moment(EditData.Created).format(
+                                                                    //             "YYYY-MM-DD"
+                                                                    //         )
+                                                                    //         : ""
+                                                                    // }
                                                                     defaultValue={
                                                                         EditData.StartDate
                                                                             ? Moment(EditData.StartDate).format(
@@ -7327,13 +8153,13 @@ const EditTaskPopup = (Items: any) => {
                                                                     className="form-control"
                                                                     placeholder="Enter Due Date"
                                                                     max="9999-12-31"
-                                                                    min={
-                                                                        EditData.Created
-                                                                            ? Moment(EditData.Created).format(
-                                                                                "YYYY-MM-DD"
-                                                                            )
-                                                                            : ""
-                                                                    }
+                                                                    // min={
+                                                                    //     EditData.Created
+                                                                    //         ? Moment(EditData.Created).format(
+                                                                    //             "YYYY-MM-DD"
+                                                                    //         )
+                                                                    //         : ""
+                                                                    // }
                                                                     defaultValue={
                                                                         EditData.DueDate
                                                                             ? Moment(EditData.DueDate).format(
@@ -7360,13 +8186,13 @@ const EditTaskPopup = (Items: any) => {
                                                                     type="date"
                                                                     className="form-control"
                                                                     max="9999-12-31"
-                                                                    min={
-                                                                        EditData.Created
-                                                                            ? Moment(EditData.Created).format(
-                                                                                "YYYY-MM-DD"
-                                                                            )
-                                                                            : ""
-                                                                    }
+                                                                    // min={
+                                                                    //     EditData.Created
+                                                                    //         ? Moment(EditData.Created).format(
+                                                                    //             "YYYY-MM-DD"
+                                                                    //         )
+                                                                    //         : ""
+                                                                    // }
                                                                     defaultValue={
                                                                         EditData.CompletedDate
                                                                             ? Moment(EditData.CompletedDate).format(
@@ -7463,38 +8289,39 @@ const EditTaskPopup = (Items: any) => {
                                                                         className="svg__iconbox svg__icon--editBox"
                                                                     ></span>
                                                                 </span>
+                                                                {SearchedServiceCompnentData?.length > 0 ? (
+                                                                    <div className="SmartTableOnTaskPopup">
+                                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                            {SearchedServiceCompnentData.map(
+                                                                                (Item: any) => {
+                                                                                    return (
+                                                                                        <li
+                                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                                                                            key={Item.id}
+                                                                                            onClick={() =>
+                                                                                                setSelectedServiceAndCompnentData(
+                                                                                                    Item,
+                                                                                                    "Single"
+                                                                                                )
+                                                                                            }
+                                                                                        >
+                                                                                            <a className="siteColor">
+                                                                                                {Item.Path}
+                                                                                            </a>
+                                                                                        </li>
+                                                                                    );
+                                                                                }
+                                                                            )}
+                                                                        </ul>
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
-                                                            {SearchedServiceCompnentData?.length > 0 ? (
-                                                                <div className="SmartTableOnTaskPopup">
-                                                                    <ul className="list-group">
-                                                                        {SearchedServiceCompnentData.map(
-                                                                            (Item: any) => {
-                                                                                return (
-                                                                                    <li
-                                                                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
-                                                                                        key={Item.id}
-                                                                                        onClick={() =>
-                                                                                            setSelectedServiceAndCompnentData(
-                                                                                                Item,
-                                                                                                "Single"
-                                                                                            )
-                                                                                        }
-                                                                                    >
-                                                                                        <a className="siteColor">
-                                                                                            {Item.Path}
-                                                                                        </a>
-                                                                                    </li>
-                                                                                );
-                                                                            }
-                                                                        )}
-                                                                    </ul>
-                                                                </div>
-                                                            ) : null}
+
                                                             <div className="input-group mb-2">
                                                                 <label className="form-label full-width">
                                                                     Categories
                                                                 </label>
-                                                                {ShareWebTypeData?.length > 1 ? <>
+                                                                {TaskCategoriesData?.length > 1 ? <>
                                                                     <input
                                                                         type="text"
                                                                         className="form-control"
@@ -7504,12 +8331,12 @@ const EditTaskPopup = (Items: any) => {
                                                                         onChange={(e) => autoSuggestionsForCategory(e)}
                                                                     />
                                                                     {SearchedCategoryData?.length > 0 ? (
-                                                                        <div className="SmartTableOnTaskPopup w-100" style={{ marginTop: "53px" }}>
-                                                                            <ul className="list-group">
+                                                                        <div className="SmartTableOnTaskPopup">
+                                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
                                                                                 {SearchedCategoryData.map((item: any) => {
                                                                                     return (
                                                                                         <li
-                                                                                            className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
                                                                                             key={item.id}
                                                                                             onClick={() =>
                                                                                                 setSelectedCategoryData(
@@ -7525,7 +8352,7 @@ const EditTaskPopup = (Items: any) => {
                                                                             </ul>
                                                                         </div>
                                                                     ) : null}
-                                                                    {ShareWebTypeData?.map(
+                                                                    {TaskCategoriesData?.map(
                                                                         (type: any, index: number) => {
                                                                             if (
                                                                                 type.Title != "Phone" &&
@@ -7558,10 +8385,10 @@ const EditTaskPopup = (Items: any) => {
                                                                         }
                                                                     )}</> :
                                                                     <>
-                                                                        {ShareWebTypeData?.length == 1 ?
+                                                                        {TaskCategoriesData?.length == 1 ?
 
                                                                             <div className="full-width">
-                                                                                {ShareWebTypeData?.map((CategoryItem: any) => {
+                                                                                {TaskCategoriesData?.map((CategoryItem: any) => {
                                                                                     return (
                                                                                         <div className="full-width replaceInput alignCenter">
                                                                                             <a
@@ -7587,12 +8414,12 @@ const EditTaskPopup = (Items: any) => {
                                                                                     onChange={(e) => autoSuggestionsForCategory(e)}
                                                                                 />
                                                                                 {SearchedCategoryData?.length > 0 ? (
-                                                                                    <div className="SmartTableOnTaskPopup w-100">
-                                                                                        <ul className="list-group">
+                                                                                    <div className="SmartTableOnTaskPopup">
+                                                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
                                                                                             {SearchedCategoryData.map((item: any) => {
                                                                                                 return (
                                                                                                     <li
-                                                                                                        className="hreflink list-group-item rounded-0 list-group-item-action"
+                                                                                                        className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
                                                                                                         key={item.id}
                                                                                                         onClick={() =>
                                                                                                             setSelectedCategoryData(
@@ -7686,10 +8513,10 @@ const EditTaskPopup = (Items: any) => {
                                                                         />
                                                                         <label>Immediate</label>
                                                                     </div>
-                                                                    {ShareWebTypeData != undefined &&
-                                                                        ShareWebTypeData?.length > 0 ? (
+                                                                    {TaskCategoriesData != undefined &&
+                                                                        TaskCategoriesData?.length > 0 ? (
                                                                         <div>
-                                                                            {ShareWebTypeData?.map(
+                                                                            {TaskCategoriesData?.map(
                                                                                 (type: any, index: number) => {
                                                                                     if (
                                                                                         type.Title != "Phone" &&
@@ -7815,30 +8642,31 @@ const EditTaskPopup = (Items: any) => {
                                                                                 >
                                                                                     <span className="svg__iconbox svg__icon--editBox mt--10"></span>
                                                                                 </span>
+                                                                                {ApproverSearchedData?.length > 0 ? (
+                                                                                    <div className="SmartTableOnTaskPopup">
+                                                                                        <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                                            {ApproverSearchedData.map(
+                                                                                                (item: any) => {
+                                                                                                    return (
+                                                                                                        <li
+                                                                                                            className="hreflink list-group-item p-1 rounded-0 list-group-item-action"
+                                                                                                            key={item.id}
+                                                                                                            onClick={() =>
+                                                                                                                SelectApproverFromAutoSuggestion(
+                                                                                                                    item, "Approver"
+                                                                                                                )
+                                                                                                            }
+                                                                                                        >
+                                                                                                            <a>{item.NewLabel}</a>
+                                                                                                        </li>
+                                                                                                    );
+                                                                                                }
+                                                                                            )}
+                                                                                        </ul>
+                                                                                    </div>
+                                                                                ) : null}
                                                                             </div>
-                                                                            {ApproverSearchedData?.length > 0 ? (
-                                                                                <div className="SmartTableOnTaskPopup">
-                                                                                    <ul className="list-group">
-                                                                                        {ApproverSearchedData.map(
-                                                                                            (item: any) => {
-                                                                                                return (
-                                                                                                    <li
-                                                                                                        className="hreflink list-group-item rounded-0 list-group-item-action"
-                                                                                                        key={item.id}
-                                                                                                        onClick={() =>
-                                                                                                            SelectApproverFromAutoSuggestion(
-                                                                                                                item
-                                                                                                            )
-                                                                                                        }
-                                                                                                    >
-                                                                                                        <a>{item.NewLabel}</a>
-                                                                                                    </li>
-                                                                                                );
-                                                                                            }
-                                                                                        )}
-                                                                                    </ul>
-                                                                                </div>
-                                                                            ) : null}
+
 
 
                                                                         </div>
@@ -7847,7 +8675,7 @@ const EditTaskPopup = (Items: any) => {
                                                                                 ApproverHistoryData.length > 1 ? (
                                                                                 <div className="border p-1">
                                                                                     <div className="siteBdrBottom">
-                                                                                        <p className="mb-1">Prev-Approver</p>
+                                                                                        <p className="mb-1">Previous Approver</p>
                                                                                     </div>
                                                                                     {ApproverHistoryData.map(
                                                                                         (HistoryData: any, index: any) => {
@@ -8043,31 +8871,32 @@ const EditTaskPopup = (Items: any) => {
                                                                             className="svg__iconbox svg__icon--editBox"
                                                                         ></span>
                                                                     </span>
+                                                                    {SearchedLinkedPortfolioData?.length > 0 ? (
+                                                                        <div className="SmartTableOnTaskPopup">
+                                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                                {SearchedLinkedPortfolioData.map(
+                                                                                    (Item: any) => {
+                                                                                        return (
+                                                                                            <li
+                                                                                                className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                                                                                key={Item.id}
+                                                                                                onClick={() =>
+                                                                                                    setSelectedServiceAndCompnentData(
+                                                                                                        Item,
+                                                                                                        "Multi"
+                                                                                                    )
+                                                                                                }
+                                                                                            >
+                                                                                                <a>{Item.Path}</a>
+                                                                                            </li>
+                                                                                        );
+                                                                                    }
+                                                                                )}
+                                                                            </ul>
+                                                                        </div>
+                                                                    ) : null}
                                                                 </div>
-                                                                {SearchedLinkedPortfolioData?.length > 0 ? (
-                                                                    <div className="SmartTableOnTaskPopup">
-                                                                        <ul className="list-group">
-                                                                            {SearchedLinkedPortfolioData.map(
-                                                                                (Item: any) => {
-                                                                                    return (
-                                                                                        <li
-                                                                                            className="hreflink list-group-item rounded-0 list-group-item-action"
-                                                                                            key={Item.id}
-                                                                                            onClick={() =>
-                                                                                                setSelectedServiceAndCompnentData(
-                                                                                                    Item,
-                                                                                                    "Multi"
-                                                                                                )
-                                                                                            }
-                                                                                        >
-                                                                                            <a>{Item.Path}</a>
-                                                                                        </li>
-                                                                                    );
-                                                                                }
-                                                                            )}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : null}
+
                                                                 {linkedPortfolioData?.length > 0 ? (
                                                                     <div className="full-width">
                                                                         {linkedPortfolioData?.map(
@@ -8120,7 +8949,7 @@ const EditTaskPopup = (Items: any) => {
                                                                                                     target="_blank"
                                                                                                     title={ProjectData.Title}
                                                                                                     data-interception="off"
-                                                                                                    href={`${siteUrls}/SitePages/Project-Management.aspx?ProjectId=${ProjectData.Id}`}
+                                                                                                    href={`${siteUrls}/SitePages/Project-Management-Profile.aspx?ProjectId=${ProjectData.Id}`}
                                                                                                 >
                                                                                                     {ProjectData.Title}
                                                                                                 </a>
@@ -8149,28 +8978,29 @@ const EditTaskPopup = (Items: any) => {
                                                                     >
                                                                         <span className="svg__iconbox svg__icon--editBox"></span>
                                                                     </span>
+                                                                    {SearchedProjectData?.length > 0 ? (
+                                                                        <div className="SmartTableOnTaskPopup">
+                                                                            <ul className="autosuggest-list maXh-200 scrollbar list-group">
+                                                                                {SearchedProjectData.map((item: any) => {
+                                                                                    return (
+                                                                                        <li
+                                                                                            className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
+                                                                                            key={item.id}
+                                                                                            onClick={() =>
+                                                                                                SelectProjectFromAutoSuggestion([
+                                                                                                    item,
+                                                                                                ])
+                                                                                            }
+                                                                                        >
+                                                                                            <a>{item?.Path}</a>
+                                                                                        </li>
+                                                                                    );
+                                                                                })}
+                                                                            </ul>
+                                                                        </div>
+                                                                    ) : null}
                                                                 </div>
-                                                                {SearchedProjectData?.length > 0 ? (
-                                                                    <div className="SmartTableOnTaskPopup">
-                                                                        <ul className="list-group">
-                                                                            {SearchedProjectData.map((item: any) => {
-                                                                                return (
-                                                                                    <li
-                                                                                        className="hreflink list-group-item rounded-0 p-1 list-group-item-action"
-                                                                                        key={item.id}
-                                                                                        onClick={() =>
-                                                                                            SelectProjectFromAutoSuggestion([
-                                                                                                item,
-                                                                                            ])
-                                                                                        }
-                                                                                    >
-                                                                                        <a>{item?.Path}</a>
-                                                                                    </li>
-                                                                                );
-                                                                            })}
-                                                                        </ul>
-                                                                    </div>
-                                                                ) : null}
+
 
                                                             </div>
                                                         </div>
@@ -8661,10 +9491,8 @@ const EditTaskPopup = (Items: any) => {
                                     </div>
                                 ) : null}
                                 {ShowTaskDetailsStatus ? null : (
-                                    <div className="mb-3">
-                                        <h6
-                                            className="siteColor"
-                                            style={{ cursor: "pointer" }}
+                                    <div className="p-0 mt--5">
+                                        <h6 className="mb-1 mt--10 text-end siteColor hreflink"
                                             onClick={() =>
                                                 setShowTaskDetailsStatus(
                                                     ShowTaskDetailsStatus ? false : true
@@ -8759,7 +9587,7 @@ const EditTaskPopup = (Items: any) => {
                                                                         openAddImageDescriptionFunction(
                                                                             index,
                                                                             imgData,
-                                                                            "Opne-Model"
+                                                                            "Image"
                                                                         )
                                                                     }
                                                                 >
@@ -8823,9 +9651,6 @@ const EditTaskPopup = (Items: any) => {
                                 <div
                                     className="comment-section col-sm-6 p-2"
                                     style={{
-                                        overflowY: "auto",
-                                        height: "600px",
-                                        overflowX: "hidden",
                                         border: "2px solid #ccc",
                                     }}
                                 >
@@ -8845,6 +9670,7 @@ const EditTaskPopup = (Items: any) => {
                                                     SmartLightStatus={SmartLightStatus}
                                                     SmartLightPercentStatus={SmartLightPercentStatus}
                                                     Context={Context}
+                                                    FeedbackCount={FeedBackCount}
                                                 />
                                                 <Example
                                                     textItems={
@@ -8861,6 +9687,18 @@ const EditTaskPopup = (Items: any) => {
                                                     SmartLightStatus={SmartLightStatus}
                                                     SmartLightPercentStatus={SmartLightPercentStatus}
                                                     Context={Context}
+                                                    FeedbackCount={FeedBackCount}
+                                                    TaskUpdatedData={MakeUpdateDataJSON}
+                                                    TaskListDetails={{
+                                                        SiteURL: siteUrls,
+                                                        ListId: Items.Items.listId,
+                                                        TaskId: Items.Items.Id,
+                                                        TaskDetails: EditData,
+                                                        AllListIdData: AllListIdData,
+                                                        Context: Context,
+                                                        siteType: Items.Items.siteType,
+                                                    }}
+                                                    taskCreatedCallback={UpdateTaskInfoFunction}
                                                 />
                                             </>
                                         ) : null}
@@ -8962,7 +9800,7 @@ const EditTaskPopup = (Items: any) => {
                 </div>
             </div>
 
-            {/* ********************** This in Add Image Description Model ****************** */}
+            {/* ********************** This in Add Image Description, Bottleneck and Attention Model ****************** */}
             <Panel
                 isOpen={AddImageDescriptions}
                 onRenderHeader={onRenderCustomHeaderAddImageDescription}
@@ -8983,14 +9821,14 @@ const EditTaskPopup = (Items: any) => {
                                         : ""
                                 }
                                 className="full-width"
-                                onChange={(e) => UpdateImageDescription(e)}
+                                onChange={(e) => UpdateImageDescription(e, AddDescriptionModelName)}
                             ></textarea>
                         </div>
                     </div>
                     <footer className="text-end mt-2">
                         <button
                             className="btn btnPrimary mx-1 "
-                            onClick={SaveImageDescription}
+                            onClick={() => SaveImageDescription(AddDescriptionModelName)}
                         >
                             Save
                         </button>
@@ -9021,6 +9859,7 @@ const EditTaskPopup = (Items: any) => {
                                     <h6>Sites</h6>
                                 </div>
                                 <div className="card-body">
+                                    {!loaded ? <PageLoader /> : ''}
                                     <ul className="quick-actions">
                                         {SiteTypes?.map((siteData: any, index: number) => {
                                             if (siteData.Title !== "QA") {
@@ -9117,7 +9956,7 @@ const EditTaskPopup = (Items: any) => {
                 onDismiss={closeApproverPopup}
                 isBlocking={ApproverPopupStatus}
                 type={PanelType.medium}
-            >
+                className="mb-2">
                 <div className={ServicesTaskCheck ? "serviepannelgreena" : ""}>
                     <div className="">
                         <div className="col-sm-12 categScroll" style={{ height: "auto" }}>
@@ -9136,7 +9975,7 @@ const EditTaskPopup = (Items: any) => {
                                                 <li
                                                     className="hreflink list-group-item rounded-0 list-group-item-action"
                                                     key={item.id}
-                                                    onClick={() => SelectApproverFromAutoSuggestion(item)}
+                                                    onClick={() => SelectApproverFromAutoSuggestion(item, "Approver")}
                                                 >
                                                     <a>{item.NewLabel}</a>
                                                 </li>
@@ -9149,11 +9988,11 @@ const EditTaskPopup = (Items: any) => {
                                 <div className="border full-width my-1 p-1">
                                     {ApproverData?.map((val: any) => {
                                         return (
-                                            <a className="hreflink block">
+                                            <a className="hreflink block me-1">
                                                 {" "}
                                                 {val.Title}
                                                 <span
-                                                    onClick={() => setApproverData([])}
+                                                    onClick={() => removeAssignedMember(val)}
                                                     className="bg-light hreflink ms-1 svg__icon--cross svg__iconbox"
                                                 ></span>
                                             </a>
@@ -9215,7 +10054,7 @@ const EditTaskPopup = (Items: any) => {
                         </div>
                     </div>
                     <footer className="fixed-bottom">
-                        <div className="align-items-center d-flex me-3 pull-right px-4 py-2">
+                        <div className="align-items-center d-flex pull-right px-4 py-2">
                             <button
                                 type="button"
                                 className="btn btn-primary px-3 mx-1"

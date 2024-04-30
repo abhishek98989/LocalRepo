@@ -6,7 +6,7 @@ import Example from "./SubCommentComponent";
 import pnp from 'sp-pnp-js';
 import * as Moment from 'moment';
 import ApprovalHistoryPopup from "./ApprovalHistoryPopup";
-// import FroalaCommentBox from '../FlorarComponents/FroalaCommentBoxComponent';
+// import FroalaEditorComponent from '../FlorarComponents/FroalaEditorComponent';
 
 const CommentBoxComponent = (commentData: any) => {
     const Context = commentData.Context;
@@ -54,13 +54,30 @@ const CommentBoxComponent = (commentData: any) => {
             Array.push(object);
             FirstFeedBackArray.push(object);
         }
+        data?.forEach((ele: any) => {
+            if (ele.ApproverData != undefined && ele.ApproverData.length > 0) {
+                ele.ApproverData?.forEach((ba: any) => {
+                    if (ba.isShowLight == 'Reject') {
+                        ba.Status = 'Rejected by'
+                    }
+                    if (ba.isShowLight == 'Approve') {
+                        ba.Status = 'Approved by '
+                    }
+                    if (ba.isShowLight == 'Maybe') {
+                        ba.Status = 'For discussion with'
+                    }
+
+
+                })
+            }
+        })
         setCommentArray(data);
         setFirstFeedBackArray(data);
         if (SmartLightStatus) {
             setIsCurrentUserApprover(true);
         }
         getCurrentUserDetails();
-    }, [commentData.FeedbackCount])
+    }, [])
 
     const getCurrentUserDetails = async () => {
         let currentUserId: number;
@@ -82,30 +99,42 @@ const CommentBoxComponent = (commentData: any) => {
         }
     }
 
+
     function handleChangeComment(e: any) {
-        if (e.target.matches("input")) {
-            const { id } = e.currentTarget.dataset;
-            const { name, value } = e.target;
-            const copy = [...commentArray];
-            const obj = { ...commentArray[id], [name]: value == "true" ? false : true };
-            copy[id] = obj;
-            if (name == "Phone") {
-                FirstFeedBackArray[id].Phone = (value == "true" ? false : true)
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        const { name, type, checked, value } = e.target;
+        let updatedValue = type === "checkbox" ? checked : value;
+        if (name === "SeeAbove") {
+            let newTitle = FirstFeedBackArray[id].Title;
+            const seeText = ` (See ${id + 1})`;
+            if (updatedValue) {
+                if (!newTitle.includes(seeText)) {
+                    newTitle += seeText;
+                }
+            } else {
+                newTitle = newTitle.replace(seeText, "").trim();
             }
-            if (name == "LowImportance") {
-                FirstFeedBackArray[id].LowImportance = (value == "true" ? false : true)
-            }
-            if (name == "HighImportance") {
-                FirstFeedBackArray[id].HighImportance = (value == "true" ? false : true)
-            }
-            if (name == "Completed") {
-                FirstFeedBackArray[id].Completed = (value == "true" ? false : true)
-            }
-            setCommentArray(copy);
-            Array = copy;
+            FirstFeedBackArray[id].Title = newTitle;
+            FirstFeedBackArray[id].SeeAbove = updatedValue;
+        } else if (type === "textarea") {
+            FirstFeedBackArray[id].Title = updatedValue;
+        } else if (type === "checkbox") {
+            FirstFeedBackArray[id][name] = updatedValue;
         }
+        const updatedCommentArray = commentArray.map((item, idx) => {
+            if (idx === id) {
+                return {
+                    ...item,
+                    Title: FirstFeedBackArray[id].Title,
+                    [name]: updatedValue
+                };
+            }
+            return item;
+        });
+        setCommentArray(updatedCommentArray);
         CallBack(FirstFeedBackArray);
     }
+
     const HtmlEditorCallBack = useCallback((EditorData: any) => {
         FirstFeedBackArray[0].Title = EditorData;
         CallBack(FirstFeedBackArray);
@@ -119,10 +148,26 @@ const CommentBoxComponent = (commentData: any) => {
             ApprovalDate: Moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
             isShowLight: value
         }
-        // currentUserData.isShowLight = value;
         FirstFeedBackArray[index].isShowLight = value;
         FirstFeedBackArray[index].ApproverData.push(temObject);
         let tempApproverData: any = FirstFeedBackArray[index].ApproverData;
+        FirstFeedBackArray?.forEach((ele: any) => {
+            if (ele.ApproverData != undefined && ele.ApproverData.length > 0) {
+                ele.ApproverData?.forEach((ba: any) => {
+                    if (ba.isShowLight == 'Reject') {
+                        ba.Status = 'Rejected by'
+                    }
+                    if (ba.isShowLight == 'Approve') {
+                        ba.Status = 'Approved by '
+                    }
+                    if (ba.isShowLight == 'Maybe') {
+                        ba.Status = 'For discussion with'
+                    }
+
+
+                })
+            }
+        })
         CallBack(FirstFeedBackArray);
         const copy = [...commentArray];
         const obj = { ...commentArray[index], isShowLight: value, ApproverData: tempApproverData };
@@ -182,7 +227,8 @@ const CommentBoxComponent = (commentData: any) => {
                     commentArray?.map((obj, i) => {
                         return (
                             <div className="row">
-                                <div data-id={i}
+                                <div
+                                    data-id={i}
                                     className="col"
                                     onChange={handleChangeComment}
                                 >
@@ -190,7 +236,7 @@ const CommentBoxComponent = (commentData: any) => {
                                         <div className="d-flex">
                                             {ApprovalStatus ?
                                                 <div>
-                                                    {/* {isCurrentUserApprover ? */}
+
                                                     <div className={isCurrentUserApprover ? "alignCenter mt-1" : "alignCenter Disabled-Link mt-1"}>
                                                         <span className="MR5">
                                                             <span title="Rejected" onClick={() => SmartLightUpdate(i, "Reject")}
@@ -203,30 +249,40 @@ const CommentBoxComponent = (commentData: any) => {
                                                             </span>
                                                         </span>
                                                     </div>
-                                                    {/* : null } */}
+
                                                 </div>
                                                 : null
                                             }
-                                            {obj.ApproverData != undefined && obj.ApproverData.length > 0 ?
-                                                <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(i, obj)}>
-                                                    Pre-approved by - <span className="ms-1"><a title={obj.ApproverData[obj.ApproverData.length - 1]?.Title}><img className='imgAuthor' src={obj.ApproverData[obj.ApproverData.length - 1]?.ImageUrl} /></a></span>
-                                                </span> :
+                                             {obj.ApproverData != undefined && obj.ApproverData.length > 0 ?
+                                                <>
+                                                   
+                                                            <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(i, obj)}>
+                                                            {obj?.ApproverData[obj?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={obj?.ApproverData[obj.ApproverData?.length - 1]?.Title}><span><a href={`${Context.pageContext.web.absoluteUrl}/SitePages/TaskDashboard.aspx?UserId=${obj.ApproverData[obj.ApproverData?.length - 1]?.Id}&Name=${obj.ApproverData[obj.ApproverData?.length - 1]?.Title}`} target="_blank" data-interception="off" title={obj.ApproverData[obj.ApproverData?.length - 1]?.Title}> <img className='imgAuthor' src={obj.ApproverData[obj.ApproverData?.length - 1]?.ImageUrl} /></a></span></a></span>
+                                                      
+                                                </> :
                                                 null
                                             }
                                         </div>
 
                                         <div>
                                             <span className="mx-1">
-                                                <input className="form-check-input mt--3" type="checkbox"
+
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="Phone"
                                                     checked={obj.Phone}
-                                                    value={obj.Phone}
-                                                    name='Phone'
+
                                                 />
                                                 <label className="commentSectionLabel ms-1">Phone</label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input mt--3"
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="LowImportance"
+                                                    checked={obj.LowImportance}
                                                 />
                                                 <label className="commentSectionLabel ms-1">
                                                     Low Importance
@@ -234,8 +290,11 @@ const CommentBoxComponent = (commentData: any) => {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='HighImportance' checked={obj.HighImportance}
-                                                    value={obj.HighImportance} className="form-check-input mt--3"
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="HighImportance"
+                                                    checked={obj.HighImportance}
                                                 />
                                                 <label className="commentSectionLabel ms-1">
                                                     High Importance
@@ -243,8 +302,14 @@ const CommentBoxComponent = (commentData: any) => {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" id="" className="form-check-input mt--3"
-                                                    name='Completed' checked={obj.Completed} value={obj.Completed} />
+
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="Completed"
+                                                    checked={obj.Completed}
+
+                                                />
                                                 <label className="commentSectionLabel ms-1">
                                                     Mark As Completed
                                                 </label>
@@ -262,11 +327,11 @@ const CommentBoxComponent = (commentData: any) => {
                                             HtmlEditorStateChange={HtmlEditorCallBack}
                                         >
                                         </HtmlEditorCard>
-                                        {/* <FroalaCommentBox
+                                        {/* <FroalaEditorComponent
                                             EditorValue={obj.Title != undefined ? obj.Title : ''}
                                             callBack={HtmlEditorCallBack}
                                         >
-                                        </FroalaCommentBox> */}
+                                        </FroalaEditorComponent> */}
                                     </div>
                                 </div>
                                 <div>
@@ -281,9 +346,8 @@ const CommentBoxComponent = (commentData: any) => {
                                             CancelCallback={postBtnHandleCallBackCancel}
                                             Context={Context}
                                             ApprovalStatus={ApprovalStatus}
+                                            SmartLightStatus={obj?.isShowLight}
                                             isCurrentUserApprover={isCurrentUserApprover}
-                                            FeedbackCount = {commentData.FeedbackCount}
-                                            SmartLightStatus = {obj.isShowLight}
                                         />
                                     </div>
                                     <div>
@@ -299,8 +363,7 @@ const CommentBoxComponent = (commentData: any) => {
                                             SmartLightPercentStatus={SmartLightPercentStatus}
                                             Context={Context}
                                             isCurrentUserApprover={isCurrentUserApprover}
-                                            isFirstComment = {true}
-                                            FeedbackCount = {commentData.FeedbackCount}
+                                            isFirstComment={true}
                                         />
                                     </div>
                                 </div>

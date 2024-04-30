@@ -37,7 +37,7 @@ const CreateWS = (props: any) => {
     const [selectedItem, setSelectedItem]: any = React.useState({})
     const [selectedTaskType, setSelectedTaskType] = React.useState(3)
     const [ParentArray, setParentArray] = React.useState([]);
-    const [SharewebTask, setSharewebTask] = React.useState<any>();
+    const [CMSTask, setCMSTask] = React.useState<any>();
     const [IsPopupComponent, setIsPopupComponent] = React.useState(false)
     const [ClientCategoriesData, setClientCategoriesData] = React.useState<any>(
         []
@@ -46,7 +46,7 @@ const CreateWS = (props: any) => {
         Title: '',
         ItemRank: '',
         UniqueRank:'XYZabc',
-        Priority: props?.selectedItem?.NoteCall=="Task"?"":'4',
+        Priority: '4',
         DueDate: '',
         Description: [],
         AssignedTo: props?.selectedItem?.AssignedTo?.length > 0 ? props?.selectedItem?.AssignedTo : [],
@@ -150,42 +150,20 @@ const CreateWS = (props: any) => {
 
 
     //************ breadcrum start */
+
     const GetParentHierarchy = async (Item: any) => {
-        const parentdata: any = []
-        // parentdata.push()
-        // return new Promise((resolve, reject) => {
-        if (Item.Parent != null || Item?.Portfolio != undefined) {
-
-            var filt: any = "Id eq " + (Item.Parent != null || undefined ? Item?.Parent?.Id : Item?.Portfolio?.Id) + "";
-
-        }
-        let web = new Web(AllListId?.siteUrl);
-        let compo = [];
-        web.lists
-            .getById(AllListId?.MasterTaskListID)
-            .items
-            .select("ID", "Id", "Title", "Mileage", "ItemType", "Parent/Id", "Parent/Title"
-            ).expand("Parent")
-
-            .top(4999)
-            .filter(filt)
-            .get().then((comp: any) => {
-
-                console.log(comp)
-                parentdata.push(comp[0])
-                parentdata.push(Item)
-                //  if(comp[0].Parent!=undefined){
-                // GetParentHierarchy(comp[0])
-                //  }else{
-                setParentArray(parentdata)
-                // resolve(parentdata)
-                //  }
-
-            }).catch((error: any) => {
-                console.log(error)
-                // reject(error)
-            });
-        // })
+        const flateData: any = []
+      
+     globalCommon?.getBreadCrumbHierarchyAllData(Item,AllListId,flateData).then((resolve:any)=>{
+        console.log(resolve)
+        // resolve?.flatdata.push(Item)
+        let data=resolve?.flatdata.reverse().pop()
+        setParentArray(resolve?.flatdata)
+      }).catch((error:any)=>{
+        console.log(error)
+      });
+    
+    
 
     }
     // ***** bread crum end ***********
@@ -370,6 +348,12 @@ const CreateWS = (props: any) => {
 
            
         }
+        else{
+            if(selectedItem?.Project?.Id!=undefined){
+                ProjectId= selectedItem?.Project?.Id
+            }
+           
+        }
         let web = new Web(AllListId?.siteUrl);
         if (selectedTaskType == 3) {
 
@@ -377,20 +361,26 @@ const CreateWS = (props: any) => {
             componentDetails = await web.lists
                 .getById(selectedItem.listId)
                 .items
-                .select("FolderID,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,TaskLevel,FileLeafRef,Title,Id,Priority_x0020_Rank,PercentComplete,Priority,Created,Modified,TaskType/Id,TaskType/Title,ParentTask/Id,ParentTask/Title,Author/Id,Author/Title,Editor/Id,Editor/Title")
+                .select("FolderID,AssignedTo/Title,AssignedTo/Name,AssignedTo/Id,TaskLevel,FileLeafRef,Title,Id,PercentComplete,Priority,Created,Modified,TaskType/Id,TaskType/Title,ParentTask/Id,ParentTask/Title,Author/Id,Author/Title,Editor/Id,Editor/Title")
                 .expand("TaskType,ParentTask,Author,Editor,AssignedTo")
                 .filter(("TaskType/Id eq 3") && ("ParentTask/Id eq '" + selectedItem?.Id + "'"))
-                .orderBy("Created", false)
+                .orderBy("Created", true)
                 .top(499)
                 .get()
             console.log(componentDetails)
             if (componentDetails?.length == 0) {
                 WorstreamLatestId = 1;
-            } else {
-                WorstreamLatestId = componentDetails?.length + 1;
+            } 
+            else {
+                if( componentDetails[componentDetails?.length-1]?.TaskLevel){
+                    WorstreamLatestId = componentDetails[componentDetails?.length-1]?.TaskLevel + 1;
+                }else{
+                    WorstreamLatestId = componentDetails?.length + 1;
+                }
+              
             }
         }
-        inputFields?.map((inputValue: any, index: any) => {
+        inputFields?.map(async(inputValue: any, index: any) => {
             let taskLevel = WorstreamLatestId++;
             let priorityRank = 4;
             let priority = '';
@@ -490,7 +480,7 @@ const CreateWS = (props: any) => {
             if (postdata?.Sitestagging == false) {
                 postdata.Sitestagging = null
             }
-            web.lists.getById(selectedItem.listId).items.add(postdata).then(async (res: any) => {
+             await web.lists.getById(selectedItem.listId).items.add(postdata).then(async (res: any) => {
                 console.log(res)
                 let item: any = {};
                 if (res?.data) {
@@ -549,7 +539,7 @@ const CreateWS = (props: any) => {
                     }
                     res.data = item;
                     if (type == "createopenpopup") {
-                        setSharewebTask(res.data);
+                        setCMSTask(res.data);
                         setIsPopupComponent(true)
 
                     } else {
@@ -582,7 +572,7 @@ const CreateWS = (props: any) => {
     //**** Callbackfunction for openeditpopup */
     const Call = (items: any) => {
         setIsPopupComponent(false)
-        let wsData = { data: SharewebTask }
+        let wsData = { data: CMSTask }
 
         closeTaskStatusUpdatePoup(wsData);
 
@@ -611,10 +601,11 @@ const CreateWS = (props: any) => {
                                     ParentArray?.map((childsitem: any, index: any) => {
                                         return (
                                             <>
-                                                <li><a href='#'>{ParentArray.length - 1 == index ? `${childsitem?.Title}` : `${childsitem?.Title}`} </a> </li>
+                                                <li><a  target="_blank" data-interception="off"  href={'PortfolioType'in childsitem? `${AllListId?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${childsitem?.Id}`:`${AllListId?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${childsitem?.Id}&Site=${childsitem?.siteType}`}>{ParentArray?.length - 1 == index ? `${childsitem?.Title}` : `${childsitem?.Title}`} </a> </li>
                                             </>
                                         )
                                     })
+                                    
                                 }
                             </ul>
 
@@ -835,13 +826,13 @@ const CreateWS = (props: any) => {
 
             </Panel>
             {/* {IsComponent && <ComponentPortPolioPopup 
-            props={SharewebComponent} 
+            props={CMSToolComponent} 
             AllListId={dynamicList}
             context={props.context} 
             Call={Call}>
                 </ComponentPortPolioPopup>}
             {IsComponentPicker && <Picker
-             props={SharewebCategory} 
+             props={TaskCat} 
              AllListId={dynamicList} 
              Call={Call}
              >
@@ -849,7 +840,7 @@ const CreateWS = (props: any) => {
             {
                 IsPopupComponent
                 && <EditTaskPopup
-                    Items={SharewebTask}
+                    Items={CMSTask}
                     AllListId={AllListId}
                     pageName={"TaskFooterTable"}
                     context={props?.context}

@@ -3,52 +3,78 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const { useState, useEffect, useCallback } = React;
 import Example from "./SubCommentComponent";
 import AddCommentComponent from './AddCommentComponent'
-import pnp from 'sp-pnp-js';
 import * as Moment from 'moment';
-import { Panel, PanelType } from 'office-ui-fabric-react';
-import { Web } from "sp-pnp-js";
-// import { TiMessage } from 'react-icons/ti'
 import ApprovalHistoryPopup from "./ApprovalHistoryPopup";
-import EditTaskPopup from "./EditTaskPopup";
-let globalCount = 0;
+import CreateTaskCompareTool from '../CreateTaskCompareTool/CreateTaskCompareTool';
+
+let globalCount = 1;
+let CreateTaskIndex: any;
+let currentUserData: any;
+
+  let UpdatedFeedBackParentArray:any=[]
 export default function FroalaCommnetBoxes(textItems: any) {
+    console.log(textItems?.copyAlldescription)
     const Context = textItems.Context;
     const TextItems = textItems.textItems;
     const callBack = textItems.callBack;
     const taskCreatedCallback = textItems.taskCreatedCallback;
     const TaskDetails: any = textItems.TaskListDetails;
-    const [State, setState] = useState([]);
-    const [Texts, setTexts] = useState(false);
-    const [btnStatus, setBtnStatus] = useState(false);
-    const [postBtnStatus, setPostBtnStatus] = useState(false);
-    const [currentIndex, setCurrentIndex] = useState('');
+    const ItemDetails: any = TaskDetails?.TaskDetails;
+    const [State, setState] = useState<any>([]);
+    const [Texts, setTexts] = useState<any>(false);
+    const [btnStatus, setBtnStatus] = useState<any>(false);
+    const [postBtnStatus, setPostBtnStatus] = useState<any>(false);
+    const [currentIndex, setCurrentIndex] = useState<any>('');
     const [ApprovalPointUserData, setApprovalPointUserData] = useState<any>([]);
-    const [ApprovalPointCurrentIndex, setApprovalPointCurrentIndex] = useState('');
-    const [isCurrentUserApprover, setIsCurrentUserApprover] = useState(false);
-    const [ApprovalPointHistoryStatus, setApprovalPointHistoryStatus] = useState(false);
-    const [TaskPopupPanelStatus, UpdateTaskPopupPanelStatus] = useState(false);
-    const [currentUserData, setCurrentUserData] = useState<any>([]);
-    const [UpdatedFeedBackParentArray, setUpdatedFeedBackParentArray] = useState([]);
-    let [IndexCount, setIndexCount] = useState(1);
-    const [newlyCreatedTask, UpdateNewlyCreatedTask] = useState<any>([]);
+    const [ApprovalPointCurrentIndex, setApprovalPointCurrentIndex] = useState<any>('');
+    const [isCurrentUserApprover, setIsCurrentUserApprover] = useState<any>(false);
+    const [ApprovalPointHistoryStatus, setApprovalPointHistoryStatus] = useState<any>(false);
+    const [IsOpenCreateTaskPanel, setIsOpenCreateTaskPanel] = useState<any>(false);
+    const [CreateTaskForThis, setCreateTaskForThis] = useState<any>();
+    
 
+    let [IndexCount, setIndexCount] = useState<any>(1);
     let ApprovalStatus: any = textItems.ApprovalStatus;
     let SmartLightPercentStatus: any = textItems.SmartLightPercentStatus;
     let SmartLightStatus: any = textItems.SmartLightStatus;
+
+
     useEffect(() => {
-        if (TextItems != undefined && TextItems.length > 0) {
+        if (TextItems != undefined && TextItems?.length > 0) {
             setState([]);
             let testItems: any = []
-            TextItems.map((item: any, index: any) => {
+            UpdatedFeedBackParentArray = []
+            TextItems?.map((item: any, index: any) => {
                 if (index > 0) {
-                    if (item.ApproverData == undefined) {
-                        item.ApproverData = [];
+                    if (typeof item == "object") {
+                        if (item?.ApproverData == undefined) {
+                            item.ApproverData = [];
+                        }
+                        item.taskIndex = index;
+                        testItems.push(item);
+
+                        testItems?.forEach((ele: any) => {
+                            if (ele?.ApproverData != undefined && ele?.ApproverData?.length > 0) {
+                                ele.ApproverData?.forEach((ba: any) => {
+                                    if (ba.isShowLight == 'Reject') {
+                                        ba.Status = 'Rejected by'
+                                    }
+                                    if (ba.isShowLight == 'Approve') {
+                                        ba.Status = 'Approved by '
+                                    }
+                                    if (ba.isShowLight == 'Maybe') {
+                                        ba.Status = 'For discussion with'
+                                    }
+
+
+                                })
+                            }
+                        })
+                        setTexts(!Texts);
+                        IndexCount = IndexCount + 1;
+                        UpdatedFeedBackParentArray.push(item);
                     }
-                    item.taskIndex = index;
-                    testItems.push(item);
-                    setTexts(!Texts);
-                    IndexCount = IndexCount + 1;
-                    UpdatedFeedBackParentArray.push(item);
+
                 }
             })
             setState((prev: any) => testItems);
@@ -64,8 +90,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
         setIndexCount(TextItems?.length)
     }, [TextItems?.length])
     const getCurrentUserDetails = async () => {
-        let currentUserId: number;
-        await pnp.sp.web.currentUser.get().then(result => { currentUserId = result.Id; console.log(currentUserId) });
+        let currentUserId = Context.pageContext._legacyPageContext.userId;
         if (currentUserId != undefined) {
             if (textItems.allUsers != null && textItems.allUsers?.length > 0) {
                 textItems.allUsers?.map((userData: any) => {
@@ -76,16 +101,14 @@ export default function FroalaCommnetBoxes(textItems: any) {
                             ImageUrl: userData.Item_x0020_Cover?.Url,
                             ApprovalDate: Moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm')
                         }
-                        setCurrentUserData(TempObject);
+                        currentUserData = TempObject;
                     }
                 })
             }
         }
     }
     const addMainRow = () => {
-        // let testTaskIndex = State?.length + 1
         let testTaskIndex = UpdatedFeedBackParentArray?.length + 1
-        // setIndexCount(IndexCount + 1);
         IndexCount = IndexCount + 1;
         const object = {
             Completed: "",
@@ -100,13 +123,12 @@ export default function FroalaCommnetBoxes(textItems: any) {
         };
         State.push(object);
         UpdatedFeedBackParentArray.push(object)
+   
         setTexts(!Texts);
         setBtnStatus(true);
     }
     const addMainRowInDiv = () => {
-        // let testTaskIndex = State?.length + 1
-        let testTaskIndex = UpdatedFeedBackParentArray?.length + 1
-        // setIndexCount(IndexCount + 1);
+        let testTaskIndex = State?.length + 1
         IndexCount = IndexCount + 1;
         const object = {
             Completed: "",
@@ -116,18 +138,21 @@ export default function FroalaCommnetBoxes(textItems: any) {
             Phone: '',
             LowImportance: '',
             HighImportance: '',
-            isShowLight: ''
+            isShowLight: '',
+            TaskCreatedForThis: false
         };
-        State.push(object);
-        UpdatedFeedBackParentArray.push(object)
+    
+     UpdatedFeedBackParentArray.push(object);
+     setState(UpdatedFeedBackParentArray)
+      
         setTexts(!Texts);
         setBtnStatus(true);
     }
 
-    const RemoveItem = (dltItem: any, Index:any) => {
+    const RemoveItem = (dltItem: any, Index: any) => {
         let tempArray: any = []
         IndexCount--;
-        State.map((array: any, ItemIndex:any) => {
+        State.map((array: any, ItemIndex: any) => {
             if (dltItem.Title != array.Title || ItemIndex != Index) {
                 tempArray.push(array);
             }
@@ -136,82 +161,56 @@ export default function FroalaCommnetBoxes(textItems: any) {
             setBtnStatus(false)
             callBack("delete");
         } else {
+            UpdatedFeedBackParentArray = []
+            UpdatedFeedBackParentArray=tempArray
             callBack(tempArray);
         }
+        UpdatedFeedBackParentArray = []
+        UpdatedFeedBackParentArray=tempArray
         setState(tempArray);
     }
 
     function handleChange(e: any) {
-        if (e.target.matches("textarea")) {
-            const { id } = e.currentTarget.dataset;
-            const { name, value } = e.target;
-            UpdatedFeedBackParentArray[id].Title = value;
-            const copy = [...State];
-            const obj = { ...State[id], [name]: value };
-            copy[id] = obj;
-            setState(copy);
-        }
-        if (e.target.matches("input")) {
-            const { id } = e.currentTarget.dataset;
-            const { name, value } = e.target;
-            if (name == "SeeAbove") {
-                if (value == 'false') {
-                    const { id } = e.currentTarget.dataset;
-                    let Index = Number(id) + 1;
-                    let NewTitle: any = "";
-                    if (UpdatedFeedBackParentArray[id].Title != undefined && UpdatedFeedBackParentArray[id].Title.length > 0) {
-                        NewTitle = UpdatedFeedBackParentArray[id].Title + " (See " + Index + ")";
-                    } else {
-                        NewTitle = "See " + Index
-                    }
-                    UpdatedFeedBackParentArray[id].Title = NewTitle;
-                    const copy = [...State];
-                    const obj = { ...State[id], Title: NewTitle, SeeAbove: true };
-                    copy[id] = obj;
-                    setState(copy);
-                } else {
-                    const { id } = e.currentTarget.dataset;
-                    let Index = Number(id) + 1;
-                    let NewTitle: any = "";
-                    if (UpdatedFeedBackParentArray[id].Title != undefined && UpdatedFeedBackParentArray[id].Title.length > 0) {
-                        NewTitle = UpdatedFeedBackParentArray[id].Title.replace(`(See ${Index})`, "");
-                    } else {
-                        NewTitle = "";
-                    }
-                    UpdatedFeedBackParentArray[id].Title = NewTitle;
-                    const copy = [...State];
-                    const obj = { ...State[id], Title: NewTitle, SeeAbove: false };
-                    copy[id] = obj;
-                    setState(copy);
+        UpdatedFeedBackParentArray = State;
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        const { name, type, checked, value } = e.target;
+        let updatedValue = type === "checkbox" ? checked : value;
+        if (name === "SeeAbove") {
+            let newTitle = UpdatedFeedBackParentArray[id].Title;
+            const seeText = ` (See ${id + 1})`;
+            if (updatedValue) {
+                if (!newTitle.includes(seeText)) {
+                    newTitle += seeText;
                 }
-                UpdatedFeedBackParentArray[id].SeeAbove = (value == "true" ? false : true)
+            } else {
+                newTitle = newTitle.replace(seeText, "").trim();
             }
-            if (name == "Phone") {
-                UpdatedFeedBackParentArray[id].Phone = (value == "true" ? false : true)
-            }
-            if (name == "LowImportance") {
-                UpdatedFeedBackParentArray[id].LowImportance = (value == "true" ? false : true)
-            }
-            if (name == "HighImportance") {
-                UpdatedFeedBackParentArray[id].HighImportance = (value == "true" ? false : true)
-            }
-            if (name == "Completed") {
-                UpdatedFeedBackParentArray[id].Completed = (value == "true" ? false : true)
-            }
-            const copy = [...State];
-            const obj = { ...State[id], [name]: value == "true" ? false : true };
-            copy[id] = obj;
-            setState(copy);
-
+            UpdatedFeedBackParentArray[id].Title = newTitle;
+            UpdatedFeedBackParentArray[id].SeeAbove = updatedValue;
+        } else if (type === "textarea") {
+            UpdatedFeedBackParentArray[id].Title = updatedValue;
+        } else if (type === "checkbox") {
+            UpdatedFeedBackParentArray[id][name] = updatedValue;
         }
+        const updatedState = State.map((item: any, idx: any) => {
+            if (idx === id) {
+                return {
+                    ...item,
+                    Title: UpdatedFeedBackParentArray[id].Title,
+                    [name]: updatedValue
+                };
+            }
+            return item;
+        });
+        setState(updatedState);
         callBack(UpdatedFeedBackParentArray);
     }
-
     const subTextCallBack = useCallback((subTextData: any, subTextIndex: any) => {
+      
+        console.log(textItems?.copyAlldescription)
         UpdatedFeedBackParentArray[subTextIndex].Subtext = subTextData
         callBack(UpdatedFeedBackParentArray);
     }, [])
-
     const postBtnHandle = (index: any) => {
         setCurrentIndex(index)
         if (postBtnStatus) {
@@ -238,15 +237,30 @@ export default function FroalaCommnetBoxes(textItems: any) {
             ApprovalDate: Moment(new Date()).tz("Europe/Berlin").format('DD MMM YYYY HH:mm'),
             isShowLight: value
         }
-        UpdatedFeedBackParentArray[index].isShowLight = value;
-        UpdatedFeedBackParentArray[index].ApproverData.push(temObject);
-        let tempApproverData: any = UpdatedFeedBackParentArray[index].ApproverData
-        callBack(UpdatedFeedBackParentArray);
         const copy = [...State];
+        let tempApproverData: any = copy[index].ApproverData;
         const obj = { ...State[index], isShowLight: value, ApproverData: tempApproverData };
         copy[index] = obj;
         setState(copy);
-
+        copy[index].isShowLight = value;
+        copy[index].ApproverData.push(temObject);
+        copy?.forEach((ele: any) => {
+            if (ele.ApproverData != undefined && ele.ApproverData.length > 0) {
+                ele.ApproverData?.forEach((ba: any) => {
+                    if (ba.isShowLight == 'Reject') {
+                        ba.Status = 'Rejected by'
+                    }
+                    if (ba.isShowLight == 'Approve') {
+                        ba.Status = 'Approved by '
+                    }
+                    if (ba.isShowLight == 'Maybe') {
+                        ba.Status = 'For discussion with'
+                    }
+                })
+            }
+        })
+        callBack(copy);
+        UpdatedFeedBackParentArray = copy;
     }
     const postBtnHandleCallBackCancel = useCallback((status: any) => {
         if (status) {
@@ -258,60 +272,19 @@ export default function FroalaCommnetBoxes(textItems: any) {
 
     // ********************* this is for the Approval Point History Popup ************************
 
-    const CreateSeperateTaskFunction = async (FeedbackData: any, Index: any) => {
-        let callForData = textItems?.TaskUpdatedData;
-        try {
-            let UpdateJSONData: any = {};
-            UpdateJSONData = await callForData();
-            let OldItemDataDetails: any = { ...UpdateJSONData }
-            var FeedBackItem: any = {};
-            let CreateTaskFor: any = FeedbackData;
-            CreateTaskFor.Subtext = [];
-            let param: any = Moment(new Date().toLocaleString())
-            FeedBackItem['Title'] = "FeedBackPicture" + param;
-            FeedBackItem['FeedBackDescriptions'] = [CreateTaskFor];
-            FeedBackItem['ImageDate'] = "" + param;
-            FeedBackItem['Completed'] = '';
-            let FeedbackArray: any = [FeedBackItem];
-            if (UpdateJSONData?.Title?.length > 1) {
-                UpdateJSONData.FeedBack = FeedbackArray?.length > 0 != undefined ? JSON.stringify(FeedbackArray) : null;
-            }
-            let web = new Web(TaskDetails?.SiteURL);
-            await web.lists.getById(TaskDetails?.ListId).items.add(UpdateJSONData).then((res: any) => {
-                console.log("Created Task Successfully !!!");
-                let responseData: any = res.data;
-                responseData.listId = TaskDetails.ListId;
-                responseData.siteUrl = TaskDetails.SiteURL;
-                responseData.siteType = TaskDetails.siteType;
-                UpdateNewlyCreatedTask(responseData);
-                try {
-                    UpdateFeedbackDetails(responseData, Index, OldItemDataDetails);
 
-                } catch (error) {
-                    console.log("Error:", error.message)
-                }
-                UpdateTaskPopupPanelStatus(true);
-                globalCount++;
-            })
-
-
-        } catch (error) {
-            console.log("Error :", error.message);
-        }
-
+    const CreateSeparateTaskFunction = async (FeedbackData: any, Index: any) => {
+        setIsOpenCreateTaskPanel(true);
+        setCreateTaskForThis(FeedbackData);
+        CreateTaskIndex = Index;
     }
 
-    const UpdateFeedbackDetails = async (NewTaskDetails: any, Index: any, OldItemData: any) => {
+
+
+    const UpdateFeedbackDetails = async (NewTaskDetails: any, Index: any) => {
         let param: any = Moment(new Date().toLocaleString());
-        let baseUrl = window.location.href;
-        let TaskURL = baseUrl.replace(TaskDetails.TaskDetails?.Id, NewTaskDetails.Id)
-        let CommentTitle: any = `A separate task for this point has been created and below is the URL for same. Task URL : ${TaskURL}`;
-        let oldTaskDetails: any = OldItemData;
-        let oldFeedbackData: any;
-        if (oldTaskDetails?.FeedBack?.length > 0) {
-            oldFeedbackData = JSON.parse(oldTaskDetails.FeedBack)
-        }
-        let FeedbackBackupArray: any = oldFeedbackData?.length > 0 ? oldFeedbackData[0].FeedBackDescriptions : [];
+        let TaskURL: any = `${TaskDetails?.SiteURL}/SitePages/Task-Profile.aspx?taskId=${NewTaskDetails?.Id}&Site=${TaskDetails?.siteType}`;
+        let CommentTitle: any = `A new task was created to address this issue: ${TaskURL} Created by ${currentUserData.Title != undefined ? currentUserData.Title : Context.pageContext._user.displayName}`;
         let CreateTaskFor: any = [{
             AuthorImage: currentUserData.ImageUrl != undefined ? currentUserData.ImageUrl : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg",
             AuthorName: currentUserData.Title != undefined ? currentUserData.Title : Context.pageContext._user.displayName,
@@ -322,43 +295,20 @@ export default function FroalaCommnetBoxes(textItems: any) {
             isApprovalComment: false,
             isShowLight: ""
         }]
-        let UpdateJSONIndex = Index + 1;
-        FeedbackBackupArray[UpdateJSONIndex].TaskCreatedForThis = true;
-        FeedbackBackupArray[UpdateJSONIndex].Completed = true;
-        if (FeedbackBackupArray[UpdateJSONIndex].Comments?.length > 0) {
-            FeedbackBackupArray[UpdateJSONIndex].Comments.unshift(CreateTaskFor[0]);
+        let UpdateJSONIndex = Index;
+        UpdatedFeedBackParentArray[UpdateJSONIndex].Completed = true;
+        if (UpdatedFeedBackParentArray[UpdateJSONIndex].Comments?.length > 0) {
+            UpdatedFeedBackParentArray[UpdateJSONIndex].Comments.unshift(CreateTaskFor[0]);
         } else {
-            FeedbackBackupArray[UpdateJSONIndex].Comments = CreateTaskFor;
+            UpdatedFeedBackParentArray[UpdateJSONIndex].Comments = CreateTaskFor;
         }
-        let web = new Web(TaskDetails?.SiteURL);
-        oldFeedbackData[0].FeedBackDescriptions = FeedbackBackupArray;
-        await web.lists.getById(TaskDetails?.ListId).items.getById(TaskDetails?.TaskId).update({
-            FeedBack: oldFeedbackData?.length > 0 ? JSON.stringify(oldFeedbackData) : null
-        }).then(async (res: any) => {
-            console.log("Onld Feedback Updated");
-        })
-        const copy = [...State];
-        const obj = { ...State[Index], TaskCreatedForThis: true, Comments: FeedbackBackupArray[UpdateJSONIndex].Comments, Completed: true };
-        copy[Index] = obj;
-        setState(copy);
-        taskCreatedCallback();
-    }
-
-    // function updateTaskIdInUrl(url: any, newTaskId: any) {
-    //     const urlParams = new URLSearchParams(url);
-    //     urlParams.set('taskId', newTaskId);
-    //     const baseUrl = url.split('?')[0];
-    //     const updatedUrl = `${baseUrl}?${urlParams.toString()}`;
-    //     return updatedUrl;
-    // }
-
-    const TaskPopupCallBack = () => {
-        UpdateTaskPopupPanelStatus(false);
+        callBack(UpdatedFeedBackParentArray);
+        setState([...UpdatedFeedBackParentArray]);
+        taskCreatedCallback("Image-Tab");
+        globalCount++;
     }
 
     // ********************* this is for the Approval Point History Popup ************************
-
-
     const ApprovalPopupOpenHandle = (index: any, data: any) => {
         setApprovalPointCurrentIndex(index);
         setApprovalPointHistoryStatus(true);
@@ -367,6 +317,14 @@ export default function FroalaCommnetBoxes(textItems: any) {
 
     const ApprovalHistoryPopupCallBack = useCallback(() => {
         setApprovalPointHistoryStatus(false)
+    }, [])
+
+    const CreateTaskCallBack = useCallback((Status: string, NewlyCreatedData: any) => {
+        if (Status == "Save") {
+            console.log("NewlyCreatedData ====", NewlyCreatedData)
+            UpdateFeedbackDetails(NewlyCreatedData, CreateTaskIndex);
+        }
+        setIsOpenCreateTaskPanel(false);
     }, [])
 
     function createRows(state: any[]) {
@@ -404,44 +362,72 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                                 : null
                                             }
                                             {obj.ApproverData != undefined && obj.ApproverData.length > 0 ?
-                                                <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(i + 1, obj)}>
-                                                    Pre-approved by - <span className="ms-1"><a title={obj.ApproverData[obj.ApproverData.length - 1]?.Title}>
-                                                        <img className='imgAuthor' src={obj.ApproverData[obj.ApproverData.length - 1]?.ImageUrl} />
-                                                    </a>
-                                                    </span>
-                                                </span> : null
+                                                <>
+
+                                                    <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => ApprovalPopupOpenHandle(i, obj)}>
+                                                        {obj.ApproverData[obj.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={obj.ApproverData[obj.ApproverData?.length - 1]?.Title}><span><a href={`${Context.pageContext.web.absoluteUrl}/SitePages/TaskDashboard.aspx?UserId=${obj.ApproverData[obj.ApproverData?.length - 1]?.Id}&Name=${obj.ApproverData[obj.ApproverData?.length - 1]?.Title}`} target="_blank" data-interception="off" title={obj.ApproverData[obj.ApproverData?.length - 1]?.Title}> <img className='imgAuthor' src={obj.ApproverData[obj.ApproverData?.length - 1]?.ImageUrl} /></a></span></a></span>
+
+                                                </> :
+                                                null
                                             }
                                         </div>
                                         <div>
                                             <span className="mx-1">
-                                                <input className="form-check-input mt--3"
+                                                {/* <input className="form-check-input mt--3"
                                                     type="checkbox"
                                                     checked={obj.SeeAbove != undefined && obj.SeeAbove == true ? true : false}
                                                     value={obj.SeeAbove != undefined && obj.SeeAbove == true ? "true" : "false"}
                                                     name='SeeAbove'
+                                                /> */}
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="SeeAbove"
+                                                    checked={obj.SeeAbove}
                                                 />
+
+                                                {/* Similar setup for other checkboxes like Phone, LowImportance, etc. */}
+
                                                 <label className="commentSectionLabel ms-1">See Above</label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input className="form-check-input mt--3" type="checkbox"
+                                                {/* <input className="form-check-input mt--3" type="checkbox"
                                                     checked={obj.Phone}
                                                     value={obj.Phone}
                                                     name='Phone'
+                                                /> */}
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="Phone"
+                                                    checked={obj.Phone}
                                                 />
                                                 <label className="commentSectionLabel ms-1">Phone</label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input mt--3" />
+                                                {/* <input type="checkbox" name='LowImportance' checked={obj.LowImportance} value={obj.LowImportance} className="form-check-input mt--3" /> */}
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="LowImportance"
+                                                    checked={obj.LowImportance}
+                                                />
                                                 <label className="commentSectionLabel ms-1">
                                                     Low Importance
                                                 </label>
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" name='HighImportance' checked={obj.HighImportance}
+                                                {/* <input type="checkbox" name='HighImportance' checked={obj.HighImportance}
                                                     value={obj.HighImportance} className="form-check-input mt--3"
+                                                /> */}
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="HighImportance"
+                                                    checked={obj.HighImportance}
                                                 />
                                                 <label className="commentSectionLabel ms-1">
                                                     High Importance
@@ -449,8 +435,14 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <input type="checkbox" id="" className="form-check-input mt--3"
-                                                    name='Completed' checked={obj.Completed} value={obj.Completed} />
+                                                {/* <input type="checkbox" id="" className="form-check-input mt--3"
+                                                    name='Completed' checked={obj.Completed} value={obj.Completed} /> */}
+                                                <input className="form-check-input mt--3"
+                                                    type="checkbox"
+                                                    data-id={i}
+                                                    name="Completed"
+                                                    checked={obj.Completed}
+                                                />
                                                 <label className="commentSectionLabel ms-1">
                                                     Mark As Completed
                                                 </label>
@@ -461,7 +453,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             </span>
                                             <span> | </span>
                                             <span className="mx-1">
-                                                <span className="siteColor hreflink commentSectionLabel" onClick={() => CreateSeperateTaskFunction(obj, i)}>
+                                                <span className="siteColor hreflink commentSectionLabel" onClick={() => CreateSeparateTaskFunction(obj, i)}>
                                                     Create Task
                                                 </span>
                                             </span>
@@ -488,10 +480,10 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                 </div >
                                 <div>
                                     <div>
-                                        <AddCommentComponent
+                                        {globalCount && <AddCommentComponent
                                             Data={obj.Comments != null ? obj.Comments : []}
                                             allFbData={TextItems}
-                                            index={currentIndex}
+                                            index={i}
                                             postStatus={i == Number(currentIndex) && postBtnStatus ? true : false}
                                             allUsers={textItems.allUsers}
                                             callBack={postBtnHandleCallBack}
@@ -499,8 +491,9 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             Context={Context}
                                             ApprovalStatus={ApprovalStatus}
                                             isCurrentUserApprover={isCurrentUserApprover}
-                                            SmartLightStatus={obj.isShowLight}
-                                        />
+                                            SmartLightStatus={obj?.isShowLight}
+                                            FeedbackCount={globalCount}
+                                        />}
                                     </div>
                                     <div>
                                         <Example
@@ -511,7 +504,7 @@ export default function FroalaCommnetBoxes(textItems: any) {
                                             callBack={subTextCallBack}
                                             allUsers={textItems.allUsers}
                                             ApprovalStatus={ApprovalStatus}
-                                            SmartLightStatus={SmartLightStatus}
+                                            SmartLightStatus={obj?.isShowLight}
                                             SmartLightPercentStatus={SmartLightPercentStatus}
                                             isCurrentUserApprover={isCurrentUserApprover}
                                             Context={Context}
@@ -529,19 +522,20 @@ export default function FroalaCommnetBoxes(textItems: any) {
                 {ApprovalPointHistoryStatus ?
                     <ApprovalHistoryPopup
                         ApprovalPointUserData={ApprovalPointUserData}
-                        ApprovalPointCurrentIndex={ApprovalPointCurrentIndex}
+                        ApprovalPointCurrentIndex={ApprovalPointCurrentIndex + 1}
                         ApprovalPointHistoryStatus={ApprovalPointHistoryStatus}
                         callBack={ApprovalHistoryPopupCallBack}
                     />
                     : null
                 }
                 {/* ********************* this is Task Popup panel ****************** */}
-                {TaskPopupPanelStatus ?
-                    <EditTaskPopup
-                        Items={newlyCreatedTask}
-                        context={TaskDetails.Context}
-                        AllListId={TaskDetails.AllListIdData}
-                        Call={TaskPopupCallBack}
+                {IsOpenCreateTaskPanel ?
+                    <CreateTaskCompareTool
+                        ItemDetails={ItemDetails}
+                        RequiredListIds={TaskDetails.AllListIdData}
+                        CallbackFunction={CreateTaskCallBack}
+                        CreateTaskForThisPoint={CreateTaskForThis}
+                        Context={Context}
                     /> : null
                 }
             </div>

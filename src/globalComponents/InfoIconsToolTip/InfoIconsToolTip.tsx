@@ -3,7 +3,7 @@ import { usePopperTooltip } from "react-popper-tooltip";
 import "react-popper-tooltip/dist/styles.css";
 import FeedbackGlobalInfoIcon from "./FeedbackGlobalInfoIcon";
 
-export default function InfoIconsToolTip({ Discription, row }: any) {
+export default function InfoIconsToolTip(props:any) {
     const [controlledVisible, setControlledVisible] = React.useState(false);
     const [feedbackArray, setfeedbackArray] = React.useState([]);
     const [showHoverTitle, setshowHoverTitle] = React.useState<any>();
@@ -52,75 +52,98 @@ export default function InfoIconsToolTip({ Discription, row }: any) {
         }
     }
     const handlAction = (newAction: any) => {
-        if (action === "click" && newAction === "hover") return;
+        if (action === "click" && newAction === "hover") return setAction("");
         let feedback: any = [];
         var hoverTitleShow: any
         let hoverdata: any
-        if (row != undefined && newAction == 'click' || newAction == 'hover') {
+        if (props?.row != undefined && newAction == 'click' || newAction == 'hover') {
 
             try {
-                let addToFeedbackArray = (value: any, heading: any) => {
-                   value=  removeHtmlAndNewline(value)
-                    if (value !== undefined && value != null) {
+
+                if(props?.SingleColumnData!=undefined){
+                    if(props?.row[props?.SingleColumnData]!=undefined){
+                        let   hovertitle:any;
+                    if (newAction == "hover" ) {
+                        hovertitle= props?.row[props?.SingleColumnData]
+                        // if(hoverTitleShow==undefined){
+                        //    hovertitle="Short Description is not available in this. Please click to see other details" 
+                        // }
+                        setshowHoverTitle(hovertitle)
                         const obj = {
-                            Title: value,
-                            heading,
+                            Title: hovertitle,
+                            heading :props?.SingleColumnData=="Short_x0020_Description_x0020_On"?"Short Description":props?.SingleColumnData?.replace("_x0020_", " "),
                         };
                         feedback.push(obj);
-                        hoverTitleShow = obj;
                         setfeedbackArray(feedback);
-                        if (newAction == "hover" && heading === "Short Description") {
-                            if(hoverTitleShow?.Title==""){
-                                hoverTitleShow.Title="Short Description is not available in this. Please click to see other details" 
-                            }
-                            setshowHoverTitle(hoverTitleShow?.Title)
-                        }
                     }
-                   
-                }
-                if(row?.Short_x0020_Description_x0020_On==undefined){
-                    let   hovertitle:any;
-                if (newAction == "hover" ) {
-                    if(hoverTitleShow==undefined){
-                       hovertitle="Short Description is not available in this. Please click to see other details" 
-                    }
-                    setshowHoverTitle(hovertitle)
                 }
             }
-                if(row?.Short_x0020_Description_x0020_On!=undefined){
-                    addToFeedbackArray(row?.Short_x0020_Description_x0020_On, "Short Description");
+                else{
+                    let addToFeedbackArray = (value: any, heading: any) => {
+                        value=  removeHtmlAndNewline(value)
+                         if (value !== undefined && value != null) {
+                             const obj = {
+                                 Title: value,
+                                 heading,
+                             };
+                             feedback.push(obj);
+                             hoverTitleShow = obj;
+                             setfeedbackArray(feedback);
+                             if (newAction == "hover" && heading === "Short Description") {
+                                 if(hoverTitleShow?.Title==""){
+                                     hoverTitleShow.Title="Short Description is not available in this. Please click to see other details" 
+                                 }
+                                 setshowHoverTitle(hoverTitleShow?.Title)
+                             }
+                         }
+                        
+                     }
+                     if(props?.row?.Short_x0020_Description_x0020_On==undefined){
+                         let   hovertitle:any;
+                     if (newAction == "hover" ) {
+                         if(hoverTitleShow==undefined){
+                            hovertitle="Short Description is not available in this. Please click to see other details" 
+                         }
+                         setshowHoverTitle(hovertitle)
+                     }
+                 }
+                     if(props?.row?.Short_x0020_Description_x0020_On!=undefined){
+                         addToFeedbackArray(props?.row?.Short_x0020_Description_x0020_On, "Short Description");
+                     }
+                     if(props?.row?.Background!=undefined){
+                         addToFeedbackArray(props?.row?.Background, "Background");
+                     } if(props?.row?.Body!=undefined){
+                         addToFeedbackArray(props?.row?.Body, "Description");
+                     } if(props?.row?.AdminNotes!=undefined){
+                         addToFeedbackArray(props?.row?.AdminNotes, "AdminNotes");
+                     } if(props?.row?.TechnicalExplanations!=undefined){
+                         addToFeedbackArray(props?.row?.TechnicalExplanations, "Technical Explanations");
+                     }
+                     if(props?.row?.Deliverables!=undefined){
+                         addToFeedbackArray(props?.row?.Deliverables, "Deliverables");
+                     }
+                     if(props?.row?.Idea!=undefined){
+                         addToFeedbackArray(props?.row?.Idea, "Idea");
+                     }
+                     if(props?.row?.ValueAdded!=undefined){
+                         addToFeedbackArray(props?.row?.ValueAdded, "ValueAdded");
+                     }
+                    if (props?.row?.FeedBack !== undefined) {
+                         feedback = JSON.parse(props?.row.FeedBack);
+                         hoverTitleShow = feedback[0].FeedBackDescriptions[0];
+                         hoverTitleShow = {
+                             ...hoverTitleShow,
+                             Title: cleanHTML(hoverTitleShow.Title),
+                         }
+                         setfeedbackArray(feedback[0].FeedBackDescriptions);
+                         settaskInfo(true);
+                         if (newAction == "hover") {
+                             setshowHoverTitle(hoverTitleShow?.Title)
+                         }
+                     }
                 }
-                if(row?.Background!=undefined){
-                    addToFeedbackArray(row?.Background, "Background");
-                } if(row?.Body!=undefined){
-                    addToFeedbackArray(row?.Body, "Description");
-                } if(row?.AdminNotes!=undefined){
-                    addToFeedbackArray(row?.AdminNotes, "AdminNotes");
-                } if(row?.TechnicalExplanations!=undefined){
-                    addToFeedbackArray(row?.TechnicalExplanations, "Technical Explanations");
-                }
-                if(row?.Deliverables!=undefined){
-                    addToFeedbackArray(row?.Deliverables, "Deliverables");
-                }
-                if(row?.Deliverables!=undefined){
-                    addToFeedbackArray(row?.Idea, "Idea");
-                }
-                if(row?.ValueAdded!=undefined){
-                    addToFeedbackArray(row?.ValueAdded, "ValueAdded");
-                }
-               if (row?.FeedBack !== undefined) {
-                    feedback = JSON.parse(row.FeedBack);
-                    hoverTitleShow = feedback[0].FeedBackDescriptions[0];
-                    hoverTitleShow = {
-                        ...hoverTitleShow,
-                        Title: cleanHTML(hoverTitleShow.Title),
-                    }
-                    setfeedbackArray(feedback[0].FeedBackDescriptions);
-                    settaskInfo(true);
-                    if (newAction == "hover") {
-                        setshowHoverTitle(hoverTitleShow?.Title)
-                    }
-                }
+
+               
 
             } catch (error) {
             console.log(error)
@@ -146,23 +169,27 @@ export default function InfoIconsToolTip({ Discription, row }: any) {
 
     const tooltiphierarchy = React.useMemo(() => {
         if (action === "click") {
-            return Discription;
+            return props?.Discription;
         }
         return '';
     }, [action]);
     return (
         <>
-            <span ref={setTriggerRef} onClick={() => handlAction("click")} onMouseEnter={() => handlAction("hover")} onMouseLeave={() => handleMouseLeave()} title="Description" className=" svg__iconbox svg__icon--info dark"></span>
+             {props?.versionHistory != true ? <span ref={setTriggerRef} 
+             onClick={() => handlAction("click")}
+              onMouseEnter={() => handlAction("hover")} 
+              onMouseLeave={() => handleMouseLeave()} className=" svg__iconbox svg__icon--info dark"></span>:
+            <span className="text-end w-25" ref={setTriggerRef} onClick={() => handlAction("click")} title="Description"><a href="#" className="ps-1">Show More</a></span>}
 
             {action === "click" && visible && (
                 <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container p-0 m-0" })}>
 
                     <div>
-                        <div className="tootltip-title">{row?.TaskID != undefined ? row?.TaskID : ""} :- {row?.Title}</div>
+                    {props?.versionHistory != true ?<div className="tootltip-title">{props?.row?.TaskID != undefined ? props?.row?.TaskID : ""} :- {props?.row?.Title}</div>:<div className="tootltip-title">{props?.row?.TaskID != undefined ? props?.row?.TaskID : ""} :- {props?.row?.TaskTitle}</div>}
                         <button className="toolTipCross" onClick={handleCloseClick}><div className="popHoverCross">×</div></button>
                     </div>
                     <div className="toolsbox">
-                        <FeedbackGlobalInfoIcon FeedBack={feedbackArray} taskInfo={taskInfo} />
+                        <FeedbackGlobalInfoIcon FeedBack={feedbackArray} taskInfo={taskInfo} SingleColumnData={ props?.SingleColumnData }/>
                     </div>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
 
@@ -170,7 +197,7 @@ export default function InfoIconsToolTip({ Discription, row }: any) {
             )}
             {action === "hover" && visible && (
                 <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container" })}>
-                    <span dangerouslySetInnerHTML={{ __html: showHoverTitle }}></span>
+                    <span className="tableTooltip" dangerouslySetInnerHTML={{ __html: showHoverTitle }}></span>
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
                 </div>
             )}

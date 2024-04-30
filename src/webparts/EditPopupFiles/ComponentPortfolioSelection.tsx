@@ -86,6 +86,7 @@ const ComponentPortPolioPopup = ({ props, Dynamic, Call }: any) => {
         "DueDate",
         "Status",
         "ItemRank",
+        "Sitestagging",
         "ClientTime",
         "Item_x0020_Type",
         "Parent/Id",
@@ -748,8 +749,7 @@ const ComponentPortPolioPopup = ({ props, Dynamic, Call }: any) => {
       //  ungetFilterLength();
       // setData(data => ([...maidataBackup]));
       setComponentsData(MainDataBackup);
-      //setData(ComponentsData)= SharewebCommonFactoryService.ArrayCopy($scope.CopyData);
-    }
+       }
   };
 
   //************ Custom Header And Footer  **********

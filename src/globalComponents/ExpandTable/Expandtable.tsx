@@ -16,6 +16,18 @@ const ExpndTable = (props: any) => {
     props.prop(prope)
   }
 
+  React.useEffect(() => {
+    const spPageCanvasContentDiv = document.getElementById('spPageCanvasContent');
+
+    if (spPageCanvasContentDiv) {
+      const seventhChild = spPageCanvasContentDiv.querySelector(':scope > div > div > div > div > div > div > div');
+
+      if (seventhChild) {
+        seventhChild.id = 'increasePageWidth';
+      }
+    }
+  }, []);
+
   return (
     <>
       <svg data-bs-toggle="modal" data-bs-target="#exampleModal"
@@ -51,7 +63,7 @@ const ExpndTable = (props: any) => {
               >
                 Expand Search Result
               </h1>
-              <span><Tooltip ComponentId='3299'/></span>
+              <span><Tooltip ComponentId='1123'/></span>
               <button
                 type="button"
                 className="btn-close"
@@ -102,7 +114,7 @@ const ExpndTable = (props: any) => {
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer text-end">
               <button  type="button" className="btn btn-default"  data-bs-dismiss="modal" >
                 Cancel
               </button>

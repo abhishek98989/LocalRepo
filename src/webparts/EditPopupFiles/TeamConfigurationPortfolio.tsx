@@ -428,8 +428,8 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                     Select Team Members
                                 </span>
                             </span>
-                            <span>
-                                <a target="_blank " className="me-1" href={`${this.props.AllListId?.siteUrl}/SitePages/TaskUser-Management.aspx`} data-interception="off">
+                            <span className='alignCenter'>
+                                <a target="_blank " className="me-1 mt-2" href={`${this.props.AllListId?.siteUrl}/SitePages/TaskUser-Management.aspx`} data-interception="off">
                                     Task User Management
                                 </a>
                                 <Tooltip ComponentId="1745" />
@@ -480,7 +480,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                             onDrop={(e) => this.onDropTeam(e, this.state.AssignedToUsers, 'Team Leaders', this.state.taskUsers, 'AssignedToUsers')}
                                             onDragOver={(e) => e.preventDefault()}>
                                             <div className="p-1">
-                                                <div data-placeholder="Team Leader" className='d-flex flex-wrap selectmember'>
+                                                <div data-placeholder="Team Leader" className='flex-wrap selectmember'>
                                                     {this.state.AssignedToUsers && this.state.AssignedToUsers.length > 0 ? (
                                                         this.state.AssignedToUsers.map((image: any, index: number) => (
                                                             <img
@@ -506,7 +506,7 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                                     onDrop={(e) => this.onDropTeam(e, this.state.TeamMemberUsers, 'Team Members', this.state.taskUsers, 'TeamMemberUsers')}
                                                     onDragOver={(e) => e.preventDefault()}>
                                                     <div className="p-1">
-                                                        <div data-placeholder="Responsible Team" className='d-flex flex-wrap selectmember'>
+                                                        <div data-placeholder="Responsible Team" className='flex-wrap selectmember'>
                                                             {this.state.TeamMemberUsers && this.state.TeamMemberUsers.length > 0 ? (
                                                                 this.state.TeamMemberUsers.map((image: any, index: number) => (
                                                                     <img
@@ -530,21 +530,14 @@ export class TeamConfigurationCard extends React.Component<ITeamConfigurationPro
                                     </div>
                                 </div>
 
-                                
-
                                 <div className="col-sm-2">
-                                    <div className='vacationpanel'>
-                                        <div onDrop={(e) => this.onDropRemoveTeam(e, this.state.taskUsers)}
-                                            onDragOver={(e) => e.preventDefault()}>
-                                            <img title="Drag user here to  remove user from team for this Network Activity." className="width-75 mt--5 vacation"
-                                                src={this.props.ItemInfo?.Services != undefined && (this.props.ItemInfo?.Services.length > 0 || this.props?.ItemInfo?.Portfolio_x0020_Type == 'Service') ?
-                                                    "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Service_Icons/icon_Dustbin-green.png" :
-                                                    "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SiteCollectionImages/ICONS/Shareweb/icon_Dustbin.png"
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                   
+                                   <div className="dustbin bg-siteColor" onDrop={(e) => this.onDropRemoveTeam(e, this.state.taskUsers)}
+                                       onDragOver={(e) => e.preventDefault()}>
+                                       <span className="svg__iconbox svg__icon--palmTree" title="Drag user here to  remove user from team for this Network Activity."></span>
+                                   </div>
+                             
+                           </div>
                             </div>
                         </div>
                         : null}

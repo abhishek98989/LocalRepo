@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
 } from '@fluentui/react';
+import { LuBellPlus } from "react-icons/lu";
 import { Web } from "sp-pnp-js";
 import CommentCard from '../../../globalComponents/Comments/CommentCard';
 import EditTaskPopup from '../../../globalComponents/EditTaskPopup/EditTaskPopup';
@@ -22,7 +23,7 @@ import { SlArrowDown, SlArrowRight } from 'react-icons/sl';
 import RelevantDocuments from './RelevantDocuments';
 import SmartInformation from './SmartInformation';
 import VersionHistoryPopup from '../../../globalComponents/VersionHistroy/VersionHistory';
-import TasksTable from './TaskfooterTable';
+import RadimadeTable from '../../../globalComponents/RadimadeTable'
 import EmailComponenet from './emailComponent';
 import AncTool from '../../../globalComponents/AncTool/AncTool'
 import { myContextValue } from '../../../globalComponents/globalCommon'
@@ -35,10 +36,13 @@ import KeyDocuments from './KeyDocument';
 import ShowTaskTeamMembers from '../../../globalComponents/ShowTaskTeamMembers';
 import ReactPopperTooltipSingleLevel from '../../../globalComponents/Hierarchy-Popper-tooltipSilgleLevel/Hierarchy-Popper-tooltipSingleLevel';
 import { EditableField } from "../../componentProfile/components/Portfoliop";
-import InlineEditingcolumns from '../../projectmanagementOverviewTool/components/inlineEditingcolumns';
+
 import ServiceComponentPortfolioPopup from '../../../globalComponents/EditTaskPopup/ServiceComponentPortfolioPopup';
 import CentralizedSiteComposition from '../../../globalComponents/SiteCompositionComponents/CentralizedSiteComposition';
 import { IoHandRightOutline } from 'react-icons/io5';
+import InlineEditingcolumns from '../../../globalComponents/inlineEditingcolumns';
+import * as GlobalFunctionForUpdateItems from '../../../globalComponents/GlobalFunctionForUpdateItems'
+import SmartPriorityHover from '../../../globalComponents/EditTaskPopup/SmartPriorityHover';
 var ClientTimeArray: any = [];
 
 var AllListId: any;
@@ -54,6 +58,7 @@ let AllClientCategories: any;
 let ProjectData: any = {}
 export interface ITaskprofileState {
   Result: any;
+  TagConceptPaper: any;
   listName: string;
   itemID: number;
   isModalOpen: boolean;
@@ -77,14 +82,14 @@ export interface ITaskprofileState {
   sendMail: boolean,
   showPopup: any;
   emailcomponentopen: boolean,
-  OpenEODReportPopup: boolean,
+
   showhideCommentBoxIndex: any
   ApprovalCommentcheckbox: boolean;
   CommenttoPost: string;
   maincollection: any;
   TotalTimeEntry: any;
   breadCrumData: any;
-  SharewebTimeComponent: any;
+  cmsTimeComponent: any;
   isopenversionHistory: boolean;
   smarttimefunction: boolean;
   ApprovalStatus: boolean;
@@ -112,9 +117,11 @@ export interface ITaskprofileState {
 class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> {
   private relevantDocRef: any;
   private smartInfoRef: any;
+  private keyDocRef: any
   private taskUsers: any = [];
   private smartMetaDataIcon: any;
   private masterTaskData: any = [];
+  private masterForHierarchy: any = [];
   private currentUser: any;
   private oldTaskLink: any;
   private site: any;
@@ -122,12 +129,13 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
   count: number = 0;
 
   countemailbutton: number = 0;
-  backGroundComment = false;
+  backGroundComment = true;
   this: any;
   public constructor(props: ITaskprofileProps, state: ITaskprofileState) {
     super(props);
     this.relevantDocRef = React.createRef();
     this.smartInfoRef = React.createRef();
+    this.keyDocRef = React.createRef()
     const params = new URLSearchParams(window.location.search);
     console.log(params.get('taskId'));
     console.log(params.get('Site'));
@@ -136,6 +144,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     this.oldTaskLink = `${props.siteUrl}/SitePages/Task-Profile-Old.aspx?taskId=` + params.get('taskId') + "&Site=" + params.get('Site');
     this.state = {
       Result: {},
+      TagConceptPaper: [],
       isEditReplyModalOpen: false,
       replyTextComment: "",
       keydoc: [],
@@ -150,7 +159,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       ApprovalPointCurrentParentIndex: null,
       ApprovalHistoryPopup: false,
       emailcomponentopen: false,
-      OpenEODReportPopup: false,
+
       emailComponentstatus: null,
       subchildParentIndex: null,
       showcomment_subtext: 'none',
@@ -184,7 +193,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       showPopup: 'none',
       maincollection: [],
       breadCrumData: [],
-      SharewebTimeComponent: [],
+      cmsTimeComponent: [],
       smarttimefunction: false,
       ApprovalStatus: false,
       EditSiteCompositionStatus: false,
@@ -204,6 +213,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     let CallBackData = await globalCommon.GetServiceAndComponentAllData(PropsObject)
     if (CallBackData?.AllData != undefined && CallBackData?.AllData?.length > 0) {
       this.masterTaskData = this.masterTaskData?.concat([...CallBackData?.FlatProjectData, ...CallBackData?.AllData])
+      this.masterForHierarchy = this.masterForHierarchy?.concat([...CallBackData?.FlatProjectData, ...CallBackData?.AllData])
+      this.GetResult();
+    } else {
       this.GetResult();
     }
   }
@@ -251,7 +263,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       .getByTitle(this.state?.listName)
       .items
       .getById(this.state?.itemID)
-      .select("ID", "Title", "Comments", "Sitestagging", "ApproverHistory", "Approvee/Id", "Approvee/Title", "EstimatedTime", "SiteCompositionSettings", "TaskID", "Portfolio/Id", "Portfolio/Title", "Portfolio/PortfolioStructureID", "DueDate", "IsTodaysTask", 'EstimatedTimeDescription', "Approver/Id", "PriorityRank", "Approver/Title", "ParentTask/Id", "ParentTask/TaskID", "Project/Id", "Project/Title", "Project/PriorityRank", "Project/PortfolioStructureID", "ParentTask/Title", "SmartInformation/Id", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "ClientCategory/Id", "ClientCategory/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Title", "ClientTime", "Editor/Title", "Modified", "Attachments", "AttachmentFiles")
+      .select("ID", "Title", "Comments", "WorkingAction", "Sitestagging", "ApproverHistory", "Approvee/Id", "Approvee/Title", "EstimatedTime", "SiteCompositionSettings", "TaskID", "Portfolio/Id", "Portfolio/Title", "Portfolio/PortfolioStructureID", "DueDate", "IsTodaysTask", 'EstimatedTimeDescription', "Approver/Id", "PriorityRank", "Approver/Title", "ParentTask/Id", "ParentTask/TaskID", "Project/Id", "Project/Title", "Project/PriorityRank", "Project/PortfolioStructureID", "ParentTask/Title", "SmartInformation/Id", "AssignedTo/Id", "TaskLevel", "TaskLevel", "OffshoreComments", "AssignedTo/Title", "OffshoreImageUrl", "TaskCategories/Id", "TaskCategories/Title", "ClientCategory/Id", "ClientCategory/Title", "Status", "StartDate", "CompletedDate", "TeamMembers/Title", "TeamMembers/Id", "ItemRank", "PercentComplete", "Priority", "Created", "Author/Title", "Author/EMail", "BasicImageInfo", "ComponentLink", "FeedBack", "ResponsibleTeam/Title", "ResponsibleTeam/Id", "TaskType/Id", "TaskType/Title", "ClientTime", "Editor/Title", "Modified", "Attachments", "AttachmentFiles")
       .expand("TeamMembers", "Project", "Approver", "Approvee", "ParentTask", "Portfolio", "SmartInformation", "AssignedTo", "TaskCategories", "Author", "ClientCategory", "ResponsibleTeam", "TaskType", "Editor", "AttachmentFiles")
       .get()
     AllListId = {
@@ -262,7 +274,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       TaskTimeSheetListID: this.props.TaskTimeSheetListID,
       DocumentsListID: this.props.DocumentsListID,
       SmartInformationListID: this.props.SmartInformationListID,
+      PortFolioTypeID: this.props.PortFolioTypeID,
       siteUrl: this.props.siteUrl,
+      Context: this.props.Context,
       TaskTypeID: this.props.TaskTypeID,
       isShowTimeEntry: isShowTimeEntry,
       isShowSiteCompostion: isShowSiteCompostion
@@ -329,19 +343,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
         })
       }
     } else {
-
       tempEstimatedArrayData = [];
-    }
-    if (taskDetails?.Sitestagging != undefined) {
-      try {
-        let parsedSiteTagging = JSON.parse(taskDetails?.Sitestagging)
-        parsedSiteTagging?.map((site: any) => {
-          site.SiteImages = this.GetSiteIcon(site?.Title)
-        })
-        taskDetails.Sitestagging = JSON.stringify(parsedSiteTagging)
-      } catch (e) {
-
-      }
     }
     const maxTitleLength: number = 75;
 
@@ -351,14 +353,12 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     }
 
     let portfolio: any = [];
-    
     if (taskDetails?.Portfolio != undefined) {
-
-      portfolio = this.masterTaskData.filter((item: any) => item?.Id == taskDetails?.Portfolio?.Id)
-
+      portfolio = this.masterTaskData.filter((item: any) => item.Id == taskDetails?.Portfolio?.Id)
       if (portfolio?.length > 0 && portfolio[0]?.PortfolioType?.Color != undefined) {
         document?.documentElement?.style?.setProperty('--SiteBlue', portfolio[0]?.PortfolioType?.Color);
       }
+      this.loadTaggedConceptPaperDocument(portfolio[0])
     }
 
     if (taskDetails?.Project != undefined) {
@@ -366,13 +366,27 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     }
     let feedBackData: any = JSON.parse(taskDetails["FeedBack"]);
     console.log(this.masterTaskData)
+    let WorkingAction = taskDetails["WorkingAction"] != null ? JSON.parse(taskDetails["WorkingAction"]) : [];
+    let Bottleneck: any = [];
+    let Attention: any = [];
+    if (WorkingAction?.length > 0) {
+      WorkingAction?.map((Action: any) => {
+        if (Action?.Title == "Bottleneck") {
+          Bottleneck = Action?.InformationData;
+        }
+        if (Action?.Title == "Attention") {
+          Attention = Action?.InformationData;
+        }
+      })
+    }
     let tempTask = {
       SiteIcon: this.GetSiteIcon(this.state?.listName),
       sitePage: this.props.Context?._pageContext?._web?.title,
       Comments: comments != null && comments != undefined ? comments : "",
       Id: taskDetails["ID"],
       ID: taskDetails["ID"],
-
+      Bottleneck: Bottleneck,
+      Attention: Attention,
       SmartPriority: globalCommon.calculateSmartPriority(taskDetails),
       TaskTypeValue: '',
       projectPriorityOnHover: '',
@@ -385,7 +399,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       IsTodaysTask: taskDetails["IsTodaysTask"],
       PriorityRank: taskDetails["PriorityRank"],
       EstimatedTime: taskDetails["EstimatedTime"],
-      Sitestagging: taskDetails["Sitestagging"] != null && JSON.parse(taskDetails["Sitestagging"]),
+      Sitestagging: taskDetails["Sitestagging"] != null ? JSON.parse(taskDetails["Sitestagging"]) : [],
       ClientTime: taskDetails["ClientTime"] != null && JSON.parse(taskDetails["ClientTime"]),
       ApproverHistory: taskDetails["ApproverHistory"] != null ? JSON.parse(taskDetails["ApproverHistory"]) : "",
       OffshoreComments: OffshoreComments.length > 0 ? OffshoreComments.reverse() : null,
@@ -423,7 +437,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       EstimatedTimeDescriptionArray: tempEstimatedArrayData,
       TotalEstimatedTime: TotalEstimatedTime,
 
-      Portfolio: portfolio != undefined && portfolio.length > 0 ? portfolio[0] : taskDetails?.Portfolio,
+      Portfolio: portfolio != undefined && portfolio.length > 0 ? portfolio[0] : undefined,
       PortfolioType: portfolio != undefined && portfolio.length > 0 ? portfolio[0]?.PortfolioType : undefined,
       Creation: taskDetails["Created"],
       Modified: taskDetails["Modified"],
@@ -436,9 +450,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       Approver: taskDetails?.Approver != undefined ? this.taskUsers.find((userData: any) => userData?.AssingedToUser?.Id == taskDetails?.Approver[0]?.Id) : "",
       ParentTask: taskDetails?.ParentTask,
     };
-    if (tempTask?.ClientTime == false) {
-      tempTask.ClientTime = null
-    }
+
     if (tempTask?.FeedBack != null && tempTask?.FeedBack.length > 0) {
       tempTask?.FeedBack[0]?.FeedBackDescriptions?.map((items: any) => {
         if (items?.Comments?.length > 0) {
@@ -458,9 +470,16 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       Result: tempTask,
 
 
-    }, () => {
+    }, async () => {
       this.getSmartTime();
       if (tempTask.Portfolio != undefined) {
+        let AllItems: any = [];
+        let breadCrumData1WithSubRow: any = await globalCommon?.getBreadCrumbHierarchyAllData(this.state.Result, AllListId, AllItems)
+        console.log(breadCrumData1WithSubRow?.flatdata)
+        let breadCrumData1 = breadCrumData1WithSubRow?.flatdata.reverse()
+        this.setState({
+          breadCrumData: breadCrumData1
+        })
         this.getAllTaskData();
       }
 
@@ -496,6 +515,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       default: {
         this?.relevantDocRef?.current?.loadAllSitesDocuments()
         this?.smartInfoRef?.current?.GetResult();
+        this?.keyDocRef?.current?.loadAllSitesDocumentsEmail()
         break
       }
     }
@@ -527,10 +547,11 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       .expand('AssingedToUser,UserGroup,Approver')
       .get();
 
-    taskUsers?.map((item: any, index: any) => {
-      if (this.props?.Context?.pageContext?._legacyPageContext?.userId === (item?.AssingedToUser?.Id) && item?.Company == "Smalsus") {
-        this.backGroundComment = true;
+    taskUsers?.map((item: any) => {
+      if (this.props?.Context?.pageContext?._legacyPageContext?.userId === (item?.AssingedToUser?.Id) && item?.Company === "HHHH") {
+        this.backGroundComment = false;
       }
+
 
 
     })
@@ -570,7 +591,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       AllClientCategories = smartMetaData;
     }
 
-    if (ClientCategory.length > 0) {
+    if (ClientCategory?.length > 0) {
       ClientCategory?.map((item: any, index: any) => {
         smartMetaData?.map((items: any, index: any) => {
           if (item?.Id == items?.Id) {
@@ -646,7 +667,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       } if (senderObject.length == 0) {
         userDeatails.push({
           'Title': username,
-          'userImage': "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"
+          'userImage': ""
         })
 
       }
@@ -728,7 +749,8 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       .items
       .getById(this.state?.itemID)
       .update({
-        FeedBack: JSON.stringify(this.state?.Result?.FeedBack)
+        FeedBack: JSON.stringify(this.state?.Result?.FeedBack),
+        Status: this?.state?.Result?.Status
       });
 
     this.setState({
@@ -765,7 +787,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
         isOpenEditPopup: false,
         TaskDeletedStatus: true,
       })
-      window.location.href = "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/TaskDashboard.aspx";
+      window.location.href = `${this.props?.siteUrl}/SitePages/TaskDashboard.aspx`;;
     }
     if (FunctionType == "Close") {
       this.setState({
@@ -779,12 +801,6 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     this.setState({
       sendMail: false,
       emailStatus: ""
-    })
-    this.GetResult();
-  }
-  private async EODReportComponentCallback() {
-    this.setState({
-      OpenEODReportPopup: false,
     })
     this.GetResult();
   }
@@ -811,29 +827,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       item.SiteIcon = this.state.Result?.SiteIcon;
       item.isLastNode = false;
       this.allDataOfTask.push(item);
-      this.masterTaskData.push(item)
-    }
-    let breadCrumData1WithSubRow: any = globalCommon.findTaskHierarchy(this.state.Result, this.masterTaskData)
-    console.log(breadCrumData1WithSubRow)
 
-
-    let array: any = [];
-    const getValueSubRow = (row: any) => {
-
-      row?.map((items: any) => {
-        array?.push(row[0])
-        if (items?.subRows?.length > 0 && items?.subRows != undefined) {
-          return getValueSubRow(items?.subRows)
-        }
-      })
-      return array
     }
-    if (breadCrumData1WithSubRow.length > 0) {
-      breadCrumData1 = getValueSubRow(breadCrumData1WithSubRow)
-    }
-    this.setState({
-      breadCrumData: breadCrumData1
-    })
+
 
 
   }
@@ -848,18 +844,39 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     var data = this.state.Result;
     if (item == "Approved") {
       // data.PercentComplete = 3
-      var data = this.state.Result;
-      this.setState({
-        Result: data,
-      }),
-        console.log(item);
-      this.setState({
-        sendMail: true,
+      // var data = this.state.Result;
+      // this.setState({
+      //   Result: data,
+      // }),
+      let TeamMembers: any = []
+      TeamMembers.push(this.state.Result.TeamMembers[0]?.Id)
+      let changeData: any = {
+        TeamMembers: TeamMembers,
+        AssignedTo: []
+      }
+      this.ChangeApprovalMember(changeData).then((data: any) => {
+        var data = this.state.Result;
+        this.setState({
+          Result: data,
+        }),
+          console.log(item);
+        this.setState({
+          sendMail: true,
+        });
+        this.setState({
+          emailStatus: item,
+        });
+      }).catch((error) => {
+        console.log(error)
       });
-      this.setState({
-        emailStatus: item,
-      });
-    } else {
+      // this.setState({
+      //   sendMail: true,
+      // });
+      // this.setState({
+      //   emailStatus: item,
+      // });
+    }
+    else {
 
       let TeamMembers: any = []
       TeamMembers.push(this.state.Result.TeamMembers[0]?.Id)
@@ -1144,24 +1161,31 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
         tempData.ApproverData.push(approvalDataHistory)
       }
 
+      var data: any = this.state.Result;
 
       if (tempData?.ApproverData != undefined && tempData?.ApproverData?.length > 0) {
         tempData?.ApproverData?.forEach((ba: any) => {
           if (ba.isShowLight == 'Reject') {
-            ba.Status = 'Rejected by'
+
+            data.Status = "Follow Up",
+              ba.Status = 'Rejected by'
           }
           if (ba.isShowLight == 'Approve') {
-            ba.Status = 'Approved by '
+            ba.Status = 'Approved by'
+            data.Status = "Approved"
           }
           if (ba.isShowLight == 'Maybe') {
-            ba.Status = 'For discussion with'
+            data.Status = "Follow Up",
+              ba.Status = 'For discussion with'
           }
 
 
         })
       }
-
-      console.log(tempData);
+      this.setState({
+        Result: data,
+      }),
+        console.log(tempData);
       console.log(this.state.Result["FeedBack"][0]?.FeedBackDescriptions);
       await this.onPost();
       if (this.state.Result["FeedBack"] != undefined) {
@@ -1193,23 +1217,29 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
         tempData.Subtext[subchileindex].ApproverData = [];
         tempData.Subtext[subchileindex].ApproverData.push(approvalDataHistory)
       }
-
+      var data: any = this.state.Result;
       if (tempData?.Subtext[subchileindex] != undefined && tempData?.Subtext[subchileindex]?.ApproverData != undefined) {
         tempData?.Subtext[subchileindex]?.ApproverData?.forEach((ba: any) => {
           if (ba.isShowLight == 'Reject') {
-            ba.Status = 'Rejected by'
+            data.Status = "Follow Up",
+              ba.Status = 'Rejected by'
           }
           if (ba.isShowLight == 'Approve') {
+            data.Status = "Approved"
             ba.Status = 'Approved by '
           }
           if (ba.isShowLight == 'Maybe') {
-            ba.Status = 'For discussion with'
+            data.Status = "Follow Up",
+              ba.Status = 'For discussion with'
           }
 
 
         })
       }
-      console.log(tempData);
+      this.setState({
+        Result: data,
+      }),
+        console.log(tempData);
       console.log(this.state.Result["FeedBack"][0]?.FeedBackDescriptions);
       console.log(this.state?.emailcomponentopen)
       await this.onPost();
@@ -1226,6 +1256,8 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
     console.log(allfeedback);
     if (allfeedback != null && allfeedback != undefined) {
       var isShowLight = 0;
+      let ApproveCount = 0;
+      let RejectCount = 0;
       var NotisShowLight = 0
       if (allfeedback != undefined) {
         allfeedback?.map((items: any) => {
@@ -1233,12 +1265,16 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
           if (items?.isShowLight != undefined && items?.isShowLight != "") {
             isShowLight = isShowLight + 1;
             if (items.isShowLight == "Approve") {
+              ApproveCount += 1;
               changespercentage = true;
               countApprove = countApprove + 1;
-            } else {
+            }
+            else {
               countreject = countreject + 1;
             }
-
+            if (items?.isShowLight == "Reject") {
+              RejectCount += 1;
+            }
 
           }
           if (items?.Subtext != undefined && items?.Subtext?.length > 0) {
@@ -1246,10 +1282,14 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
               if (subtextItems?.isShowLight != undefined && subtextItems?.isShowLight != "") {
                 isShowLight = isShowLight + 1;
                 if (subtextItems?.isShowLight == "Approve") {
+                  ApproveCount += 1;
                   changespercentage = true;
                   countApprove = countApprove + 1;
                 } else {
                   countreject = countreject + 1;
+                }
+                if (subtextItems?.isShowLight == "Reject") {
+                  RejectCount += 1;
                 }
 
               }
@@ -1262,7 +1302,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       }
 
       if (isShowLight > NotisShowLight) {
-        if (item == "Reject") {
+        if (RejectCount == 1 && item == "Reject") {
           countemailbutton = 0;
           this.setState({
             emailcomponentopen: true,
@@ -1291,7 +1331,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
           let changeData: any = {
 
             TeamMembers: TeamMembers,
-            AssignedTo: [this.currentUser?.[0]?.Id]
+            AssignedTo: []
           }
           this.ChangeApprovalMember(changeData).then((data: any) => {
             this.GetResult();
@@ -1301,7 +1341,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
 
         }
-        if (isShowLight == 1 && item == "Approve") {
+        if (ApproveCount == 1 && item == "Approve") {
           countemailbutton = 0;
           this.setState({
             emailcomponentopen: true,
@@ -1530,22 +1570,25 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
   private onRenderCustomHeadereditcomment = () => {
     return (
       <>
-
-        <div className='siteColor subheading' >
+        <div className='subheading' >
           Update Comment
         </div>
         <Tooltip ComponentId='1683' />
       </>
     );
   };
-  private contextCall = (data: any, path: any, component: any) => {
+  private contextCall = (data: any, path: any, releventKey: any) => {
     if (data != null && path != null) {
       this.setState({
         keydoc: data,
         FileDirRef: path
       })
     }
-    if (component) {
+    if (releventKey) {
+      this?.relevantDocRef?.current?.loadAllSitesDocuments()
+    }
+    else if (data == null && path == null && releventKey == false) {
+      this?.keyDocRef?.current?.loadAllSitesDocumentsEmail()
       this?.relevantDocRef?.current?.loadAllSitesDocuments()
     }
   };
@@ -1553,38 +1596,25 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
   //****** remove extra space in folora editor  */
 
   private cleanHTML = (html: any, folora: any, index: any) => {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-
-    const paragraphs = div.querySelectorAll('p');
-
-    // Filter out empty <p> tags
-    paragraphs.forEach((p) => {
-      if (p.innerText.trim() === '') {
-        p.parentNode.removeChild(p); // Remove empty <p> tags
-      }
-    });
-
-    // Replace newline characters with <br> elements
-    div.innerHTML = div.innerHTML.replace(/\n/g, '<br>');
-    if (folora == "folora" && index == 0) {
-      const brTags = div.querySelectorAll('br');
-      let prevBr = null;
-
-      for (let i = brTags.length - 1; i >= 0; i--) {
-        const br = brTags[i];
-        if (prevBr) {
-          br.parentNode.removeChild(br); // Remove consecutive <br> tags
+    if (html != undefined) {
+      html = globalCommon?.replaceURLsWithAnchorTags(html)
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      const paragraphs = div.querySelectorAll('p');
+      // Filter out empty <p> tags
+      paragraphs.forEach((p) => {
+        if (p.innerText.trim() === '') {
+          p.parentNode.removeChild(p); // Remove empty <p> tags
         }
-        prevBr = br;
-      }
+      });
+      div.innerHTML = div.innerHTML.replace(/\n/g, '<br>')  // Convert newlines to <br> tags first
+      div.innerHTML = div.innerHTML.replace(/(?:<br\s*\/?>\s*)+(?=<\/?[a-z][^>]*>)/gi, '');
+
+
+      return div.innerHTML;
     }
 
-
-    return div.innerHTML;
   };
-
-
 
   //******* End ****************************/
   private callbackTotalTime = ((Time: any) => {
@@ -1647,30 +1677,54 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
         isopenProjectpopup: true
       })
     }
-
   }
-  private ComponentServicePopupCallBack = (DataItem: any, Type: any, functionType: any) => {
+  private loadTaggedConceptPaperDocument = async (Documents: any) => {
+    let web = new Web(AllListId?.siteUrl);
+    try {
+      let query = "Id,Title,PriorityRank,DocumentType,Year,Body,Item_x0020_Cover,Portfolios/Id,Portfolios/Title,File_x0020_Type,FileLeafRef,FileDirRef,ItemRank,ItemType,Url,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,EncodedAbsUrl&$expand=Author,Editor,Portfolios"
+      await web.lists.getById(AllListId?.DocumentsListID)
+        .items.select(query)
+        .filter(`(Portfolios/Id eq ${Documents?.ID})`)
+        .getAll()
+        .then((Data: any[]) => {
+          var tagdoc: any = Data.filter((item: any) => item.DocumentType === "Concept Paper")
+          this.setState({
+            TagConceptPaper: tagdoc
+          })
+        })
+
+    } catch (e: any) {
+      console.log(e)
+    }
+  }
+  private ComponentServicePopupCallBack = async (DataItem: any, Type: any, functionType: any) => {
     console.log(DataItem)
     console.log(Type)
     console.log(functionType)
+    if (DataItem.length > 0) {
+      this.loadTaggedConceptPaperDocument(DataItem[0])
+    }
     let dataUpdate: any;
     let selectedCC: any = [];
     let Sitestagging: any
     let cctag: any = []
+    let TeamMembersId: any = []
+    let AssignedToId: any = [];
+    let ResponsibleTeamId: any = [];
     if (functionType == "Save") {
       if (this?.state?.isopencomonentservicepopup) {
-        DataItem[0]?.ClientCategory?.map((cc: any) => {
-          if (cc.Id != undefined) {
-            let foundCC = AllClientCategories?.find((allCC: any) => allCC?.Id == cc.Id)
-            if (this?.state?.Result?.siteType?.toLowerCase() == 'shareweb') {
-              selectedCC.push(cc.Id)
-              cctag.push(foundCC)
-            } else if (this?.state?.Result?.siteType?.toLowerCase() == foundCC?.siteName?.toLowerCase()) {
-              selectedCC.push(cc.Id)
-              cctag.push(foundCC)
-            }
-          }
-        })
+        // DataItem[0]?.ClientCategory?.map((cc: any) => {
+        //   if (cc.Id != undefined) {
+        //     let foundCC = AllClientCategories?.find((allCC: any) => allCC?.Id == cc.Id)
+        //     if (this?.state?.Result?.siteType?.toLowerCase() == 'shareweb') {
+        //       selectedCC.push(cc.Id)
+        //       cctag.push(foundCC)
+        //     } else if (this?.state?.Result?.siteType?.toLowerCase() == foundCC?.siteName?.toLowerCase()) {
+        //       selectedCC.push(cc.Id)
+        //       cctag.push(foundCC)
+        //     }
+        //   }
+        // })
         if (DataItem[0]?.Sitestagging != undefined) {
           if (this?.state?.Result?.siteType?.toLowerCase() == "shareweb") {
             var sitetag = JSON.parse(DataItem[0]?.Sitestagging)
@@ -1706,11 +1760,44 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
 
         }
+        DataItem?.map((portfolio: any) => {
+          portfolio?.ClientCategory?.map((cc: any) => {
+            if (cc.Id != undefined) {
+              let foundCC = AllClientCategories?.find((allCC: any) => allCC?.Id == cc.Id)
+              if (this?.state?.Result?.siteType?.toLowerCase() == 'shareweb') {
+                selectedCC.push(cc.Id)
+                cctag.push(foundCC)
+              } else if (this?.state?.Result?.siteType?.toLowerCase() == foundCC?.siteName?.toLowerCase()) {
+                selectedCC.push(cc.Id)
+                cctag.push(foundCC)
+              }
+            }
+          })
+          if (portfolio?.AssignedTo?.length > 0) {
+            portfolio?.AssignedTo?.map((assignData: any) => {
+              AssignedToId.push(assignData.Id)
+            })
+            if (portfolio?.ResponsibleTeam?.length > 0) {
+              portfolio?.ResponsibleTeam?.map((resp: any) => {
+                ResponsibleTeamId.push(resp.Id)
+              })
+            }
+            if (portfolio?.TeamMembers?.length > 0) {
+              portfolio?.TeamMembers?.map((teamMemb: any) => {
+                TeamMembersId.push(teamMemb.Id)
+              })
+            }
+          }
+        })
+
+
         this.setState((prevState) => ({
           Result: {
             ...prevState.Result,
             Portfolio: DataItem[0],
-
+            ResponsibleTeam: DataItem[0]?.ResponsibleTeam,
+            TeamMembers: DataItem[0]?.TeamMembers,
+            AssignedTo: DataItem[0]?.AssignedTo,
 
           }
         }))
@@ -1718,9 +1805,24 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
           PortfolioId: DataItem[0]?.Id,
           ClientCategoryId: { results: selectedCC },
           Sitestagging: Sitestagging,
+
+          TeamMembersId: {
+            results: TeamMembersId
+
+          },
+          AssignedToId: {
+            results: AssignedToId
+
+          },
+          ResponsibleTeamId: {
+            results: ResponsibleTeamId
+
+          },
+
         }
         this?.updateProjectComponentServices(dataUpdate)
       } else {
+
         ProjectData = DataItem[0];
         if (DataItem[0]?.Item_x0020_Type == "Project" || DataItem[0]?.Item_x0020_Type == "Sprint") {
           dataUpdate = {
@@ -1736,7 +1838,13 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
             }
           }));
+
+          // console.log(childData)
           this?.updateProjectComponentServices(dataUpdate)
+          if (this.state.Result?.TaskType?.Title != "Task") {
+            await globalCommon?.AwtGroupingAndUpdatePrarticularColumn(this.state.Result, this.allDataOfTask, dataUpdate)
+          }
+
         }
       }
 
@@ -1755,14 +1863,33 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
       // .getById(this.props.SiteTaskListID)
       .items
       .getById(this.state?.itemID)
-      .update(dataUpdate).then((data: any) => {
+      .update(dataUpdate).then(async (data: any) => {
         console.log(data)
+
       }).catch((error: any) => {
         console.log(error)
       });
 
 
   }
+  private SendRemindernotifications = (InfoData: any, ActionType: any) => {
+    if (InfoData?.NotificationSend == true) {
+      let RequiredData: any = {
+        ReceiverName: InfoData.TaggedUsers?.Title,
+        sendUserEmail: [InfoData.TaggedUsers?.Email],
+        Context: this.props?.Context,
+        ActionType: ActionType,
+        ReasonStatement: InfoData.Comment,
+        UpdatedDataObject: this.state.Result,
+      }
+      GlobalFunctionForUpdateItems.MSTeamsReminderMessage(RequiredData);
+      alert("The reminder has been sent to the user.");
+    } else {
+      alert(`This user has not been tagged as a ${ActionType} yet, so you cannot send a reminder now.`);
+    }
+  }
+
+
 
   //********** */ Inline editing End************
   public render(): React.ReactElement<ITaskprofileProps> {
@@ -1783,9 +1910,8 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
 
 
-
     return (
-      <myContextValue.Provider value={{ ...myContextValue, FunctionCall: this.contextCall, keyDoc: this.state.keydoc, FileDirRef: this.state.FileDirRef, user: this?.taskUsers }}>
+      <myContextValue.Provider value={{ ...myContextValue, FunctionCall: this.contextCall, keyDoc: this.state.keydoc, FileDirRef: this.state.FileDirRef, user: this?.taskUsers, ColorCode: this.state.Result["Portfolio"]?.PortfolioType?.Color }}>
         <div>
           <section className='ContentSection'> {this.state.breadCrumData != undefined &&
             <div className='row'>
@@ -1824,7 +1950,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                           {breadcrumbitem?.siteType == "Master Tasks" && <li>
                             <a style={{ color: breadcrumbitem?.PortfolioType?.Color }} className="fw-bold" target="_blank" data-interception="off" href={`${this.state.Result["siteUrl"]}/SitePages/Portfolio-Profile.aspx?taskId=${breadcrumbitem?.Id}`}>{breadcrumbitem?.Title}</a>
                           </li>}
-                          {breadcrumbitem?.siteType != "Master Tasks" && <li>
+                          {breadcrumbitem?.siteType !== "Master Tasks" && <li>
 
                             <a target="_blank" data-interception="off" href={`${this.state.Result["siteUrl"]}/SitePages/Task-Profile.aspx?taskId=${breadcrumbitem?.Id}&Site=${breadcrumbitem?.siteType} `}>{breadcrumbitem?.Title}</a>
                           </li>}
@@ -1863,12 +1989,16 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="25" viewBox="0 0 48 48" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 21.9323V35.8647H13.3613H19.7226V34.7589V33.6532H14.3458H8.96915L9.0264 25.0837L9.08387 16.5142H24H38.9161L38.983 17.5647L39.0499 18.6151H40.025H41V13.3076V8H24H7V21.9323ZM38.9789 12.2586L39.0418 14.4164L24.0627 14.3596L9.08387 14.3027L9.0196 12.4415C8.98428 11.4178 9.006 10.4468 9.06808 10.2838C9.1613 10.0392 11.7819 9.99719 24.0485 10.0441L38.9161 10.1009L38.9789 12.2586ZM36.5162 21.1565C35.8618 21.3916 34.1728 22.9571 29.569 27.5964L23.4863 33.7259L22.7413 36.8408C22.3316 38.554 22.0056 39.9751 22.017 39.9988C22.0287 40.0225 23.4172 39.6938 25.1029 39.2686L28.1677 38.4952L34.1678 32.4806C41.2825 25.3484 41.5773 24.8948 40.5639 22.6435C40.2384 21.9204 39.9151 21.5944 39.1978 21.2662C38.0876 20.7583 37.6719 20.7414 36.5162 21.1565ZM38.5261 23.3145C39.2381 24.2422 39.2362 24.2447 32.9848 30.562C27.3783 36.2276 26.8521 36.6999 25.9031 36.9189C25.3394 37.0489 24.8467 37.1239 24.8085 37.0852C24.7702 37.0467 24.8511 36.5821 24.9884 36.0529C25.2067 35.2105 25.9797 34.3405 31.1979 29.0644C35.9869 24.2225 37.2718 23.0381 37.7362 23.0381C38.0541 23.0381 38.4094 23.1626 38.5261 23.3145Z" fill="#333333" /></svg>
 
                   </a>
-                  {this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && this.state.Result["Categories"]?.includes("Approval") && ((this.currentUser != undefined && this?.currentUser?.length > 0 && this.state.Result?.Approver?.AssingedToUser?.Id == this.currentUser[0]?.Id) || (this.currentUser != undefined && this?.currentUser?.length > 0 && this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && this.state.Result["Status"] == "For Approval" &&
+                  {this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && this.state.Result["Categories"]?.includes("Approval") && ((this.currentUser != undefined && this?.currentUser?.length > 0 && this.state.Result?.Approver?.AssingedToUser?.Id == this.currentUser[0]?.Id) || (this.currentUser != undefined && this?.currentUser?.length > 0 && this.state.Result["Approver"]?.Approver?.length > 0 && this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && this.state.Result["Status"] == "For Approval" &&
                     this.state.Result["PercentComplete"] == 1 ? <span><button onClick={() => this.sendEmail("Approved")} className="btn btn-success ms-3 mx-2">Approve</button><span><button className="btn btn-danger" onClick={() => this.sendEmail("Rejected")}>Reject</button></span></span> : null
                   }
                   {this.currentUser != undefined && this.state.sendMail && this.state.emailStatus != "" && <EmailComponenet approvalcallback={() => { this.approvalcallback() }} Context={this.props.Context} emailStatus={this.state.emailStatus} currentUser={this.currentUser} items={this.state.Result} />}
                 </span>
-                <span className="text-end fs-6"> <a target='_blank' data-interception="off" href={this.oldTaskLink} style={{ cursor: "pointer", fontSize: "14px" }}>Old Task Profile</a></span>
+                {!(this?.state?.Result["siteUrl"]?.includes('GrueneWeltweit')) ? (
+                  <span className="text-end fs-6">
+                    <a className='oldtitle' target='_blank' data-interception="off" href={this.oldTaskLink} style={{ cursor: "pointer", fontSize: "14px" }}>Old Task Profile</a>
+                  </span>
+                ) : null}
 
               </h2>
             </section>
@@ -1880,7 +2010,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                       <dl>
                         <dt className='bg-Fa'>Task Id</dt>
                         <dd className='bg-Ff position-relative'>
-                          <ReactPopperTooltipSingleLevel ShareWebId={this.state.Result['TaskId']} row={this.state.Result} singleLevel={true} masterTaskData={this.masterTaskData} AllSitesTaskData={this.allDataOfTask} AllListId={AllListId} />
+                          <ReactPopperTooltipSingleLevel CMSToolId={this.state.Result['TaskId']} row={this.state.Result} singleLevel={true} masterTaskData={this.masterForHierarchy} AllSitesTaskData={this.allDataOfTask} AllListId={AllListId} />
 
                         </dd>
                       </dl>
@@ -1951,6 +2081,58 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
                         </dd>
                       </dl>
+                      <dl>
+                        <dt className='bg-Fa'>Bottleneck</dt>
+                        <dd className='bg-Ff'>
+                          {this.state?.Result?.Bottleneck?.length > 0 && this.state?.Result?.Bottleneck?.map((BottleneckData: any) => {
+                            return (
+                              <div className="align-content-center alignCenter justify-content-between py-1">
+                                <div className="alignCenter">
+                                  <img
+                                    className="ProirityAssignedUserPhoto m-0"
+                                    title={BottleneckData.TaggedUsers?.Title}
+                                    src={
+                                      BottleneckData.TaggedUsers.userImage !=
+                                        undefined &&
+                                        BottleneckData.TaggedUsers.userImage.length >
+                                        0
+                                        ? BottleneckData.TaggedUsers.userImage
+                                        : ""
+                                    }
+                                  />
+                                  <span className="ms-1">{BottleneckData?.TaggedUsers?.Title}</span>
+                                </div>
+
+                                <div className="alignCenter">
+                                  <span
+                                    className="hover-text me-1"
+                                    onClick={() =>
+                                      this.SendRemindernotifications(BottleneckData, "Bottleneck")}
+                                  >
+                                    <LuBellPlus />
+                                    <span className="tooltip-text pop-left">
+                                      Send reminder notifications
+                                    </span>
+                                  </span>
+                                  {BottleneckData.Comment != undefined &&
+                                    BottleneckData.Comment?.length > 1 && <span
+                                      className="m-0 img-info hover-text"
+
+                                    >
+                                      <span className="svg__iconbox svg__icon--comment"></span>
+                                      <span className="tooltip-text pop-left">
+                                        {BottleneckData.Comment}
+                                      </span>
+                                    </span>}
+
+                                </div>
+                              </div>
+                            )
+
+                          })}
+
+                        </dd>
+                      </dl>
 
                       {isShowTimeEntry && <dl>
                         <dt className='bg-Fa'>SmartTime Total</dt>
@@ -1959,6 +2141,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                         </dd>
 
                       </dl>}
+
                     </div>
 
                     <div className='col-md-4 p-0'>
@@ -1976,10 +2159,10 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                       </dl>
                       <dl>
                         <dt className='bg-Fa'>Status</dt>
-                        <dd className='bg-Ff'>{this.state.Result["Status"]}<br></br>
+                        <dd className='bg-Ff'>{this.state.Result["PercentComplete"] != undefined ? this.state.Result["PercentComplete"]?.toFixed(0) : 0} <span className='me-2'>%</span> {this.state.Result["Status"]}<br></br>
                           {this.state.Result["ApproverHistory"] != undefined && this.state.Result["ApproverHistory"].length > 1 && this.state.Result["Categories"].includes("Approval") ?
                             <span style={{ fontSize: "smaller" }}>Approved by
-                              <img className="workmember" title={this.state.Result["ApproverHistory"][this.state.Result.ApproverHistory.length - 2]?.ApproverName} src={(this.state.Result?.ApproverHistory[this.state.Result?.ApproverHistory?.length - 2]?.ApproverImage != null) ? (this.state.Result.ApproverHistory[this.state.Result.ApproverHistory.length - 2]?.ApproverImage) : (this.state.Result?.ApproverHistory[this.state.Result.ApproverHistory.length - 2]?.ApproverSuffix)}></img></span>
+                              <img className="workmember" title={this.state.Result["ApproverHistory"][this.state.Result?.ApproverHistory.length - 2]?.ApproverName} src={(this.state.Result?.ApproverHistory[this.state.Result?.ApproverHistory?.length - 2]?.ApproverImage != null) ? (this.state.Result.ApproverHistory[this.state.Result.ApproverHistory.length - 2]?.ApproverImage) : (this.state.Result?.ApproverHistory[this.state.Result.ApproverHistory.length - 2]?.ApproverSuffix)}></img></span>
 
                             : null}</dd>
                       </dl>
@@ -1989,13 +2172,13 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                         </dd>
                       </dl>
 
-                      <dl>
+                      {/* <dl>
                         <dt className='bg-Fa'>% Complete</dt>
 
                         <dd className='bg-Ff'>{this.state.Result["PercentComplete"] != undefined ? this.state.Result["PercentComplete"]?.toFixed(0) : 0}</dd>
 
 
-                      </dl>
+                      </dl> */}
                       <dl>
                         <dt className='bg-Fa'>Priority</dt>
                         <dd className='bg-Ff'>
@@ -2006,9 +2189,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                 onMouseEnter={this.showOnHoldReason}
                                 onMouseLeave={this.hideOnHoldReason}
                               />
-                              <span className="tooltip-text tooltipboxs  pop-right">
-                                {this.state.showOnHoldComment &&
-                                  comments.map((item: any, index: any) =>
+                              {this.state.showOnHoldComment && (
+                                <span className="tooltip-text tooltipboxs  pop-right">
+                                  {comments.map((item: any, index: any) =>
                                     item.CommentFor !== undefined &&
                                       item.CommentFor === "On-Hold" ? (
                                       <div key={index}>
@@ -2028,13 +2211,14 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                         {item.CommentFor !== undefined &&
                                           item.CommentFor !== "" ? (
                                           <div key={index}>
-                                            {item.Description}
+                                            <span dangerouslySetInnerHTML={{ __html: this.cleanHTML(item?.Description, "folora", index) }}>
+                                            </span>
                                           </div>
                                         ) : null}
                                       </div>
                                     ) : null
                                   )}
-                              </span>
+                                </span>)}
                             </div>
                           ) : null}
                           <EditableField
@@ -2060,8 +2244,14 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                         <dt className='bg-Fa'>SmartPriority</dt>
 
                         <dd className='bg-Ff'>
-                          <div className="boldClable" title={this?.state?.Result?.showFormulaOnHover}>
-                            {this.state.Result["SmartPriority"] != undefined ? this.state.Result["SmartPriority"] : 0}
+                          <div className="boldClable" >
+                            <span className={this?.state?.Result["SmartPriority"] != undefined ? "hover-text hreflink m-0 r sxsvc" : "hover-text hreflink m-0 cssc"}>
+                              <>{this.state.Result["SmartPriority"] != undefined ? this?.state?.Result["SmartPriority"] : 0}</>
+                              <span className="tooltip-text pop-right">
+                                {this.state?.Result?.showFormulaOnHover != undefined ?
+                                  <SmartPriorityHover editValue={this.state.Result} /> : ""}
+                              </span>
+                            </span>
                           </div>
 
                         </dd>
@@ -2070,14 +2260,68 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                       <dl>
                         <dt className='bg-Fa'>Created</dt>
                         <dd className='bg-Ff alignCenter'>
-                          {this.state.Result["Created"] != undefined && this.state.Result["Created"] != null ? moment(this.state.Result["Created"]).format("DD/MM/YYYY") : ""}
+                          {this.state.Result["Created"] != undefined && this.state.Result["Created"] != null ? moment(this.state.Result["Created"]).format("DD/MMM/YYYY") : ""}
                           {this.state.Result["Author"] != null && this.state.Result["Author"].length > 0 &&
                             <a title={this.state.Result["Author"][0].Title} className='alignCenter ms-1'>
-                              {this.state.Result["Author"][0].userImage !== "" && <img className="workmember" src={this.state.Result["Author"][0].userImage} ></img>}
-                              {this.state.Result["Author"][0].userImage === "" && <span className="workmember">{this.state.Result["Author"][0].Suffix}</span>}
+                              {this.state.Result["Author"][0].userImage !== "" && <img className="workmember hreflink " src={this.state.Result["Author"][0].userImage} onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, this.state.Result["Author"][0]?.Id)} ></img>
+
+                              }
+                              {this.state.Result["Author"][0].userImage === "" && <span title="Default user icons" className="alignIcon svg__iconbox svg__icon--defaultUser "></span>}
                             </a>
 
                           }
+
+                        </dd>
+                      </dl>
+                      <dl>
+                        <dt className='bg-Fa'>Attention</dt>
+                        <dd className='bg-Ff'>
+                          {this.state?.Result?.Attention?.length > 0 && this.state?.Result?.Attention?.map((AttentionData: any) => {
+                            return (
+                              <div className="align-content-center alignCenter justify-content-between py-1">
+                                <div className="alignCenter">
+                                  <img
+                                    className="ProirityAssignedUserPhoto m-0"
+                                    title={AttentionData.TaggedUsers?.Title}
+                                    src={
+                                      AttentionData.TaggedUsers.userImage !=
+                                        undefined &&
+                                        AttentionData.TaggedUsers.userImage.length >
+                                        0
+                                        ? AttentionData.TaggedUsers.userImage
+                                        : ""
+                                    }
+                                  />
+                                  <span className="ms-1">{AttentionData?.TaggedUsers?.Title}</span>
+                                </div>
+
+                                <div className="alignCenter">
+                                  <span
+                                    className="hover-text me-1"
+                                    onClick={() =>
+                                      this.SendRemindernotifications(AttentionData, "Attention")}
+                                  >
+                                    <LuBellPlus />
+                                    <span className="tooltip-text pop-left">
+                                      Send reminder notifications
+                                    </span>
+                                  </span>
+                                  {AttentionData.Comment != undefined &&
+                                    AttentionData.Comment?.length > 1 && <span
+                                      className="m-0 img-info hover-text"
+
+                                    >
+                                      <span className="svg__iconbox svg__icon--comment"></span>
+                                      <span className="tooltip-text pop-left">
+                                        {AttentionData.Comment}
+                                      </span>
+                                    </span>}
+
+                                </div>
+                              </div>
+                            )
+
+                          })}
 
                         </dd>
                       </dl>
@@ -2088,7 +2332,11 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
                         <dt className='bg-Fa'>Portfolio Item</dt>
                         <dd className='bg-Ff full-width'>
-
+                          {this.state?.TagConceptPaper?.length > 0 &&
+                            <a href={this.state?.TagConceptPaper[0].EncodedAbsUrl}>
+                              <span className={`alignIcon svg__iconbox svg__icon--${this.state?.TagConceptPaper[0]?.File_x0020_Type}`} title={this.state?.TagConceptPaper[0]?.File_x0020_Type}></span>
+                            </a>
+                          }
                           {this.state?.Result["Portfolio"] != null &&
 
                             <a className="hreflink" target="_blank" data-interception="off" href={`${this.state.Result["siteUrl"]}/SitePages/Portfolio-Profile.aspx?taskId=${this.state?.Result["Portfolio"].Id}`}>
@@ -2107,8 +2355,8 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                         <dt className='bg-Fa'>Project</dt>
                         <dd className='bg-Ff full-width'>
                           <div>
-                            {ProjectData?.Title != undefined ? <a className="hreflink" target="_blank" data-interception="off" href={`${this.state.Result["siteUrl"]}/SitePages/Project-Management.aspx?ProjectId=${ProjectData?.Id}`}><span className='d-flex'>
-                              <ReactPopperTooltipSingleLevel ShareWebId={`${ProjectData?.PortfolioStructureID} - ${ProjectData?.Title}`} row={ProjectData} singleLevel={true} masterTaskData={this.masterTaskData} AllSitesTaskData={this.allDataOfTask} AllListId={AllListId} /></span></a> : null}
+                            {ProjectData?.Title != undefined ? <a className="hreflink" target="_blank" data-interception="off" href={`${this.state.Result["siteUrl"]}/SitePages/PX-Profile.aspx?ProjectId=${ProjectData?.Id}`}><span className='d-flex'>
+                              <ReactPopperTooltipSingleLevel CMSToolId={`${ProjectData?.PortfolioStructureID} - ${ProjectData?.Title}`} row={ProjectData} singleLevel={true} masterTaskData={this.masterTaskData} AllSitesTaskData={this.allDataOfTask} AllListId={AllListId} /></span></a> : null}
                             <span className="pull-right svg__icon--editBox svg__iconbox" onClick={() => this?.openPortfolioPopupFunction("Project")}></span>
                           </div>
                         </dd>
@@ -2150,17 +2398,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                           </div>
                         }
                       </dl>}
-                      <div className="Sitecomposition my-2">
-                        <a className="sitebutton bg-fxdark alignCenter justify-content-between">
-                          <span className="alignCenter">
-                            <span className="svg__iconbox svg__icon--docx"></span>
-                            <span className="mx-2">Submit EOD Report</span>
-                          </span>
-                          <span className="svg__iconbox svg__icon--editBox hreflink" title="Submit EOD Report Popup"
-                            onClick={() => this.setState({ OpenEODReportPopup: true })}>
-                          </span>
-                        </a>
-                      </div>
+
                       {this.state.Result?.EstimatedTimeDescriptionArray?.length > 0 &&
                         <dl className="Sitecomposition my-2">
                           <div className='dropdown'>
@@ -2180,7 +2418,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                           <div className='alignCenter'>
                                             <span className='me-2'>{EstimatedTimeData?.Team != undefined ? EstimatedTimeData?.Team : EstimatedTimeData?.Category != undefined ? EstimatedTimeData?.Category : null}</span> |
                                             <span className='mx-2'>{EstimatedTimeData?.EstimatedTime ? (EstimatedTimeData?.EstimatedTime > 1 ? EstimatedTimeData?.EstimatedTime + " hours" : EstimatedTimeData?.EstimatedTime + " hour") : "0 hour"}</span>
-                                            <img className="ProirityAssignedUserPhoto m-0 mx-2" title={EstimatedTimeData?.UserName} src={EstimatedTimeData?.UserImage != undefined && EstimatedTimeData?.UserImage?.length > 0 ? EstimatedTimeData?.UserImage : ''} />
+                                            <img className="ProirityAssignedUserPhoto m-0 mx-2 hreflink " onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, EstimatedTimeData?.UserName, this?.taskUsers)} title={EstimatedTimeData?.UserName} src={EstimatedTimeData?.UserImage != undefined && EstimatedTimeData?.UserImage?.length > 0 ? EstimatedTimeData?.UserImage : ''} />
                                           </div>
                                           {EstimatedTimeData?.EstimatedTimeDescription?.length > 0 && <div className='alignCenter hover-text'>
                                             <span className="svg__iconbox svg__icon--info"></span>
@@ -2194,7 +2432,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                 }
                               </div>
                             </div>
-                            <div className="spxdropdown-menu ps-2 py-1 border-top-0" style={{ zIndex: 0 }}>
+                            <div className="spxdropdown-menu ps-2 py-1 " style={{ zIndex: 0 }}>
                               <span>Total Estimated Time : </span><span className="mx-1">{this.state.Result?.TotalEstimatedTime > 1 ? this.state.Result?.TotalEstimatedTime + " hours" : this.state.Result?.TotalEstimatedTime + " hour"} </span>
                             </div>
                           </div>
@@ -2211,6 +2449,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                         }
                       </div>
                     </div>
+                  </div>
+                  <div className="row">
+                    <div className='p-0'> {this.state.Result.Id != undefined && <KeyDocuments AllListId={AllListId} Context={this.props?.Context} siteUrl={this.props.siteUrl} user={this?.taskUsers} DocumentsListID={this.props?.DocumentsListID} ID={this.state?.itemID} siteName={this.state.listName} folderName={this.state.Result['Title']} keyDoc={true}></KeyDocuments>}</div>
                   </div>
                   <section>
                     <div className="col mt-2">
@@ -2234,8 +2475,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                     <span>
                                       <span >{imgData?.UploadeDate}</span>
                                       <span className='round px-1'>
-                                        {imgData?.UserImage != null &&
-                                          <img className='align-self-start' title={imgData?.UserName} src={imgData?.UserImage} />
+                                        {imgData?.UserImage != null && imgData?.UserImage != "" ?
+                                          <img className='align-self-start hreflink ' title={imgData?.UserName} onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, imgData?.UserName, this?.taskUsers)} src={imgData?.UserImage} />
+                                          : <span title="Default user icons" onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, imgData?.UserName, this?.taskUsers)} className="alignIcon svg__iconbox svg__icon--defaultUser "></span>
                                         }
                                       </span>
                                       {imgData?.Description != undefined && imgData?.Description != "" && <span title={imgData?.Description} className="mx-1" >
@@ -2268,250 +2510,87 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                             <div className={"Addcomment " + "manage_gap"}>
                               <label className='form-label full-width fw-semibold'>Task description</label>
                               {this.state.Result["FeedBack"][0]?.FeedBackDescriptions?.map((fbData: any, i: any) => {
-                                let userdisplay: any = [];
-                                userdisplay.push({ Title: this.props?.userDisplayName })
+                                if (typeof fbData == "object") {
+                                  let userdisplay: any = [];
+                                  userdisplay.push({ Title: this.props?.userDisplayName })
 
 
-                                if (fbData != null && fbData != undefined && fbData?.Title != "") {
+                                  if (fbData != null && fbData != undefined && fbData?.Title != "") {
 
-                                  try {
-                                    if (fbData?.Title != undefined) {
-                                      fbData.Title = fbData?.Title?.replace(/\n/g, '<br>');
+                                    try {
+                                      if (fbData?.Title != undefined) {
+                                        fbData.Title = fbData?.Title?.replace(/\n/g, '<br>');
 
+                                      }
+                                    } catch (e) {
                                     }
-                                  } catch (e) {
-                                  }
-                                  return (
-                                    <>
-                                      <div>
+                                    return (
+                                      <>
+                                        <div>
 
 
 
-                                        <div className="col mb-2">
-                                          <div className='justify-content-between d-flex'>
-                                            <div className="alignCenter m-0">
-                                              {this.state.ApprovalStatus ?
-                                                <span className="alignCenter">
-                                                  <span title="Rejected"
-                                                    onClick={() => this.changeTrafficLigth(i, "Reject")}
-                                                    className={fbData['isShowLight'] == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
-                                                  >
-                                                  </span>
-                                                  <span
-                                                    onClick={() => this.changeTrafficLigth(i, "Maybe")}
-                                                    title="Maybe" className={fbData['isShowLight'] == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
-                                                  </span>
-                                                  <span title="Approved"
-                                                    onClick={() => this.changeTrafficLigth(i, "Approve")}
-                                                    className={fbData['isShowLight'] == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
-
-                                                  </span>
-                                                  {fbData["ApproverData"] != undefined && fbData.ApproverData?.length > 0 &&
-                                                    <>
-                                                      <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => this.ShowApprovalHistory(fbData, i, null)}>
-                                                        {fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={fbData.ApproverData[fbData.ApproverData.length - 1]?.Title}><span><a href={`${this.props?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Id}&Name=${fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Title}`} target="_blank" data-interception="off" title={fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Title}> <img className='imgAuthor' src={fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.ImageUrl} /></a></span></a></span>
-                                                    </>
-
-                                                  }
-                                                </span>
-                                                : null
-                                              }
-                                            </div>
-                                            <div className='m-0'>
-                                              <span className="d-block">
-                                                <a className="siteColor" style={{ cursor: 'pointer' }} onClick={(e) => this.showhideCommentBox(i)}>Add Comment</a>
-                                              </span>
-                                            </div>
-                                          </div>
-
-
-                                          <div className="d-flex p-0 FeedBack-comment ">
-                                            <div className="border p-1 me-1">
-                                              <span>{i + 1}.</span>
-                                              <ul className='list-none'>
-                                                <li>
-                                                  {fbData['Completed'] != null && fbData['Completed'] &&
-
-                                                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
-                                                  }
-                                                </li>
-                                                <li>
-                                                  {fbData['HighImportance'] != null && fbData['HighImportance'] &&
-                                                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
-                                                  }
-                                                </li>
-                                                <li>
-                                                  {fbData['LowImportance'] != null && fbData['LowImportance'] &&
-                                                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
-                                                  }
-                                                </li>
-                                                <li>
-                                                  {fbData['Phone'] != null && fbData['Phone'] &&
-                                                    <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
-                                                  }
-                                                </li>
-                                              </ul>
-                                            </div>
-
-                                            <div className="border p-2 full-width text-break"
-
-                                            >
-
-                                              <span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbData?.Title, "folora", i) }}></span>
-                                              <div className="col">
-                                                {fbData['Comments'] != null && fbData['Comments']?.length > 0 && fbData['Comments']?.map((fbComment: any, k: any) => {
-                                                  return <div className={fbComment.isShowLight != undefined && fbComment.isApprovalComment ? `col add_cmnt my-1 ${fbComment.isShowLight}` : "col add_cmnt my-1"} title={fbComment.isShowLight != undefined ? fbComment.isShowLight : ""}>
-                                                    <div className="">
-                                                      <div className="d-flex p-0">
-                                                        <div className="col-1 p-0 wid30">
-                                                          <img className="workmember" src={fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ?
-                                                            fbComment.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
-                                                        </div>
-                                                        <div className="col-11 pe-0" >
-                                                          <div className='d-flex justify-content-between align-items-center'>
-                                                            {fbComment?.AuthorName} - {fbComment?.Created}
-                                                            <span className='d-flex'>
-                                                              <a className="ps-1" title="Comment Reply" >
-                                                                <div data-toggle="tooltip" id={buttonId + "-" + i + k}
-                                                                  onClick={() => this.openReplycommentPopup(i, k)}
-                                                                  data-placement="bottom"
-                                                                >
-                                                                  <span className="svg__iconbox svg__icon--reply"></span>
-                                                                </div>
-                                                              </a>
-                                                              <a title='Edit'
-                                                                onClick={() => this.openEditModal(fbComment, k, 0, false, i)}
-                                                              >
-                                                                <span className='svg__iconbox svg__icon--edit'></span>
-                                                              </a>
-                                                              <a title='Delete'
-                                                                onClick={() => this.clearComment(false, k, 0, i)}
-                                                              >
-                                                                <span className='svg__iconbox svg__icon--trash'></span></a>
-                                                            </span>
-                                                          </div>
-                                                          <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbComment?.Title, null, i) }}></span></div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="col-12 ps-3 pe-0 mt-1">
-                                                        {fbComment?.ReplyMessages != undefined && fbComment?.ReplyMessages.length > 0 && fbComment?.ReplyMessages?.map((replymessage: any, index: any) => {
-                                                          return (
-                                                            <div className="d-flex border ms-3 p-2  mb-1">
-                                                              <div className="col-1 p-0 wid30">
-                                                                <img className="workmember" src={replymessage?.AuthorImage != undefined && replymessage?.AuthorImage != '' ?
-                                                                  replymessage.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
-                                                              </div>
-                                                              <div className="col-11 pe-0" >
-                                                                <div className='d-flex justify-content-between align-items-center'>
-                                                                  {replymessage?.AuthorName} - {replymessage?.Created}
-                                                                  <span className='d-flex'>
-                                                                    <a title='Edit'
-                                                                      onClick={() => this.EditReplyComment(replymessage, k, 0, false, i, index)
-                                                                      }
-                                                                    >
-                                                                      <span className='svg__iconbox svg__icon--edit'></span>
-                                                                    </a>
-                                                                    <a title='Delete'
-                                                                      onClick={() => this.clearReplycomment(false, k, 0, i, index)
-                                                                      }
-                                                                    >
-                                                                      <span className='svg__iconbox svg__icon--trash'></span></a>
-                                                                  </span>
-                                                                </div>
-                                                                <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(replymessage?.Title, null, i) }}></span></div>
-                                                              </div>
-                                                            </div>
-
-                                                          )
-                                                        })}
-                                                      </div>
-                                                    </div>
-
-
-                                                  </div>
-
-
-                                                })}
-                                              </div>
-
-                                            </div>
-                                          </div>
-                                          {this.state.showhideCommentBoxIndex == i && <div className='SpfxCheckRadio'>
-                                            <div className="col-sm-12 mt-2 p-0" style={{ display: this.state.showcomment }} >
-                                              {this.state.Result["Approver"] != "" && this.state.Result["Approver"] != undefined && (this.state.Result["Approver"]?.AssingedToUser?.Id == this?.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && <label className='label--checkbox'><input type='checkbox' className='checkbox' name='approval' checked={this.state.ApprovalCommentcheckbox} onChange={(e) => this.setState({ ApprovalCommentcheckbox: e.target.checked })} />
-                                                Mark as Approval Comment</label>}
-                                            </div>
-                                            <div className="align-items-center d-flex"
-                                              style={{ display: this.state.showcomment }}
-                                            >  <textarea id="txtComment" onChange={(e) => this.handleInputChange(e)} className="form-control full-width"></textarea>
-                                              <button type="button" className={this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) ? "btn-primary btn ms-2" : "btn-primary btn ms-2"} onClick={() => this.PostButtonClick(fbData, i)}>Post</button>
-                                            </div>
-                                          </div>}
-
-                                        </div>
-
-                                        {fbData['Subtext'] != null && fbData['Subtext'].length > 0 && fbData['Subtext']?.map((fbSubData: any, j: any) => {
-                                          return <div className="col-sm-12 p-0 mb-2" style={{ width: '100%' }}>
+                                          <div className="col mb-2">
                                             <div className='justify-content-between d-flex'>
-                                              <div className='alignCenter m-0'>
+                                              <div className="alignCenter m-0">
                                                 {this.state.ApprovalStatus ?
                                                   <span className="alignCenter">
                                                     <span title="Rejected"
-                                                      onClick={() => this.changeTrafficLigthsubtext(i, j, "Reject")}
-                                                      className={fbSubData.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
+                                                      onClick={() => this.changeTrafficLigth(i, "Reject")}
+                                                      className={fbData['isShowLight'] == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
                                                     >
                                                     </span>
-                                                    <span title="Maybe"
-                                                      onClick={() => this.changeTrafficLigthsubtext(i, j, "Maybe")}
-                                                      className={fbSubData?.isShowLight == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
+                                                    <span
+                                                      onClick={() => this.changeTrafficLigth(i, "Maybe")}
+                                                      title="Maybe" className={fbData['isShowLight'] == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
                                                     </span>
                                                     <span title="Approved"
-                                                      onClick={() => this.changeTrafficLigthsubtext(i, j, "Approve")}
-                                                      className={fbSubData?.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
+                                                      onClick={() => this.changeTrafficLigth(i, "Approve")}
+                                                      className={fbData['isShowLight'] == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
 
                                                     </span>
-                                                    {fbSubData?.ApproverData?.length > 0 &&
+                                                    {fbData["ApproverData"] != undefined && fbData.ApproverData?.length > 0 &&
                                                       <>
-                                                        <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => this.ShowApprovalHistory(fbSubData, i, j)}>
-                                                          {fbSubData?.ApproverData[fbSubData?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.Title}><span><a href={`${this.props?.siteUrl}/SitePages/TaskDashboard.aspx?UserId=${fbSubData?.ApproverData[fbSubData?.ApproverData?.length - 1]?.Id}&Name=${fbSubData?.ApproverData[fbSubData?.ApproverData?.length - 1]?.Title}`} target="_blank" data-interception="off" title={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.Title}> <img className='imgAuthor' src={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.ImageUrl} /></a></span></a></span>
-                                                      </>}
+                                                        <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => this.ShowApprovalHistory(fbData, i, null)}>
+                                                          {fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={fbData.ApproverData[fbData.ApproverData.length - 1]?.Title}><span><a onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Id,)} target="_blank" data-interception="off" title={fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.Title}> <img className='imgAuthor hreflink ' src={fbData?.ApproverData[fbData?.ApproverData?.length - 1]?.ImageUrl} /></a></span></a></span>
+                                                      </>
 
-
+                                                    }
                                                   </span>
                                                   : null
                                                 }
                                               </div>
                                               <div className='m-0'>
-                                                <a className="d-block text-end">
-                                                  <a className='siteColor' style={{ cursor: 'pointer' }}
-                                                    onClick={(e) => this.showhideCommentBoxOfSubText(j, i)}
-                                                  >Add Comment</a>
-                                                </a>
+                                                <span className="d-block">
+                                                  <a className="siteColor" style={{ cursor: 'pointer' }} onClick={(e) => this.showhideCommentBox(i)}>Add Comment</a>
+                                                </span>
                                               </div>
                                             </div>
 
-                                            <div className="d-flex pe-0 FeedBack-comment">
+
+                                            <div className="d-flex p-0 FeedBack-comment ">
                                               <div className="border p-1 me-1">
-                                                <span >{i + 1}.{j + 1}</span>
-                                                <ul className="list-none">
+                                                <span>{i + 1}.</span>
+                                                <ul className='list-none'>
                                                   <li>
-                                                    {fbSubData?.Completed != null && fbSubData?.Completed &&
-                                                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Completed.png'></img></span>
+                                                    {fbData['Completed'] != null && fbData['Completed'] &&
+
+                                                      <span className="svg__iconbox svg__icon--tick"></span>
                                                     }
                                                   </li>
                                                   <li>
-                                                    {fbSubData?.HighImportance != null && fbSubData?.HighImportance &&
-                                                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/highPriorty.png'></img></span>
+                                                    {fbData['HighImportance'] != null && fbData['HighImportance'] &&
+                                                      <span className="svg__iconbox svg__icon--taskHighPriority"></span>
                                                     }
                                                   </li>
                                                   <li>
-                                                    {fbSubData?.LowImportance != null && fbSubData?.LowImportance &&
-                                                      <span><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/lowPriority.png'></img></span>
+                                                    {fbData['LowImportance'] != null && fbData['LowImportance'] &&
+                                                      <span className="svg__iconbox svg__icon--lowPriority"></span>
                                                     }
                                                   </li>
                                                   <li>
-                                                    {fbSubData?.Phone != null && fbSubData?.Phone &&
-                                                      <span ><img className="wid10" style={{ width: '10px' }} src='https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/siteIcons/Phone.png'></img></span>
+                                                    {fbData['Phone'] != null && fbData['Phone'] &&
+                                                      <span className="svg__iconbox svg__icon--phone"></span>
                                                     }
                                                   </li>
                                                 </ul>
@@ -2520,69 +2599,70 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                               <div className="border p-2 full-width text-break"
 
                                               >
-                                                <span ><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbSubData?.Title, null, j) }}></span></span>
-                                                <div className="feedbackcomment col-sm-12 PadR0 mt-10">
-                                                  {fbSubData?.Comments != null && fbSubData.Comments.length > 0 && fbSubData?.Comments?.map((fbComment: any, k: any) => {
-                                                    return <div className={fbComment?.isShowLight != undefined && fbComment.isApprovalComment ? `col-sm-12  mb-2 add_cmnt my-1 ${fbComment?.isShowLight}` : "col-sm-12  mb-2 add_cmnt my-1 "} title={fbComment?.isShowLight != undefined ? fbComment?.isShowLight : ""}>
+
+                                                <span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbData?.Title, "folora", i) }}></span>
+                                                <div className="col">
+                                                  {fbData['Comments'] != null && fbData['Comments']?.length > 0 && fbData['Comments']?.map((fbComment: any, k: any) => {
+                                                    return <div className={fbComment.isShowLight != undefined && fbComment.isApprovalComment ? `col add_cmnt my-1 ${fbComment.isShowLight}` : "col add_cmnt my-1"} title={fbComment.isShowLight != undefined ? fbComment.isShowLight : ""}>
                                                       <div className="">
                                                         <div className="d-flex p-0">
                                                           <div className="col-1 p-0 wid30">
-                                                            <img className="workmember" src={fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ?
-                                                              fbComment.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
+                                                            {fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ? <img className="workmember hreflink " onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, fbComment?.AuthorName, this?.taskUsers)}
+                                                              src={fbComment.AuthorImage} /> :
+                                                              <span onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, fbComment?.AuthorName, this?.taskUsers)} title="Default user icons" className="alignIcon svg__iconbox svg__icon--defaultUser "></span>}
                                                           </div>
-                                                          <div className="col-11 pad0" key={k}>
-                                                            <div className="d-flex justify-content-between align-items-center">
+                                                          <div className="col-11 pe-0" >
+                                                            <div className='d-flex justify-content-between align-items-center'>
                                                               {fbComment?.AuthorName} - {fbComment?.Created}
                                                               <span className='d-flex'>
                                                                 <a className="ps-1" title="Comment Reply" >
-                                                                  <div data-toggle="tooltip" id={buttonId + "-" + i + j + k}
-                                                                    onClick={() => this.openReplySubcommentPopup(i, j, k)}
+                                                                  <div data-toggle="tooltip" id={buttonId + "-" + i + k}
+                                                                    onClick={() => this.openReplycommentPopup(i, k)}
                                                                     data-placement="bottom"
                                                                   >
                                                                     <span className="svg__iconbox svg__icon--reply"></span>
                                                                   </div>
                                                                 </a>
-                                                                <a title="Edit"
-                                                                  onClick={() => this.openEditModal(fbComment, k, j, true, i)}
+                                                                <a title='Edit'
+                                                                  onClick={() => this.openEditModal(fbComment, k, 0, false, i)}
                                                                 >
-
                                                                   <span className='svg__iconbox svg__icon--edit'></span>
                                                                 </a>
                                                                 <a title='Delete'
-                                                                  onClick={() => this.clearComment(true, k, j, i)}
-                                                                ><span className='svg__iconbox svg__icon--trash'></span></a>
+                                                                  onClick={() => this.clearComment(false, k, 0, i)}
+                                                                >
+                                                                  <span className='svg__iconbox svg__icon--trash'></span></a>
                                                               </span>
                                                             </div>
-                                                            <div ><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbComment?.Title, null, j) }}></span></div>
+                                                            <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbComment?.Title, null, i) }}></span></div>
                                                           </div>
                                                         </div>
                                                         <div className="col-12 ps-3 pe-0 mt-1">
-                                                          {fbComment?.ReplyMessages != undefined && fbComment?.ReplyMessages.length > 0 && fbComment?.ReplyMessages?.map((replymessage: any, ReplyIndex: any) => {
+                                                          {fbComment?.ReplyMessages != undefined && fbComment?.ReplyMessages.length > 0 && fbComment?.ReplyMessages?.map((replymessage: any, index: any) => {
                                                             return (
                                                               <div className="d-flex border ms-3 p-2  mb-1">
                                                                 <div className="col-1 p-0 wid30">
-                                                                  <img className="workmember" src={replymessage?.AuthorImage != undefined && replymessage?.AuthorImage != '' ?
-                                                                    replymessage.AuthorImage : "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"} />
+                                                                  {replymessage?.AuthorImage != undefined && replymessage?.AuthorImage != '' ? <img className="workmember hreflink " onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, replymessage?.AuthorName, this?.taskUsers)}
+                                                                    src={replymessage?.AuthorImage} /> : <span title="Default user icons" className="alignIcon svg__iconbox svg__icon--defaultUser "></span>}
                                                                 </div>
                                                                 <div className="col-11 pe-0" >
                                                                   <div className='d-flex justify-content-between align-items-center'>
                                                                     {replymessage?.AuthorName} - {replymessage?.Created}
                                                                     <span className='d-flex'>
                                                                       <a title='Edit'
-
-                                                                        onClick={() => this.EditReplyComment(replymessage, k, 0, true, i, ReplyIndex)
+                                                                        onClick={() => this.EditReplyComment(replymessage, k, 0, false, i, index)
                                                                         }
                                                                       >
                                                                         <span className='svg__iconbox svg__icon--edit'></span>
                                                                       </a>
                                                                       <a title='Delete'
-                                                                        onClick={() => this.clearReplycomment(true, k, j, i, ReplyIndex)}
-
+                                                                        onClick={() => this.clearReplycomment(false, k, 0, i, index)
+                                                                        }
                                                                       >
                                                                         <span className='svg__iconbox svg__icon--trash'></span></a>
                                                                     </span>
                                                                   </div>
-                                                                  <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(replymessage?.Title, null, j) }}></span></div>
+                                                                  <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(replymessage?.Title, null, i) }}></span></div>
                                                                 </div>
                                                               </div>
 
@@ -2590,64 +2670,202 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                                           })}
                                                         </div>
                                                       </div>
+
+
                                                     </div>
+
+
                                                   })}
                                                 </div>
+
                                               </div>
                                             </div>
-                                            {this.state?.subchildcomment == j && this.state?.subchildParentIndex == i ? <div className='SpfxCheckRadio' >
-                                              <div className="col-sm-12 mt-2 p-0  "
-
-                                              >
-                                                {this.state.Result["Approver"] != "" && this.state.Result["Approver"] != undefined && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && <label className='label--checkbox'><input type='checkbox' className='checkbox' checked={this.state?.ApprovalCommentcheckbox} onChange={(e) => this.setState({ ApprovalCommentcheckbox: e.target?.checked })} />Mark as Approval Comment</label>}
-
+                                            {this.state.showhideCommentBoxIndex == i && <div className='SpfxCheckRadio'>
+                                              <div className="col-sm-12 mt-2 p-0" style={{ display: this.state.showcomment }} >
+                                                {this.state.Result["Approver"] != "" && this.state.Result["Approver"] != undefined && (this.state.Result["Approver"]?.AssingedToUser?.Id == this?.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver?.length > 0 && this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && <label className='label--checkbox'><input type='checkbox' className='form-check-input me-1' name='approval' checked={this.state.ApprovalCommentcheckbox} onChange={(e) => this.setState({ ApprovalCommentcheckbox: e.target.checked })} />
+                                                  Mark as Approval Comment</label>}
                                               </div>
-
                                               <div className="align-items-center d-flex"
-
-                                              >  <textarea id="txtCommentSubtext" onChange={(e) => this.handleInputChange(e)} className="form-control full-width" ></textarea>
-                                                <button type="button" className={this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) ? "btn-primary btn ms-2" : "btn-primary btn ms-2"} onClick={() => this.SubtextPostButtonClick(j, i)}>Post</button>
+                                                style={{ display: this.state.showcomment }}
+                                              >  <textarea id="txtComment" onChange={(e) => this.handleInputChange(e)} className="form-control full-width"></textarea>
+                                                <button type="button" className={this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver?.length > 0 && this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) ? "btn-primary btn ms-2" : "btn-primary btn ms-2"} onClick={() => this.PostButtonClick(fbData, i)}>Post</button>
                                               </div>
-                                            </div> : null}
+                                            </div>}
 
                                           </div>
-                                        })}
 
-                                        <Panel
-                                          onRenderHeader={this.onRenderCustomHeadereditcomment}
-                                          isOpen={this.state.isEditModalOpen ? this.state.isEditModalOpen : this.state.isEditReplyModalOpen}
-                                          onDismiss={this.Closecommentpopup}
-                                          isBlocking={this.state.isEditModalOpen ? !this.state.isEditModalOpen : !this.state.isEditReplyModalOpen}>
-                                          <div className="modal-body">
-                                            <div className='col'><textarea id="txtUpdateComment" rows={6} className="full-width" onChange={(e) => this.handleUpdateComment(e)}  >{this.state?.CommenttoUpdate}</textarea></div>
-                                          </div>
-                                          <footer className='modal-footer'>
-                                            <button className="btn btn-primary ms-1" onClick={(e) => this.updateComment()}>Save</button>
-                                            <button className='btn btn-default ms-1' onClick={this.Closecommentpopup}>Cancel</button>
+                                          {fbData['Subtext'] != null && fbData['Subtext'].length > 0 && fbData['Subtext']?.map((fbSubData: any, j: any) => {
+                                            return <div className="col-sm-12 p-0 mb-2" style={{ width: '100%' }}>
+                                              <div className='justify-content-between d-flex'>
+                                                <div className='alignCenter m-0'>
+                                                  {this.state.ApprovalStatus ?
+                                                    <span className="alignCenter">
+                                                      <span title="Rejected"
+                                                        onClick={() => this.changeTrafficLigthsubtext(i, j, "Reject")}
+                                                        className={fbSubData.isShowLight == "Reject" ? "circlelight br_red pull-left ml5 red" : "circlelight br_red pull-left ml5"}
+                                                      >
+                                                      </span>
+                                                      <span title="Maybe"
+                                                        onClick={() => this.changeTrafficLigthsubtext(i, j, "Maybe")}
+                                                        className={fbSubData?.isShowLight == "Maybe" ? "circlelight br_yellow pull-left yellow" : "circlelight br_yellow pull-left"}>
+                                                      </span>
+                                                      <span title="Approved"
+                                                        onClick={() => this.changeTrafficLigthsubtext(i, j, "Approve")}
+                                                        className={fbSubData?.isShowLight == "Approve" ? "circlelight br_green pull-left green" : "circlelight br_green pull-left"}>
 
-
-                                          </footer>
-
-
-                                        </Panel>
-
-                                        {this.state.ApprovalHistoryPopup ? <ApprovalHistoryPopup
-                                          ApprovalPointUserData={this.state.ApprovalPointUserData}
-                                          indexSHow={this.state.currentArraySubTextIndex != null ? this.state.ApprovalPointCurrentParentIndex + "." + this.state.currentArraySubTextIndex : this.state.ApprovalPointCurrentParentIndex}
-                                          ApprovalPointCurrentIndex={this.state.ApprovalPointCurrentParentIndex - 1}
-                                          ApprovalPointHistoryStatus={this.state.ApprovalHistoryPopup}
-                                          currentArrayIndex={this.state.currentArraySubTextIndex - 1}
-                                          usefor="TaskProfile"
-
-                                          callBack={() => this.ApprovalHistoryPopupCallBack()}
-                                        />
-                                          : null}
-                                      </div>
+                                                      </span>
+                                                      {fbSubData?.ApproverData?.length > 0 &&
+                                                        <>
+                                                          <span className="siteColor ms-2 hreflink" title="Approval-History Popup" onClick={() => this.ShowApprovalHistory(fbSubData, i, j)}>
+                                                            {fbSubData?.ApproverData[fbSubData?.ApproverData?.length - 1]?.Status} </span> <span className="ms-1"><a title={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.Title}><span><a onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, fbSubData?.ApproverData[fbSubData?.ApproverData?.length - 1]?.Id,)} target="_blank" data-interception="off" title={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.Title}> <img className='imgAuthor hreflink ' src={fbSubData?.ApproverData[fbSubData?.ApproverData.length - 1]?.ImageUrl} /></a></span></a></span>
+                                                        </>}
 
 
-                                    </>
-                                  )
+                                                    </span>
+                                                    : null
+                                                  }
+                                                </div>
+                                                <div className='m-0'>
+                                                  <a className="d-block text-end">
+                                                    <a className='siteColor' style={{ cursor: 'pointer' }}
+                                                      onClick={(e) => this.showhideCommentBoxOfSubText(j, i)}
+                                                    >Add Comment</a>
+                                                  </a>
+                                                </div>
+                                              </div>
+
+                                              <div className="d-flex pe-0 FeedBack-comment">
+                                                <div className="border p-1 me-1">
+                                                  <span >{i + 1}.{j + 1}</span>
+                                                  <ul className="list-none">
+                                                    <li>
+                                                      {fbSubData?.Completed != null && fbSubData?.Completed &&
+                                                        <span className="svg__iconbox svg__icon--tick"></span>
+                                                      }
+                                                    </li>
+                                                    <li>
+                                                      {fbSubData?.HighImportance != null && fbSubData?.HighImportance &&
+                                                        <span className="svg__iconbox svg__icon--taskHighPriority"></span>
+                                                      }
+                                                    </li>
+                                                    <li>
+                                                      {fbSubData?.LowImportance != null && fbSubData?.LowImportance &&
+                                                        <span className="svg__iconbox svg__icon--lowPriority"></span>
+                                                      }
+                                                    </li>
+                                                    <li>
+                                                      {fbSubData?.Phone != null && fbSubData?.Phone &&
+                                                        <span className="svg__iconbox svg__icon--phone"></span>
+                                                      }
+                                                    </li>
+                                                  </ul>
+                                                </div>
+
+                                                <div className="border p-2 full-width text-break"
+
+                                                >
+                                                  <span ><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbSubData?.Title, null, j) }}></span></span>
+                                                  <div className="feedbackcomment col-sm-12 PadR0 mt-10">
+                                                    {fbSubData?.Comments != null && fbSubData.Comments.length > 0 && fbSubData?.Comments?.map((fbComment: any, k: any) => {
+                                                      return <div className={fbComment?.isShowLight != undefined && fbComment.isApprovalComment ? `col-sm-12  mb-2 add_cmnt my-1 ${fbComment?.isShowLight}` : "col-sm-12  mb-2 add_cmnt my-1 "} title={fbComment?.isShowLight != undefined ? fbComment?.isShowLight : ""}>
+                                                        <div className="">
+                                                          <div className="d-flex p-0">
+                                                            <div className="col-1 p-0 wid30">
+                                                              {fbComment?.AuthorImage != undefined && fbComment?.AuthorImage != '' ? <img className="workmember hreflink " onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, fbComment?.AuthorName, this?.taskUsers)}
+                                                                src={fbComment.AuthorImage} /> : <span title="Default user icons" className="alignIcon svg__iconbox svg__icon--defaultUser "></span>
+                                                              }
+                                                            </div>
+                                                            <div className="col-11 pad0" key={k}>
+                                                              <div className="d-flex justify-content-between align-items-center">
+                                                                {fbComment?.AuthorName} - {fbComment?.Created}
+                                                                <span className='d-flex'>
+                                                                  <a className="ps-1" title="Comment Reply" >
+                                                                    <div data-toggle="tooltip" id={buttonId + "-" + i + j + k}
+                                                                      onClick={() => this.openReplySubcommentPopup(i, j, k)}
+                                                                      data-placement="bottom"
+                                                                    >
+                                                                      <span className="svg__iconbox svg__icon--reply"></span>
+                                                                    </div>
+                                                                  </a>
+                                                                  <a title="Edit"
+                                                                    onClick={() => this.openEditModal(fbComment, k, j, true, i)}
+                                                                  >
+
+                                                                    <span className='svg__iconbox svg__icon--edit'></span>
+                                                                  </a>
+                                                                  <a title='Delete'
+                                                                    onClick={() => this.clearComment(true, k, j, i)}
+                                                                  ><span className='svg__iconbox svg__icon--trash'></span></a>
+                                                                </span>
+                                                              </div>
+                                                              <div ><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(fbComment?.Title, null, j) }}></span></div>
+                                                            </div>
+                                                          </div>
+                                                          <div className="col-12 ps-3 pe-0 mt-1">
+                                                            {fbComment?.ReplyMessages != undefined && fbComment?.ReplyMessages.length > 0 && fbComment?.ReplyMessages?.map((replymessage: any, ReplyIndex: any) => {
+                                                              return (
+                                                                <div className="d-flex border ms-3 p-2  mb-1">
+                                                                  <div className="col-1 p-0 wid30">
+                                                                    {replymessage?.AuthorImage != undefined && replymessage?.AuthorImage != '' ? <img className="workmember hreflink " onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, replymessage?.AuthorName, this?.taskUsers)}
+                                                                      src={replymessage.AuthorImage} /> : <span title="Default user icons" className="alignIcon svg__iconbox svg__icon--defaultUser "></span>}
+                                                                  </div>
+                                                                  <div className="col-11 pe-0" >
+                                                                    <div className='d-flex justify-content-between align-items-center'>
+                                                                      {replymessage?.AuthorName} - {replymessage?.Created}
+                                                                      <span className='d-flex'>
+                                                                        <a title='Edit'
+
+                                                                          onClick={() => this.EditReplyComment(replymessage, k, 0, true, i, ReplyIndex)
+                                                                          }
+                                                                        >
+                                                                          <span className='svg__iconbox svg__icon--edit'></span>
+                                                                        </a>
+                                                                        <a title='Delete'
+                                                                          onClick={() => this.clearReplycomment(true, k, j, i, ReplyIndex)}
+
+                                                                        >
+                                                                          <span className='svg__iconbox svg__icon--trash'></span></a>
+                                                                      </span>
+                                                                    </div>
+                                                                    <div><span dangerouslySetInnerHTML={{ __html: this.cleanHTML(replymessage?.Title, null, j) }}></span></div>
+                                                                  </div>
+                                                                </div>
+
+                                                              )
+                                                            })}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              {this.state?.subchildcomment == j && this.state?.subchildParentIndex == i ? <div className='SpfxCheckRadio' >
+                                                <div className="col-sm-12 mt-2 p-0  ">
+                                                  {this.state.Result["Approver"] != "" && this.state.Result["Approver"] != undefined && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) && <label className='label--checkbox'><input type='checkbox' className='form-check-input me-1' checked={this.state?.ApprovalCommentcheckbox} onChange={(e) => this.setState({ ApprovalCommentcheckbox: e.target?.checked })} />Mark as Approval Comment</label>}
+
+                                                </div>
+
+                                                <div className="align-items-center d-flex"
+
+                                                >  <textarea id="txtCommentSubtext" onChange={(e) => this.handleInputChange(e)} className="form-control full-width" ></textarea>
+                                                  <button type="button" className={this.state.Result["Approver"] != undefined && this.state.Result["Approver"] != "" && (this.state.Result["Approver"]?.AssingedToUser?.Id == this.currentUser[0]?.Id || (this.state.Result["Approver"]?.Approver[0]?.Id == this?.currentUser[0]?.Id)) ? "btn-primary btn ms-2" : "btn-primary btn ms-2"} onClick={() => this.SubtextPostButtonClick(j, i)}>Post</button>
+                                                </div>
+                                              </div> : null}
+
+                                            </div>
+                                          })}
+
+
+
+                                        </div>
+
+
+                                      </>
+                                    )
+                                  }
                                 }
+
                               })}
                             </div>
                           }
@@ -2683,8 +2901,9 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                                   <div className="expandicon">
                                     <span >{imgData?.UploadeDate}</span>
                                     <span className='round px-1'>
-                                      {imgData?.UserImage !== null &&
-                                        <img className='align-self-start' title={imgData?.UserName} src={imgData?.UserImage} />
+                                      {imgData?.UserImage !== null && imgData?.UserImage != "" ?
+                                        <img className='align-self-start hreflink ' title={imgData?.UserName} onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, imgData?.UserName, this?.taskUsers)} src={imgData?.UserImage} />
+                                        : <span title="Default user icons" onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, imgData?.UserName, this?.taskUsers)} className="alignIcon svg__iconbox svg__icon--defaultUser "></span>
                                       }
                                     </span>
                                   </div>
@@ -2703,7 +2922,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
 
                                 <span className='round px-1'>
                                   {item.AuthorImage != null &&
-                                    <img className='align-self-start' title={item?.AuthorName} src={item?.AuthorImage} />
+                                    <img className='align-self-start hreflink ' title={item?.AuthorName} onClick={() => globalCommon?.openUsersDashboard(AllListId?.siteUrl, undefined, item?.AuthorName, this?.taskUsers)} src={item?.AuthorImage} />
                                   }
                                 </span>
 
@@ -2721,9 +2940,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                     </div>}
 
                   </section>
-                  <div className="row">
-                    <div className='p-0'> {this.state.Result.Id != undefined && <KeyDocuments ref={this?.relevantDocRef} AllListId={AllListId} Context={this.props?.Context} siteUrl={this.props.siteUrl} user={this?.taskUsers} DocumentsListID={this.props?.DocumentsListID} ID={this.state?.itemID} siteName={this.state.listName} folderName={this.state.Result['Title']} keyDoc={true}></KeyDocuments>}</div>
-                  </div>
+
                 </div>
                 <div className="col-3">
                   <div>
@@ -2734,7 +2951,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                   </div>
                   <div>{this.state.Result.Id && <SmartInformation ref={this.smartInfoRef} Id={this.state.Result.Id} AllListId={AllListId} Context={this.props?.Context} taskTitle={this.state.Result?.Title} listName={this.state.Result?.listName} />}</div>
                   <div> {this.state.Result.Id != undefined && <RelevantDocuments ref={this?.relevantDocRef} AllListId={AllListId} Context={this.props?.Context} siteUrl={this.props.siteUrl} DocumentsListID={this.props?.DocumentsListID} ID={this.state?.itemID} siteName={this.state.listName} folderName={this.state.Result['Title']} ></RelevantDocuments>}</div>
-                  <div> {this.state.Result.Id != undefined && <RelevantEmail ref={this?.relevantDocRef} AllListId={AllListId} Context={this.props?.Context} siteUrl={this.props.siteUrl} DocumentsListID={this.props?.DocumentsListID} ID={this.state?.itemID} siteName={this.state.listName} folderName={this.state.Result['Title']} ></RelevantEmail>}</div>
+                  <div> {this.state.Result.Id != undefined && <RelevantEmail ref={this?.keyDocRef} AllListId={AllListId} Context={this.props?.Context} siteUrl={this.props.siteUrl} DocumentsListID={this.props?.DocumentsListID} ID={this.state?.itemID} siteName={this.state.listName} folderName={this.state.Result['Title']} ></RelevantEmail>}</div>
                 </div>
 
               </div>
@@ -2743,7 +2960,10 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
             {console.log("context data ================", myContextValue)}
 
             <div className="row">
-              {this.state.Result != undefined && this.state.Result.Id != undefined && this.state.Result.TaskTypeTitle != "" && this.state.Result.TaskTypeTitle != undefined && this.state.Result.TaskTypeTitle != 'Task' ? <TasksTable props={this.state.Result} AllMasterTasks={this.masterTaskData} AllSiteTasks={this.allDataOfTask} AllListId={AllListId} Context={this.props?.Context} /> : ''}
+              {this.state.Result != undefined && this.state.Result.Id != undefined && this.state.Result.TaskTypeTitle != "" && this.state.Result.TaskTypeTitle != undefined && this.state.Result.TaskTypeTitle != 'Task' ?
+                //  <TasksTable props={this.state.Result} AllMasterTasks={this.masterTaskData} AllSiteTasks={this.allDataOfTask} AllListId={AllListId} Context={this.props?.Context} />
+                <RadimadeTable tableId="TaskProfilegit" AllListId={AllListId} configration={"AllAwt"} SelectedSiteForTask={[this.state?.listName]} SelectedItem={this.state.Result}></RadimadeTable>
+                : ''}
             </div>
             <div className='row'>
 
@@ -2754,7 +2974,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
                   </div>
                   <div>Last modified <span >{(moment(this.state.Result['Modified']).format('DD MMM YYYY HH:mm '))}</span> by <span className="siteColor">{this.state.Result['ModifiedBy'] != null && this.state.Result['ModifiedBy'].Title}</span><span className='mx-1'>|</span>
 
-                    <span>{this.state.itemID ? <VersionHistoryPopup taskId={this.state.itemID} listId={this.state.Result.listId} siteUrls={this.state.Result.siteUrl} isOpen={this.state.isopenversionHistory} /> : ''}</span>
+                    <span>{this.state.itemID ? <VersionHistoryPopup taskId={this.state.itemID} RequiredListIds={AllListId} listId={this.state.Result.listId} siteUrls={this.state.Result.siteUrl} isOpen={this.state.isopenversionHistory} /> : ''}</span>
                   </div>
                 </div>
               }
@@ -2822,6 +3042,7 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
               RequiredListIds={AllListId}
               closePopupCallBack={(Type: any) => { this.CallBack(Type) }}
               usedFor={"AWT"}
+              ColorCode={this.state.Result["Portfolio"]?.PortfolioType?.Color}
             /> : ''}
           {this.state?.emailcomponentopen && countemailbutton == 0 && <EmailComponenet approvalcallback={() => { this.approvalcallback() }} Context={this.props?.Context} emailStatus={this.state?.emailComponentstatus} currentUser={this?.currentUser} items={this.state?.Result} />}
 
@@ -2835,6 +3056,36 @@ class Taskprofile extends React.Component<ITaskprofileProps, ITaskprofileState> 
               showProject={this.state?.isopenProjectpopup}
             />
           }
+          {(this.state?.CommenttoUpdate != undefined) && <Panel
+            onRenderHeader={this.onRenderCustomHeadereditcomment}
+            isOpen={this.state.isEditModalOpen ? this.state.isEditModalOpen : this.state.isEditReplyModalOpen}
+            onDismiss={this.Closecommentpopup}
+            isBlocking={this.state.isEditModalOpen ? !this.state.isEditModalOpen : !this.state.isEditReplyModalOpen}
+          >
+            <div className="modal-body">
+              <div className='col'>
+                <textarea id="txtUpdateComment" rows={6} className="full-width" onChange={(e) => this.handleUpdateComment(e)}  >{this.state?.CommenttoUpdate}</textarea>
+              </div>
+            </div>
+            <footer className='modal-footer mt-2'>
+              <button className="btn btn-primary ms-1" onClick={(e) => this.updateComment()}>Save</button>
+              <button className='btn btn-default ms-1' onClick={this.Closecommentpopup}>Cancel</button>
+            </footer>
+
+
+          </Panel>}
+
+          {this.state.ApprovalHistoryPopup ? <ApprovalHistoryPopup
+            ApprovalPointUserData={this.state.ApprovalPointUserData}
+            indexSHow={this.state.currentArraySubTextIndex != null ? this.state.ApprovalPointCurrentParentIndex + "." + this.state.currentArraySubTextIndex : this.state.ApprovalPointCurrentParentIndex}
+            ApprovalPointCurrentIndex={this.state.ApprovalPointCurrentParentIndex - 1}
+            ApprovalPointHistoryStatus={this.state.ApprovalHistoryPopup}
+            currentArrayIndex={this.state.currentArraySubTextIndex - 1}
+            usefor="TaskProfile"
+
+            callBack={() => this.ApprovalHistoryPopupCallBack()}
+          />
+            : null}
 
         </div>
       </myContextValue.Provider>

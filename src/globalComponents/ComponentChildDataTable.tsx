@@ -5,7 +5,6 @@ import { FaCompressArrowsAlt } from "react-icons/fa";
 import pnp, { Web, sp } from "sp-pnp-js";
 import { map } from "jquery";
 import * as globalCommon from "../globalComponents/globalCommon";
-import ShowTaskTeamMembers from "../globalComponents/ShowTaskTeamMembers";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { ColumnDef } from "@tanstack/react-table";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -17,14 +16,12 @@ import GlobalCommanTable, {
   IndeterminateCheckbox
 } from "../globalComponents/GroupByReactTableComponents/GlobalCommanTable";
 import InfoIconsToolTip from "../globalComponents/InfoIconsToolTip/InfoIconsToolTip";
-import PageLoader from "../globalComponents/pageLoader";
+import ClientCategoryPopup from "./SiteCompositionComponents/SCClientCategoryPopup";
+
 
 var filt: any = "";
 var ContextValueGlobal: any = {};
-let AllSiteTasksDataGlobal: any = [];
-let isUpdatedGlobal: any = "";
-let componentDataGlobal: any = [];
-let childRefdataGlobal: any;
+
 let timeSheetConfigGlobal: any = {}
 let portfolioColorGlobal: any = "";
 let ProjectDataGlobal: any = [];
@@ -34,23 +31,55 @@ let countAllTasksDataGlobal: any = [];
 let countAllComposubDataGlobal: any = [];
 let countsrunGlobal = 0;
 let countGlobal = 1;
+let UpdatedCCCount: any = 0;
+let tempSiteAndCategoryData: any = [];
+
+let isUpdatedGlobal: any = "";
+let lastUpdatedAllSites: any = [];
+let childRefdataGlobal: any;
+
 function ComponentChildDataTable(SelectedProp: any) {
+  let AllsiteClientCategories: any = [];
+  let allMasterTaskGlobalArray: any = [];
+  let allSiteGlobalArray: any = [];
+  let AllSiteTasksDataGlobal: any = [];
+  let componentDataGlobal: any = [];
   const usedFor = SelectedProp.usedFor;
   const childRef = React.useRef<any>();
+  const prevSelectedCC = SelectedProp.prevSelectedCC;
   if (childRef != null) {
     childRefdataGlobal = { ...childRef };
   }
-  
+  // try {
+  //   if (SelectedProp?.NextProp != undefined) {
+  //     SelectedProp.NextProp.isShowTimeEntry = JSON.parse(
+  //       SelectedProp?.NextProp?.TimeEntry
+  //     );
+  //     SelectedProp.NextProp.isShowSiteCompostion = JSON.parse(
+  //       SelectedProp?.NextProp?.SiteCompostion
+  //     );
+  //   }
+  // } catch (e) {
+  //   console.log(e);
+  // }
   ContextValueGlobal = SelectedProp?.NextProp;
-
-  const refreshData = () => setData(() => renderDataGlobal);
+  const refreshData = () => {
+    AllsiteClientCategories = []
+    componentDataGlobal = [];
+    lastUpdatedAllSites = []
+    allMasterTaskGlobalArray = []
+    allSiteGlobalArray = []
+    // setData([])
+  };
   const [loaded, setLoaded] = React.useState(false);
   const [siteConfig, setSiteConfig] = React.useState([]);
   const [data, setData] = React.useState([]);
+  const [FlatViewAllData, setFlatViewAllData] = React.useState<any>([])
   copyDtaArrayGlobal = data;
   const [AllUsers, setTaskUser] = React.useState([]);
   const [AllMetadata, setMetadata] = React.useState([]);
   const [AllClientCategory, setAllClientCategory] = React.useState([]);
+  const [AllSitesData, setAllSitesData] = React.useState([]);
   const [IsUpdated, setIsUpdated] = React.useState("");
   const [checkedList, setCheckedList] = React.useState<any>({});
   // const [AllSiteTasksDataGlobal, setAllSiteTasksData] = React.useState([]);
@@ -59,16 +88,7 @@ function ComponentChildDataTable(SelectedProp: any) {
   const [taskTypeData, setTaskTypeData] = React.useState([]);
   const [portfolioTypeDataItem, setPortFolioTypeIcon] = React.useState([]);
   const [taskTypeDataItem, setTaskTypeDataItem] = React.useState([]);
-  const [OpenAddStructurePopup, setOpenAddStructurePopup] =
-    React.useState(false);
-  const [ActivityPopup, setActivityPopup] = React.useState(false);
-  const [isOpenActivity, setIsOpenActivity] = React.useState(false);
-  const [isOpenWorkstream, setIsOpenWorkstream] = React.useState(false);
-  const [IsComponent, setIsComponent] = React.useState(false);
-  const [SharewebComponent, setSharewebComponent] = React.useState("");
-  const [IsTask, setIsTask] = React.useState(false);
-  const [SharewebTask, setSharewebTask] = React.useState("");
-  const [SharewebTimeComponent, setSharewebTimeComponent] = React.useState([]);
+
   const [checkedList1, setCheckedList1] = React.useState([]);
   const [topCompoIcon, setTopCompoIcon]: any = React.useState(false);
   const [IsTimeEntry, setIsTimeEntry] = React.useState(false);
@@ -78,6 +98,12 @@ function ComponentChildDataTable(SelectedProp: any) {
       { Title: "SubComponent", Suffix: "S", Level: 2 },
       { Title: "Feature", Suffix: "F", Level: 3 }
     ]);
+
+  const [flatView, setFlatView] = React.useState(true);
+  const [IsMakeSCProtected, setIsMakeSCProtected] = React.useState(SelectedProp?.IsSCProtected ? SelectedProp.IsSCProtected : false);
+  const [IsClientCategoryPopupOpen, setIsClientCategoryPopupOpen] = React.useState(false);
+  const [SelectedClientCategory, setSelectedClientCategory] = React.useState([]);
+  const [CurrentSiteName, setCurrentSiteName] = React.useState('');
   let ComponetsData: any = {};
   let Response: any = [];
   let props = undefined;
@@ -86,14 +112,6 @@ function ComponentChildDataTable(SelectedProp: any) {
 
   let TaskUsers: any = [];
   let TasksItem: any = [];
-
-
-  // Load all time entry for smart time 
-
-
-
-
-  // load all time entry end  
 
   const getTaskUsers = async () => {
     let web = new Web(ContextValueGlobal.siteUrl);
@@ -192,6 +210,12 @@ function ComponentChildDataTable(SelectedProp: any) {
         (metadata: any) => metadata?.TaxType == "Client Category"
       )
     );
+    setAllSitesData(
+      smartmetaDetails?.filter(
+        (metadata: any) => metadata?.TaxType == "Sites"
+      )
+    );
+
     smartmetaDetails?.map((newtest: any) => {
       if (newtest.Title == "SDC Sites" || newtest.Title == "DRR" || newtest.Title == "Offshore Tasks" || newtest.Title == "DE" || newtest.Title == "Gender" || newtest.Title == "Small Projects" || newtest.Title == "Shareweb Old" || newtest.Title == "Master Tasks")
         newtest.DataLoadNew = false;
@@ -204,6 +228,22 @@ function ComponentChildDataTable(SelectedProp: any) {
       setSiteConfig(siteConfigSites);
     }
     setMetadata(smartmetaDetails);
+  };
+
+  /// **************** Flat View related functions  *********************///
+
+  const handleSwitchToggle = () => {
+    setFlatView(!flatView);
+  };
+  const ToggleForProtected = () => {
+    if (IsMakeSCProtected) {
+      setIsMakeSCProtected(false);
+      SelectedProp?.isProtected(false)
+    } else {
+      setIsMakeSCProtected(true);
+      SelectedProp?.isProtected(true)
+    }
+
   };
 
   const findPortFolioIconsAndPortfolio = async () => {
@@ -289,7 +329,6 @@ function ComponentChildDataTable(SelectedProp: any) {
             "Body",
             "SiteCompositionSettings",
             "PercentComplete",
-            "ClientCategory",
             "Priority",
             "TaskType/Id",
             "TaskType/Title",
@@ -334,6 +373,7 @@ function ComponentChildDataTable(SelectedProp: any) {
                 $.each(AllTasksMatches, function (index: any, item: any) {
                   item.isDrafted = false;
                   item.flag = true;
+
                   item.TitleNew = item.Title;
                   item.siteType = config.Title;
                   item.childs = [];
@@ -341,6 +381,34 @@ function ComponentChildDataTable(SelectedProp: any) {
                   item.siteUrl = ContextValueGlobal.siteUrl;
                   item["SiteIcon"] = config?.Item_x005F_x0020_Cover?.Url;
                   item.fontColorTask = "#000";
+                  let SCSettingsData: any = item["SiteCompositionSettings"];
+                  let checkIsSCProctected: any = false;
+                  if (SCSettingsData?.length > 0) {
+                    let TempSCSettingsData: any = JSON.parse(SCSettingsData);
+                    if (TempSCSettingsData?.length > 0) {
+                      checkIsSCProctected = TempSCSettingsData[0].Protected;
+                    }
+                  }
+                  if (checkIsSCProctected) {
+                    item.IsSCProtected = true;
+                    item.IsSCProtectedStatus = "Protected";
+
+                  } else {
+                    item.IsSCProtected = false;
+                    item.IsSCProtectedStatus = "";
+
+                  }
+                  let tempArray: any = [];
+                  if (item.ClientCategory?.length > 0) {
+                    AllClientCategory?.map((AllCategory: any) => {
+                      item.ClientCategory?.map((SelectedCcategory: any) => {
+                        if (AllCategory.Id == SelectedCcategory.Id) {
+                          tempArray.push(AllCategory);
+                        }
+                      })
+                    })
+                  }
+                  item.ClientCategory = tempArray;
                   // if (item.TaskCategories.results != undefined) {
                   //     if (item.TaskCategories.results.length > 0) {
                   //         $.each(
@@ -368,6 +436,7 @@ function ComponentChildDataTable(SelectedProp: any) {
                   result.chekbox = false;
                   result.descriptionsSearch = "";
                   result.commentsSearch = "";
+                  result.portfolioItemsSearch = '';
 
                   result.DueDate = Moment(result.DueDate).format("DD/MM/YYYY");
                   result.DisplayDueDate = Moment(result.DueDate).format("DD/MM/YYYY");
@@ -478,6 +547,9 @@ function ComponentChildDataTable(SelectedProp: any) {
 
                   }
                   result["Item_x0020_Type"] = "Task";
+                  if (result?.TaskType) {
+                    result.portfolioItemsSearch = result.siteType;
+                  }
                   TasksItem.push(result);
                   AllTasksData.push(result);
                 });
@@ -492,58 +564,7 @@ function ComponentChildDataTable(SelectedProp: any) {
       }
     }
   };
-  const timeEntryIndex: any = {};
-  const smartTimeTotal = async () => {
-    countGlobal++;
-    let AllTimeEntries = [];
-    if (timeSheetConfigGlobal?.Id !== undefined) {
-      AllTimeEntries = await globalCommon.loadAllTimeEntry(timeSheetConfigGlobal);
-    }
-    AllTimeEntries?.forEach((entry: any) => {
-      siteConfig.forEach((site) => {
-        const taskTitle = `Task${site.Title}`;
-        const key = taskTitle + entry[taskTitle]?.Id
-        if (entry.hasOwnProperty(taskTitle) && entry.AdditionalTimeEntry !== null && entry.AdditionalTimeEntry !== undefined) {
-          if (entry[taskTitle].Id === 168) {
-            console.log(entry[taskTitle].Id);
 
-          }
-          const additionalTimeEntry = JSON.parse(entry.AdditionalTimeEntry);
-          let totalTaskTime = additionalTimeEntry?.reduce((total: any, time: any) => total + parseFloat(time.TaskTime), 0);
-
-          if (timeEntryIndex.hasOwnProperty(key)) {
-            timeEntryIndex[key].TotalTaskTime += totalTaskTime
-          } else {
-            timeEntryIndex[`${taskTitle}${entry[taskTitle]?.Id}`] = {
-              ...entry[taskTitle],
-              TotalTaskTime: totalTaskTime,
-              siteType: site.Title,
-            };
-          }
-        }
-      });
-    });
-    AllSiteTasksDataGlobal?.map((task: any) => {
-      task.TotalTaskTime = 0;
-      const key = `Task${task?.siteType + task.Id}`;
-      if (timeEntryIndex.hasOwnProperty(key) && timeEntryIndex[key]?.Id === task.Id && timeEntryIndex[key]?.siteType === task.siteType) {
-        task.TotalTaskTime = timeEntryIndex[key]?.TotalTaskTime;
-      }
-    })
-    if (timeEntryIndex) {
-      const dataString = JSON.stringify(timeEntryIndex);
-      localStorage.setItem('timeEntryIndex', dataString);
-    }
-    console.log("timeEntryIndex", timeEntryIndex)
-    if (AllSiteTasksDataGlobal?.length > 0) {
-      setData([]);
-      portfolioTypeData.forEach((port, index) => {
-        componentGrouping(port?.Id, index);
-        countsrunGlobal++;
-      });
-    }
-    return AllSiteTasksDataGlobal;
-  };
 
   const GetComponents = async () => {
     if (portfolioTypeData.length > 0) {
@@ -578,6 +599,7 @@ function ComponentChildDataTable(SelectedProp: any) {
         "Created",
         "Body",
         "Item_x0020_Type",
+        "SiteCompositionSettings",
         "Categories",
         "Short_x0020_Description_x0020_On",
         "PriorityRank",
@@ -650,6 +672,25 @@ function ComponentChildDataTable(SelectedProp: any) {
           ""
         );
       }
+
+      let SCSettingsData: any = result["SiteCompositionSettings"];
+      let checkIsSCProctected: any = false;
+      if (SCSettingsData?.length > 0) {
+        let TempSCSettingsData: any = JSON.parse(SCSettingsData);
+        if (TempSCSettingsData?.length > 0) {
+          checkIsSCProctected = TempSCSettingsData[0].Protected;
+        }
+      }
+      if (checkIsSCProctected) {
+        result.IsSCProtected = true;
+        result.IsSCProtectedStatus = "Protected";
+
+      } else {
+        result.IsSCProtected = false;
+        result.IsSCProtectedStatus = "";
+
+      }
+
       result.DisplayCreateDate = Moment(result.Created).format("DD/MM/YYYY");
 
       result.PercentComplete = (result.PercentComplete * 100).toFixed(0);
@@ -730,21 +771,27 @@ function ComponentChildDataTable(SelectedProp: any) {
         result.ClientCategorySearch = "";
       }
     });
-    setAllMasterTasks(componentDetails);
-    AllComponetsData = componentDetails;
-    ComponetsData["allComponets"] = componentDetails;
+    let finalDataComponent = componentDetails.filter((val: any, id: any, array: any) => {
+      return array.indexOf(val) == id;
+    })
+    setAllMasterTasks(finalDataComponent);
+    AllComponetsData = finalDataComponent;
+    ComponetsData["allComponets"] = finalDataComponent;
     // AllSiteTasksDataGlobal?.length > 0 &&
     if (AllSiteTasksDataGlobal?.length > 0 && AllComponetsData?.length > 0) {
-    //   if (usedFor == "Site-Compositions" && copyDtaArrayGlobal?.length > 0) {
-    //     console.log("Data Already Exits");
-    //     setLoaded(true);
-    //     setData(componentDataGlobal);
-    //   } else {
-        portfolioTypeData.forEach((port, index) => {
-          componentGrouping(port?.Id, index);
-          countsrunGlobal++;
-        });
-    //   }
+      //   if (usedFor == "Site-Compositions" && copyDtaArrayGlobal?.length > 0) {
+      //     console.log("Data Already Exits");
+      //     setLoaded(true);
+      //     setData(componentDataGlobal);
+      //   } else {
+      portfolioTypeData.forEach((port, index) => {
+        componentGrouping(port?.Id, index);
+        countsrunGlobal++;
+      });
+      // let portfoliodata =  portfolioTypeData.filter((port)=>port.Title === SelectedProp?.props?.Item_x0020_Type)
+      // componentGrouping(portfoliodata[0]?.Id, portfoliodata[0]?.Id);
+      // countsrunGlobal++;
+      //   }
 
     }
     if (portfolioTypeData?.length === countsrunGlobal) {
@@ -770,22 +817,22 @@ function ComponentChildDataTable(SelectedProp: any) {
     // if (usedFor == "Site-Compositions" && componentDataGlobal?.length > 0) {
     //   console.log("Data Already Exits");
     // } else {
-      getTaskType();
-      findPortFolioIconsAndPortfolio();
-      GetSmartmetadata();
-      getTaskUsers();
-      getPortFolioType();
+    getTaskType();
+    findPortFolioIconsAndPortfolio();
+    GetSmartmetadata();
+    getTaskUsers();
+    getPortFolioType();
     // }
 
   }, []);
 
   React.useEffect(() => {
     if (AllMetadata.length > 0 && portfolioTypeData.length > 0) {
-    //   if (usedFor == "Site-Compositions" && componentDataGlobal?.length > 0) {
-    //     console.log("Data Already Exits");
-    //   } else {
-        LoadAllSiteTasks();
-    //   }
+      //   if (usedFor == "Site-Compositions" && componentDataGlobal?.length > 0) {
+      //     console.log("Data Already Exits");
+      //   } else {
+      LoadAllSiteTasks();
+      //   }
     }
   }, [AllMetadata.length > 0 && portfolioTypeData.length > 0]);
 
@@ -866,7 +913,6 @@ function ComponentChildDataTable(SelectedProp: any) {
       let Actatcomponent = AllSiteTasksDataGlobal?.filter(
         (elem1: any) =>
           elem1?.TaskType?.Id === 1 &&
-          elem1?.ParentTask?.Id === undefined &&
           elem1?.Portfolio?.Id === SelectedProp?.props?.Id
       );
       countAllTasksDataGlobal = countAllTasksDataGlobal.concat(Actatcomponent);
@@ -913,13 +959,219 @@ function ComponentChildDataTable(SelectedProp: any) {
         componentDataGlobal.push(temp);
       }
     }
-
     setLoaded(true);
-    setData(componentDataGlobal);
-    console.log(countAllTasksDataGlobal);
+    componentDataGlobal?.map((ItemDataCheckSC: any) => {
+      let SCSettingsData: any = ItemDataCheckSC["SiteCompositionSettings"];
+      let checkIsSCProctected: any = false;
+      if (SCSettingsData?.length > 0) {
+        let TempSCSettingsData: any = JSON.parse(SCSettingsData);
+        if (TempSCSettingsData?.length > 0) {
+          checkIsSCProctected = TempSCSettingsData[0].Protected;
+        }
+      }
+      if (checkIsSCProctected) {
+        ItemDataCheckSC.IsSCProtected = true;
+        ItemDataCheckSC.IsSCProtectedStatus = "Protected";
+      } else {
+        ItemDataCheckSC.IsSCProtected = false;
+        ItemDataCheckSC.IsSCProtectedStatus = "";
+      }
+      if (ItemDataCheckSC?.SiteCompositionSettings != undefined) {
+        ItemDataCheckSC.compositionType = siteCompositionType(ItemDataCheckSC?.SiteCompositionSettings);
+
+      } else {
+        ItemDataCheckSC.compositionType = '';
+
+      }
+      // if (ItemDataCheckSC.ClientCategory?.length > 0) {
+      //   if (ItemDataCheckSC.TaskType?.Title == "Task" || ItemDataCheckSC.TaskType?.Title == "Activities" || ItemDataCheckSC.TaskType?.Title == "Workstream") {
+      //     AllSitesData?.map((SiteData) => {
+      //       ItemDataCheckSC.ClientCategory?.map((ClientCategoryItem: any) => {
+      //         if (ClientCategoryItem.siteName == SiteData.Title) {
+      //           if (SiteData.ClientCategoryData?.length > 0) {
+      //             SiteData.ClientCategoryData?.push(ClientCategoryItem);
+      //           } else {
+      //             SiteData.ClientCategoryData = [ClientCategoryItem];
+      //           }
+      //         }
+      //       })
+      //       tempSiteAndCategoryData.push(SiteData);
+      //     })
+      //     ItemDataCheckSC.ClientCategory?.map((ClientCategoryItem: any) => {
+      //       AllsiteClientCategories.push(ClientCategoryItem)
+      //     })
+      //   }
+      // }
+    })
+
+    let AllFlitteredData: any = componentDataGlobal.filter((val: any, id: any, array: any) => {
+      return array.indexOf(val) == id;
+    })
+    setData([...AllFlitteredData]);
+    findAllClientCategories(AllFlitteredData);
+    console.log(AllFlitteredData);
+    GroupByClientCategoryData();
+    // console.log("Filter Site and Client Category Data ======", tempSiteAndCategoryData);
+    // console.log("Filter Site and Client Category Data AllSiteClientCategories======", AllSiteClientCategories);
   };
 
+
+  // These are the used for the summarize the Client Category Related Functionality
+
+  const findAllClientCategories = (AllData: any) => {
+    AllData.forEach((AllDataItem: any) => {
+      if (AllDataItem.Item_x0020_Type == "SubComponent" || AllDataItem.Item_x0020_Type == "Feature" || AllDataItem.Item_x0020_Type == "Component") {
+        allMasterTaskGlobalArray.push(AllDataItem)
+      }
+      if (AllDataItem.TaskType?.Title == "Task" || AllDataItem.TaskType?.Title == "Activities" || AllDataItem.TaskType?.Title == "Workstream") {
+        if (AllDataItem?.ClientCategory?.length > 0) {
+          AllDataItem?.ClientCategory?.map((CCItem: any) => {
+            AllsiteClientCategories.push(CCItem);
+          })
+        }
+        allSiteGlobalArray.push(AllDataItem);
+      }
+      if (AllDataItem.subRows?.length > 0) {
+        AllDataItem.subRows?.map((ChildArray: any) => {
+          if (ChildArray.Item_x0020_Type == "SubComponent" || ChildArray.Item_x0020_Type == "Feature" || ChildArray.Item_x0020_Type == "Component") {
+            allMasterTaskGlobalArray.push(ChildArray)
+          }
+
+          if (ChildArray.TaskType?.Title == "Task" || ChildArray.TaskType?.Title == "Activities" || ChildArray.TaskType?.Title == "Workstream") {
+            if (ChildArray?.ClientCategory?.length > 0) {
+              ChildArray?.ClientCategory?.map((CCItem: any) => {
+                AllsiteClientCategories.push(CCItem);
+              })
+            }
+            allSiteGlobalArray.push(ChildArray);
+          }
+        })
+        findAllClientCategories(AllDataItem.subRows);
+      }
+    });
+  }
+
+  const GroupByClientCategoryData = () => {
+    let AllClientCategoryOG: any = [];
+    if (AllsiteClientCategories?.length > 0) {
+      AllClientCategoryOG = AllsiteClientCategories.filter((val: any, id: any, array: any) => {
+        return array.indexOf(val) == id;
+      })
+      if (AllClientCategoryOG?.length > 0) {
+        AllClientCategoryOG?.map((SelectedCC: any) => {
+          AllSitesData?.map((AllSiteItem: any) => {
+            if (AllSiteItem.Title == SelectedCC.siteName) {
+              if (AllSiteItem.ClientCategories?.length > 0) {
+                AllSiteItem.ClientCategories.push(SelectedCC);
+              } else {
+                AllSiteItem.ClientCategories = [SelectedCC]
+              }
+            }
+          })
+        })
+      }
+      // Mereging the prev selected CC from Parent into the Summerize CC Array
+      if (prevSelectedCC?.length > 0) {
+        UpdatedCCCount++;
+        prevSelectedCC?.map((SelectedCCItem: any) => {
+          SelectedCCItem.checked = true;
+          AllSitesData?.map((AllSiteItemData: any) => {
+            if (AllSiteItemData.Title == SelectedCCItem.siteName) {
+              if (AllSiteItemData.ClientCategories?.length > 0) {
+                AllSiteItemData.ClientCategories.unshift(SelectedCCItem);
+                const finalData = AllSiteItemData.ClientCategories?.filter((val: any, id: any, array: any) => {
+                  return array.indexOf(val) == id;
+                })
+                AllSiteItemData.ClientCategories = finalData;
+              } else {
+                AllSiteItemData.ClientCategories = [SelectedCCItem]
+              }
+            }
+          })
+        })
+
+      }
+
+      lastUpdatedAllSites = [...AllSitesData];
+
+    }
+    removeDuplicateClientCategories();
+  }
+
+
+  const removeDuplicateClientCategories = () => {
+    AllSitesData?.map((CCItemData: any) => {
+      if (CCItemData.ClientCategories?.length > 0) {
+        let uniqueIds: any = {};
+        // Filter the array to remove duplicates based on Id
+        let result: any = CCItemData.ClientCategories?.filter((obj: any) => {
+          if (!uniqueIds[obj.Id]) {
+            uniqueIds[obj.Id] = true;
+            return true;
+          }
+          return false;
+        });
+        result[0].checked = true;
+        CCItemData.ClientCategories = result;
+      }
+    })
+
+    console.log("All Cliebnt nsdv sdvd sv dfbsf", AllSitesData)
+
+    let AllFinalData: any = allMasterTaskGlobalArray.concat(allSiteGlobalArray);
+    let AllFaltViewData: any = AllFinalData?.filter((val: any, id: any, array: any) => {
+      return array.indexOf(val) == id;
+    })
+    // setData(AllFaltViewData);
+    // refreshData();
+    const tempAllData: any = JSON.parse(JSON.stringify(AllFaltViewData));
+    tempAllData?.map((testItem: any) => {
+      testItem.subRows = [];
+    })
+    setFlatViewAllData([...tempAllData]);
+  }
+
+  const selectedParentClientCategory = (SelectedCCIndex: any, SiteName: any) => {
+    UpdatedCCCount++;
+    let tempArray: any = [];
+    AllSitesData?.map((ItemData: any,) => {
+      if (ItemData.Title == SiteName) {
+        if (SelectedCCIndex > -1) {
+          ItemData.ClientCategories?.map((CCItem: any, CCIndex: any) => {
+            if (CCIndex == SelectedCCIndex) {
+              CCItem.checked = true
+            } else {
+              CCItem.checked = false
+            }
+          })
+        }
+      }
+      tempArray.push(ItemData);
+      // lastUpdatedAllSites.push(ItemData);
+    })
+    setAllSitesData([...tempArray]);
+    lastUpdatedAllSites = [...tempArray];
+    SelectedProp.callback([], lastUpdatedAllSites);
+  }
+
+
   // ComponentWS
+  function siteCompositionType(jsonStr: any) {
+    var data = JSON.parse(jsonStr);
+    try {
+      data = data[0];
+      for (var key in data) {
+        if (data?.hasOwnProperty(key) && data[key] === true) {
+          return key;
+        }
+      }
+
+      return '';
+    } catch (error) {
+      console.log(error)
+      return '';
+    }
+  }
 
   const componentWsT = (levelType: any, items: any) => {
     let findws = AllSiteTasksDataGlobal.filter(
@@ -941,7 +1193,7 @@ function ComponentChildDataTable(SelectedProp: any) {
     });
     items.subRows = items?.subRows?.concat(findws);
   };
-  
+
 
   const componentActivity = (levelType: any, items: any) => {
     let findActivity = AllSiteTasksDataGlobal?.filter(
@@ -1011,6 +1263,7 @@ function ComponentChildDataTable(SelectedProp: any) {
     }
   };
 
+
   function executeOnce() {
     if (countAllTasksDataGlobal?.length > 0) {
       let countAllTasksData1 = countAllTasksDataGlobal?.filter(
@@ -1073,52 +1326,23 @@ function ComponentChildDataTable(SelectedProp: any) {
         id: "Id"
       },
       {
+        accessorFn: (row) => row?.portfolioItemsSearch,
         cell: ({ row, getValue }) => (
           <div className="alignCenter">
             {row?.original?.SiteIcon != undefined ? (
               <div className="alignCenter" title="Show All Child">
-                <img
-                  title={row?.original?.TaskType?.Title}
-                  className={
-                    row?.original?.Item_x0020_Type == "SubComponent"
-                      ? "ml-12 workmember ml20 me-1"
-                      : row?.original?.Item_x0020_Type == "Feature"
-                        ? "ml-24 workmember ml20 me-1"
-                        : row?.original?.TaskType?.Title == "Activities"
-                          ? "ml-36 workmember ml20 me-1"
-                          : row?.original?.TaskType?.Title == "Workstream"
-                            ? "ml-48 workmember ml20 me-1"
-                            : row?.original?.TaskType?.Title == "Task" ||
-                              (row?.original?.Item_x0020_Type === "Task" &&
-                                row?.original?.TaskType == undefined)
-                              ? "ml-60 workmember ml20 me-1"
-                              : "workmember ml20 me-1"
-                  }
-                  src={row?.original?.SiteIcon}
-                ></img>
+                <img title={row?.original?.TaskType?.Title} className={row?.original?.Item_x0020_Type == "SubComponent" ? "ml-12 workmember ml20 me-1" : row?.original?.Item_x0020_Type == "Feature" ? "ml-24 workmember ml20 me-1" : row?.original?.TaskType?.Title == "Activities" ? "ml-36 workmember ml20 me-1" :
+                  row?.original?.TaskType?.Title == "Workstream" ? "ml-48 workmember ml20 me-1" : row?.original?.TaskType?.Title == "Task" || row?.original?.Item_x0020_Type === "Task" && row?.original?.TaskType == undefined ? "ml-60 workmember ml20 me-1" : "workmember me-1"
+                }
+                  src={row?.original?.SiteIcon}>
+                </img>
               </div>
             ) : (
               <>
                 {row?.original?.Title != "Others" ? (
-                  <div
-                    title={row?.original?.Item_x0020_Type}
-                    style={{
-                      backgroundColor: `${row?.original?.PortfolioType?.Color}`
-                    }}
-                    className={
-                      row?.original?.Item_x0020_Type == "SubComponent"
-                        ? "ml-12 Dyicons"
-                        : row?.original?.Item_x0020_Type == "Feature"
-                          ? "ml-24 Dyicons"
-                          : row?.original?.TaskType?.Title == "Activities"
-                            ? "ml-36 Dyicons"
-                            : row?.original?.TaskType?.Title == "Workstream"
-                              ? "ml-48 Dyicons"
-                              : row?.original?.TaskType?.Title == "Task"
-                                ? "ml-60 Dyicons"
-                                : "Dyicons"
-                    }
-                  >
+                  <div title={row?.original?.Item_x0020_Type} style={{ backgroundColor: `${row?.original?.PortfolioType?.Color}` }} className={row?.original?.Item_x0020_Type == "SubComponent" ? "ml-12 Dyicons" : row?.original?.Item_x0020_Type == "Feature" ? "ml-24 Dyicons" : row?.original?.TaskType?.Title == "Activities" ? "ml-36 Dyicons" :
+                    row?.original?.TaskType?.Title == "Workstream" ? "ml-48 Dyicons" : row?.original?.TaskType?.Title == "Task" ? "ml-60 Dyicons" : "Dyicons"
+                  }>
                     {row?.original?.SiteIconTitle}
                   </div>
                 ) : (
@@ -1126,212 +1350,111 @@ function ComponentChildDataTable(SelectedProp: any) {
                 )}
               </>
             )}
-            {getValue()}
           </div>
         ),
-        accessorKey: "",
-        id: "row?.original.Id",
-        canSort: false,
-        placeholder: "",
-        size: 95
+        id: "portfolioItemsSearch",
+        placeholder: "Type",
+        header: "",
+        resetColumnFilters: false,
+        size: 95,
       },
       {
         accessorFn: (row) => row?.TaskID,
         cell: ({ row, getValue }) => (
-          <>
-            <ReactPopperTooltip ShareWebId={getValue()} row={row} />
-          </>
+          <div>
+            <ReactPopperTooltip CMSToolId={getValue()} row={row} />
+          </div>
         ),
         id: "TaskID",
         placeholder: "ID",
         header: "",
         resetColumnFilters: false,
         // isColumnDefultSortingAsc:true,
-        size: 195
+        size: 100
       },
       {
         accessorFn: (row) => row?.Title,
         cell: ({ row, column, getValue }) => (
           <div className="alignCenter">
-            <span className="column-description2">
-              {row?.original?.siteType == "Master Tasks" &&
-                row?.original?.Title !== "Others" && (
-                  <a
-                    className="text-content hreflink"
-                    title={row?.original?.Title}
-                    data-interception="off"
-                    target="_blank"
-                    style={
-                      row?.original?.fontColorTask != undefined
-                        ? { color: `${row?.original?.fontColorTask}` }
-                        : { color: `${row?.original?.PortfolioType?.Color}` }
-                    }
-                    href={
-                      ContextValueGlobal.siteUrl +
-                      "/SitePages/Portfolio-Profile.aspx?taskId=" +
-                      row?.original?.ID
-                    }
-                  >
-                    <HighlightableCell
-                      value={getValue()}
-                      searchTerm={
-                        column.getFilterValue() != undefined
-                          ? column.getFilterValue()
-                          : childRef?.current?.globalFilter
-                      }
-                    />
-                  </a>
-                )}
-              {row?.original?.siteType != "Master Tasks" &&
-                row?.original?.Title !== "Others" && (
-                  <a
-                    className="text-content hreflink"
-                    title={row?.original?.Title}
-                    data-interception="off"
-                    target="_blank"
-                    style={
-                      row?.original?.fontColorTask != undefined
-                        ? { color: `${row?.original?.fontColorTask}` }
-                        : { color: `${row?.original?.PortfolioType?.Color}` }
-                    }
-                    href={
-                      ContextValueGlobal.siteUrl +
-                      "/SitePages/Task-Profile.aspx?taskId=" +
-                      row?.original?.ID +
-                      "&Site=" +
-                      row?.original?.siteType
-                    }
-                  >
-                    <HighlightableCell
-                      value={getValue()}
-                      searchTerm={
-                        column.getFilterValue() != undefined
-                          ? column.getFilterValue()
-                          : childRef?.current?.globalFilter
-                      }
-                    />
-                  </a>
-                )}
+            <span className="columnFixedTitle">
+              {row?.original?.siteType == "Master Tasks" && row?.original?.Title !== "Others" && (
+                <a className="text-content hreflink" title={row?.original?.Title} data-interception="off" target="_blank" style={row?.original?.fontColorTask != undefined ? { color: `${row?.original?.fontColorTask}` } : { color: `${row?.original?.PortfolioType?.Color}` }}
+                  href={ContextValueGlobal.siteUrl + "/SitePages/Portfolio-Profile.aspx?taskId=" + row?.original?.ID} >
+                  <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : childRef?.current?.globalFilter} />
+                </a>
+              )}
+              {row?.original?.siteType != "Master Tasks" && row?.original?.Title !== "Others" && (
+                <a className="text-content hreflink" title={row?.original?.Title} data-interception="off" target="_blank" style={row?.original?.fontColorTask != undefined ? { color: `${row?.original?.fontColorTask}` } : { color: `${row?.original?.PortfolioType?.Color}` }}
+                  href={ContextValueGlobal.siteUrl + "/SitePages/Task-Profile.aspx?taskId=" + row?.original?.ID + "&Site=" + row?.original?.siteType} >
+                  <HighlightableCell value={getValue()} searchTerm={column.getFilterValue() != undefined ? column.getFilterValue() : childRef?.current?.globalFilter} />
+                </a>
+              )}
               {row?.original.Title === "Others" ? (
-                <span
-                  className="text-content"
-                  title={row?.original?.Title}
-                  style={
-                    row?.original?.fontColorTask != undefined
-                      ? { color: `${row?.original?.fontColorTask}` }
-                      : { color: `${row?.original?.PortfolioType?.Color}` }
-                  }
-                >
-                  {row?.original?.Title}
-                </span>
+                <span className="text-content" title={row?.original?.Title} style={row?.original?.fontColorTask != undefined ? { color: `${row?.original?.fontColorTask}` } : { color: `${row?.original?.PortfolioType?.Color}` }}>{row?.original?.Title}</span>
               ) : (
                 ""
               )}
             </span>
-            {row?.original?.Categories == "Draft" ? (
-              <FaCompressArrowsAlt
-                style={{
-                  height: "11px",
-                  width: "20px",
-                  color: `${row?.original?.PortfolioType?.Color}`
-                }}
-              />
-            ) : (
-              ""
+            {row?.original?.Categories == 'Draft' ?
+              <FaCompressArrowsAlt style={{ height: '11px', width: '20px', color: `${row?.original?.PortfolioType?.Color}` }} /> : ''}
+            {row?.original?.subRows?.length > 0 ?
+              <span className='ms-1'>{row?.original?.subRows?.length ? '(' + row?.original?.subRows?.length + ')' : ""}</span> : ''}
+            {row?.original?.descriptionsSearch != null && row?.original?.descriptionsSearch != '' && (
+              <InfoIconsToolTip Discription={row?.original?.descriptionsSearch} row={row?.original} />
             )}
-            {row?.original?.subRows?.length > 0 ? (
-              <span className="ms-1">
-                {row?.original?.subRows?.length
-                  ? "(" + row?.original?.subRows?.length + ")"
-                  : ""}
-              </span>
-            ) : (
-              ""
-            )}
-            {row?.original?.descriptionsSearch != null &&
-              row?.original?.descriptionsSearch != "" && (
-                <InfoIconsToolTip
-                  Discription={row?.original?.descriptionsSearch}
-                  row={row?.original}
-                />
-              )}
           </div>
         ),
         id: "Title",
         placeholder: "Title",
         resetColumnFilters: false,
         header: "",
-        size: 480
+        size: 500,
       },
       {
-        accessorFn: (row) => row?.projectStructerId + "." + row?.ProjectTitle,
-        cell: ({ row }) => (
-          <>
-            {row?.original?.ProjectTitle != (null || undefined) ? (
-              <span>
-                <a
-                  style={
-                    row?.original?.fontColorTask != undefined
-                      ? { color: `${row?.original?.fontColorTask}` }
-                      : { color: `${row?.original?.PortfolioType?.Color}` }
-                  }
-                  data-interception="off"
-                  target="_blank"
-                  className="hreflink serviceColor_Active"
-                  href={`${ContextValueGlobal.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${row?.original?.ProjectId}`}
-                >
-                  <ReactPopperTooltip
-                    ShareWebId={row?.original?.projectStructerId}
-                    projectToolShow={true}
-                    row={row}
-                    AllListId={ContextValueGlobal}
-                  />
-                </a>
-              </span>
-            ) : (
-              ""
-            )}
-          </>
-        ),
-        id: "ProjectTitle",
-        placeholder: "Project",
-        resetColumnFilters: false,
+        accessorKey: "IsSCProtectedStatus",
+        placeholder: "Protected",
         header: "",
-        size: 70
+        resetColumnFilters: false,
+        size: 80,
+        id: "IsSCProtectedStatus"
+      },
+
+      {
+        accessorKey: "compositionType",
+        placeholder: "Composition Type",
+        header: "",
+        resetColumnFilters: false,
+        size: 80,
+        id: "compositionType"
       },
       {
         accessorFn: (row) => row?.ClientCategorySearch,
         cell: ({ row }) => (
           <>
-            <ShowClintCatogory
-              clintData={row?.original}
-              AllMetadata={AllMetadata}
-            />
+            <ShowClintCatogory clintData={row?.original} AllMetadata={AllMetadata} />
           </>
         ),
         id: "ClientCategorySearch",
         placeholder: "Client Category",
         header: "",
         resetColumnFilters: false,
-        size: 100
+        size: 95,
       },
       {
-        accessorFn: (row) => row?.AllTeamName,
-        cell: ({ row }) => (
-          <div className="alignCenter">
-            <ShowTaskTeamMembers
-              key={row?.original?.Id}
-              props={row?.original}
-              TaskUsers={AllUsers}
-              Context={SelectedProp?.NextProp}
-            />
-          </div>
+        accessorFn: (row) => row?.projectStructerId + "." + row?.ProjectTitle,
+        cell: ({ row, column, getValue }) => (
+          <>
+            {row?.original?.ProjectTitle != (null || undefined) ?
+              <span ><a style={row?.original?.fontColorTask != undefined ? { color: `${row?.original?.fontColorTask}` } : { color: `${row?.original?.PortfolioType?.Color}` }} data-interception="off" target="_blank" className="hreflink serviceColor_Active" href={`${ContextValueGlobal.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${row?.original?.ProjectId}`} >
+                <ReactPopperTooltip CMSToolId={row?.original?.projectStructerId} projectToolShow={true} row={row} AllListId={ContextValueGlobal} /></a></span>
+              : ""}
+          </>
         ),
-        id: "AllTeamName",
-        placeholder: "Team",
+        id: 'ProjectTitle',
+        placeholder: "Project",
         resetColumnFilters: false,
         header: "",
-        size: 131
+        size: 70,
       },
       {
         accessorKey: "PercentComplete",
@@ -1340,35 +1463,6 @@ function ComponentChildDataTable(SelectedProp: any) {
         resetColumnFilters: false,
         size: 42,
         id: "PercentComplete"
-      },
-      {
-        accessorKey: "ItemRank",
-        placeholder: "Item Rank",
-        header: "",
-        resetColumnFilters: false,
-        size: 42,
-        id: "ItemRank"
-      },
-     
-      {
-        accessorFn: (row) => row?.DueDate,
-        cell: ({ row }) => (
-          <span className='ms-1'>{row?.original?.DisplayDueDate} </span>
-
-        ),
-        id: 'DueDate',
-        filterFn: (row: any, columnName: any, filterValue: any) => {
-          if (row?.original?.DisplayDueDate?.includes(filterValue)) {
-            return true
-          } else {
-            return false
-          }
-        },
-        resetColumnFilters: false,
-        resetSorting: false,
-        placeholder: "DueDate",
-        header: "",
-        size: 100
       },
       {
         accessorFn: (row) => row?.Created,
@@ -1409,35 +1503,66 @@ function ComponentChildDataTable(SelectedProp: any) {
           }
         },
         header: "",
-        size: 134
+        size: 125
       },
-      {
-        accessorKey: "descriptionsSearch",
-        placeholder: "descriptionsSearch",
-        header: "",
-        resetColumnFilters: false,
-        size: 100,
-        id: "descriptionsSearch"
-      },
-      {
-        accessorKey: "commentsSearch",
-        placeholder: "commentsSearch",
-        header: "",
-        resetColumnFilters: false,
-        size: 100,
-        id: "commentsSearch"
-      },
-     
-     
+
+
     ],
     [data]
   );
-  //-------------------------------------------------- restructuring function start---------------------------------------------------------------
+  //------------------------------------- restructuring function start-----------------------------------
 
   const callBackData = React.useCallback((checkData: any) => {
     if (usedFor == "Site-Compositions") {
-      SelectedProp.callback(checkData);
+      let TempArray: any = [];
+      // if (UpdatedCCCount > 0) {
+      if (checkData?.length > 0) {
+        checkData?.map((SelectedItem: any) => {
+          let OriginalData: any = SelectedItem.original;
+          if (OriginalData.TaskType?.Title == "Task" || OriginalData.TaskType?.Title == "Activities" || OriginalData.TaskType?.Title == "Workstream") {
+            lastUpdatedAllSites?.map((AllSiteItem: any) => {
+              if (OriginalData.siteType == AllSiteItem.Title) {
+                if (AllSiteItem?.ClientCategories?.length > 0) {
+                  AllSiteItem?.ClientCategories?.map((ExistingCCItem: any) => {
+                    if (ExistingCCItem.checked == true) {
+                      OriginalData.ClientCategory = [ExistingCCItem];
+                    }
+                  })
+                }
+              }
+              if (OriginalData.siteType == "Shareweb") {
+                let TempCCForTask: any = [];
+                lastUpdatedAllSites?.map((AllSiteItem: any) => {
+                  if (AllSiteItem?.ClientCategories?.length > 0) {
+                    AllSiteItem?.ClientCategories?.map((ExistingCCItem: any) => {
+                      if (ExistingCCItem.checked == true) {
+                        TempCCForTask.push(ExistingCCItem);
+                      }
+                    })
+                  }
+                })
+                OriginalData.ClientCategory = TempCCForTask;
+              }
+            })
+          }
+          if (OriginalData?.Item_x0020_Type == "SubComponent" || OriginalData?.Item_x0020_Type == "Feature" || OriginalData?.Item_x0020_Type == "Component") {
+            let TempCCForCSF: any = [];
+            lastUpdatedAllSites?.map((AllSiteItem: any) => {
+              if (AllSiteItem?.ClientCategories?.length > 0) {
+                AllSiteItem?.ClientCategories?.map((ExistingCCItem: any) => {
+                  if (ExistingCCItem.checked == true) {
+                    TempCCForCSF.push(ExistingCCItem);
+                  }
+                })
+              }
+            })
+            OriginalData.ClientCategory = TempCCForCSF;
+          }
+        })
+      }
     }
+    SelectedProp.callback(checkData, lastUpdatedAllSites);
+    // }
     let array: any = [];
     if (checkData != undefined) {
       setCheckedList(checkData);
@@ -1449,95 +1574,167 @@ function ComponentChildDataTable(SelectedProp: any) {
     setCheckedList1(array);
   }, []);
 
-  const callBackData1 = React.useCallback((getData: any, topCompoIcon: any) => {
-    setData((getData) => [...getData]);
-    setTopCompoIcon(topCompoIcon);
-    renderDataGlobal = [];
-    renderDataGlobal = renderDataGlobal.concat(getData);
-    refreshData();
-  }, []);
 
-  //  Function to call the child component's function
-  const callChildFunction = (items: any) => {
-    if (childRef.current) {
-      childRef.current.callChildFunction(items);
-    }
-  };
+  // thses are used for Client Category Popup Related Functionality 
 
-  const trueTopIcon = (items: any) => {
-    if (childRef.current) {
-      childRef.current.trueTopIcon(items);
-    }
-  };
+  const OpenClientCategoryPopup = (siteName: string, SelectedCC: any) => {
+    setIsClientCategoryPopupOpen(true);
+    setSelectedClientCategory(SelectedCC)
+    setCurrentSiteName(siteName)
+  }
 
+  const ClosePopupCallback = React.useCallback((UsedFor: string) => {
+    setIsClientCategoryPopupOpen(false);
+  }, [])
+  const saveClientCategory = React.useCallback((ClientCategories: any, siteName: string) => {
+    let TempArray: any = [];
+    lastUpdatedAllSites?.map((AllCCItem: any) => {
+      if (AllCCItem.Title == siteName) {
+        AllCCItem.ClientCategories = ClientCategories;
+      }
+      TempArray.push(AllCCItem);
+    })
+    setAllSitesData([...TempArray]);
+  }, [])
+
+
+
+
+  let IndexCounting: any = 0;
+
+  // let FinalGroupData:any = data?.filter((val: any, id: any, array: any) => {
+  //   return array.indexOf(val) == id;
+  // })
   //-------------------------------------------------- restructuring function end---------------------------------------------------------------
   //-------------------------------------------------------------End---------------------------------------------------------------------------------
   return (
-      <section className="TableContentSection taskprofilepagegreen">
-        <div className="container-fluid">
-          <section className="TableSection">
-            <div className="container p-0">
-              <div className="Alltable mt-2 ">
-                <div className="col-sm-12 p-0 smart">
-                  <div className="">
-                    <div className="wrapper">
-                      <Loader
-                        loaded={loaded}
-                        lines={13}
-                        length={20}
-                        width={10}
-                        radius={30}
-                        corners={1}
-                        rotate={0}
-                        direction={1}
-                        color={portfolioColorGlobal ? portfolioColorGlobal : "#000069"}
-                        speed={2}
-                        trail={60}
-                        shadow={false}
-                        hwaccel={false}
-                        className="spinner"
-                        zIndex={2e9}
-                        top="28%"
-                        left="50%"
-                        scale={1.0}
-                        loadedClassName="loadedContent"
-                      />
-                      <GlobalCommanTable
-                        smartTimeTotalFunction={smartTimeTotal} SmartTimeIconShow={true}
-                        ref={childRef}
-                        AddStructureFeature={
-                          SelectedProp?.props?.Item_x0020_Type
-                        }
-                        setLoaded={setLoaded}
-                        queryItems={SelectedProp?.props}
-                        PortfolioFeature={SelectedProp?.props?.Item_x0020_Type}
-                        AllMasterTasksData={AllMasterTasksData}
-                        callChildFunction={callChildFunction}
-                        AllListId={ContextValueGlobal}
-                        columns={columns}
-                        restructureCallBack={callBackData1}
-                        data={data}
-                        multiSelect={usedFor == "Site-Compositions" ? true : false}
-                        callBackData={callBackData}
-                        TaskUsers={AllUsers}
-                        showHeader={usedFor == "Site-Compositions" ? false : true}
-                        portfolioColorGlobal={portfolioColorGlobal}
-                        portfolioTypeData={portfolioTypeDataItem}
-                        taskTypeDataItem={taskTypeDataItem}
-                        fixedWidth={true}
-                        protfolioProfileButton={true}
-                        portfolioTypeConfrigration={portfolioTypeConfrigration}
-                        showingAllPortFolioCount={true}
-                        showCreationAllButton={true}
-                      />
+    <section className="">
+      <div className="">
+        <section className="TableSection">
+          <div className="container p-0">
+            <div className="Alltable mt-2">
+              <div className="p-2">
+                <div className="full-width alignCenter justify-content-between">
+                  <div className="pb-2 siteColor">Summarize Client Categories</div>
+                  <div className="alignCenter">
+                    <div className="alignCenter pb-2">
+                      <span className='me-1 siteColor'>Protected</span>
+                      <label className="switch me-2 siteColor" htmlFor="checkbox-Protected">
+                        <input checked={IsMakeSCProtected} onChange={ToggleForProtected} type="checkbox" id="checkbox-Protected" name="Protected-view" />
+                        {IsMakeSCProtected === true ? <div style={{ backgroundColor: '#000066' }} className="slider round" title='Switch to Un-Protected View'></div> : <div title='Switch to Protected-View' className="slider round"></div>}
+                      </label>
+                    </div>
+                    <div className="alignCenter pb-2">
+                      <span className='me-1 siteColor'>Flat View</span>
+                      <label className="switch me-2 siteColor" htmlFor="checkbox-Flat">
+                        <input checked={flatView} onChange={handleSwitchToggle} type="checkbox" id="checkbox-Flat" name="Flat-view" />
+                        {flatView === true ? <div style={{ backgroundColor: '#000066' }} className="slider round" title='Switch to Groupby View'></div> : <div title='Switch to Flat-View' className="slider round"></div>}
+                      </label>
                     </div>
                   </div>
+
                 </div>
+                <table className="table siteColor">
+                  <tbody>
+                    {AllSitesData?.map((CCDetails: any, Index: any) => {
+                      if (CCDetails.Title == "EI" || CCDetails.Title == "EPS" || CCDetails.Title == "Education" || CCDetails.Title == "Migration") {
+                        IndexCounting++;
+                        return (
+                          <tr key={IndexCounting} className="border-1 siteColor">
+                            <th scope="row" className="text-center">{IndexCounting}.</th>
+                            <td>{CCDetails.Title}</td>
+                            <td className="p-1">
+                              <div className="d-flex">
+                                {CCDetails.ClientCategories?.map((CCItem: any, ChildIndex: any) => {
+                                  return (
+                                    <label className="SpfxCheckRadio">
+                                      <input
+                                        className="radio"
+                                        type="radio"
+                                        name={`Client-Category-${IndexCounting}`}
+                                        defaultChecked={CCItem.checked == true ? true : false}
+                                        checked={CCItem.checked == true ? true : false}
+                                        onClick={() => selectedParentClientCategory(ChildIndex, CCDetails.Title)}
+                                      />
+                                      {CCItem.Title ? CCItem.Title : null}
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            </td>
+                            <td>
+                              <span onClick={() => OpenClientCategoryPopup(CCDetails.Title, CCDetails.ClientCategories)} className="svg__iconbox svg__icon--editBox"></span>
+                            </td>
+                          </tr>
+                        )
+                      }
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="">
+                <Loader
+                  loaded={loaded}
+                  lines={13}
+                  length={20}
+                  width={10}
+                  radius={30}
+                  corners={1}
+                  rotate={0}
+                  direction={1}
+                  color={portfolioColorGlobal ? portfolioColorGlobal : "#000069"}
+                  speed={2}
+                  trail={60}
+                  shadow={false}
+                  hwaccel={false}
+                  className="spinner"
+                  zIndex={2e9}
+                  top="28%"
+                  left="50%"
+                  scale={1.0}
+                  loadedClassName="loadedContent"
+                />
+                <GlobalCommanTable
+                  expendedTrue={false}
+                  ref={childRef}
+                  AddStructureFeature={
+                    SelectedProp?.props?.Item_x0020_Type
+                  }
+                  setLoaded={setLoaded}
+                  queryItems={SelectedProp?.props}
+                  PortfolioFeature={SelectedProp?.props?.Item_x0020_Type}
+                  AllMasterTasksData={AllMasterTasksData}
+                  AllListId={ContextValueGlobal}
+                  columns={columns}
+                  data={flatView ? FlatViewAllData : data}
+                  multiSelect={usedFor == "Site-Compositions" ? true : false}
+                  callBackData={callBackData}
+                  TaskUsers={AllUsers}
+                  showHeader={usedFor == "Site-Compositions" ? false : true}
+                  portfolioColorGlobal={portfolioColorGlobal}
+                  portfolioTypeData={portfolioTypeDataItem}
+                  taskTypeDataItem={taskTypeDataItem}
+                  fixedWidth={true}
+                  protfolioProfileButton={true}
+                  portfolioTypeConfrigration={portfolioTypeConfrigration}
+                  showingAllPortFolioCount={true}
+                  showCreationAllButton={true}
+                />
               </div>
             </div>
-          </section>
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
+
+      {IsClientCategoryPopupOpen ?
+        <ClientCategoryPopup
+          ContextValue={ContextValueGlobal}
+          SelectedCC={SelectedClientCategory}
+          CurrentSiteName={CurrentSiteName}
+          ClosePopupCallback={ClosePopupCallback}
+          saveClientCategory={saveClientCategory}
+        /> : null}
+    </section>
   );
 }
 export default ComponentChildDataTable;

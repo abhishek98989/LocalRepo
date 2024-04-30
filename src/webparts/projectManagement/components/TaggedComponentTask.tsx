@@ -1,6 +1,6 @@
 import { Panel, PanelType } from "office-ui-fabric-react";
 import * as React from "react";
-import ComponentTable from "../../componentProfile/components/Taskwebparts";
+// import ComponentTable from "../../componentProfile/components/ComponentPortfolioTable";
 
 const TaggedComponentTask = (props: any) => {    
     const onRenderCustomHeaderMain = () => {
@@ -27,7 +27,7 @@ const TaggedComponentTask = (props: any) => {
                 onDismiss={() => callBack()}
                 isBlocking={false}>
                 <div >
-                    <ComponentTable props={props?.SelectedItem} UsedFrom={'ProjectManagement'} NextProp={props?.AllListId}/>
+                    {/* <ComponentTable props={props?.SelectedItem} UsedFrom={'ProjectManagement'} NextProp={props?.AllListId}/> */}
                   
                 </div>
                 <div className="text-end mt-3">

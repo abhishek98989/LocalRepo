@@ -19,19 +19,13 @@ const EditSiteComposition = (Props: any) => {
         getAllSitesData();
         if (EditData.ClientCategory?.length > 0) {
             EditData.ClientCategory?.map((itemData: any) => {
-                if (itemData.siteName?.length > 2) {
+                if (itemData.siteName?.length > 1) {
                 } else {
                     itemData.siteName = itemData.SiteName;
                 }
                 selectedClientCategory.push(itemData);
             })
         }
-        setTimeout(() => {
-            const panelMain: any = document.querySelector('.ms-Panel-main');
-            if (panelMain && EditData?.PortfolioType?.Color) {
-              $('.ms-Panel-main').css('--SiteBlue', EditData?.PortfolioType?.Color); // Set the desired color value here
-            }
-          }, 1000)
 
     }, [])
 
@@ -150,7 +144,7 @@ const EditSiteComposition = (Props: any) => {
                 <div className="subheading siteColor">
                     Edit Site Composition
                 </div>
-                <Tooltip ComponentId="1626" />
+                <Tooltip ComponentId="1268" />
             </div>
         )
     }
@@ -160,9 +154,9 @@ const EditSiteComposition = (Props: any) => {
         callBack("Close");
     }
 
-    const closePopupCallBack = React.useCallback(() => {
+    const closePopupCallBack = React.useCallback((Type:any) => {
         setEditSiteCompositionStatus(false);
-        callBack("Close");
+        callBack("Save");
     }, [])
 
     return (
@@ -183,13 +177,13 @@ const EditSiteComposition = (Props: any) => {
                                 siteUrls={siteUrls}
                                 SiteTypes={SiteTypes}
                                 SelectedItemDetails={EditData}
-                                // ClientTime={EditData.ClientTime != false ? EditData.ClientTime : []}
-                                // SiteCompositionSettings={EditData.SiteCompositionSettings}
+                                ClientTime={EditData.ClientTime != false ? EditData.ClientTime : []}
+                                SiteCompositionSettings={EditData.SiteCompositionSettings}
                                 SmartTotalTimeData={SmartTotalTimeData}
-                                // currentListName={EditData.siteType}
+                                currentListName={EditData.siteType}
                                 callBack={SiteCompositionCallBack}
                                 isServiceTask={ServicesTaskCheck}
-                                // SelectedClientCategory={EditData.ClientCategory}
+                                SelectedClientCategory={EditData.ClientCategory}
                                 // isPortfolioConncted={ComponentTaskCheck || ServicesTaskCheck ? true : false}
                                 // SitesTaggingData={EditData}
                                 usedFor={"Task-Profile"}

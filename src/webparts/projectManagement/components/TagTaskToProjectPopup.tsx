@@ -9,10 +9,12 @@ import { Web } from "sp-pnp-js";
 import * as moment from 'moment';
 import * as globalCommon from "../../../globalComponents/globalCommon"
 import GlobalCommanTable from '../../../globalComponents/GroupByReactTableComponents/GlobalCommanTable';
-import InlineEditingcolumns from '../../projectmanagementOverviewTool/components/inlineEditingcolumns';
+import InlineEditingcolumns from '../../../globalComponents/inlineEditingcolumns';
 import { ColumnDef } from '@tanstack/react-table';
 import InfoIconsToolTip from '../../../globalComponents/InfoIconsToolTip/InfoIconsToolTip';
-import ReactPopperTooltip from '../../../globalComponents/Hierarchy-Popper-tooltip';
+import ReactPopperTooltipSingleLevel from '../../../globalComponents/Hierarchy-Popper-tooltipSilgleLevel/Hierarchy-Popper-tooltipSingleLevel';
+import PageLoader from '../../../globalComponents/pageLoader';
+import Tooltip from '../../../globalComponents/Tooltip';
 var AllUser: any = []
 var siteConfig: any = []
 var DataSiteIcon: any = []
@@ -27,6 +29,7 @@ const TagTaskToProjectPopup = (props: any) => {
     const [AllTasks, setAllTasks] = React.useState([])
     const [selectedTasks, setSelectedTasks] = React.useState([])
     const [AllTaskUser, setAllTaskUser] = React.useState([])
+    const [pageLoaderActive, setPageLoader] = React.useState(false)
 
     const TaskUser = async () => {
         let web = new Web(props?.AllListId?.siteUrl);
@@ -57,24 +60,7 @@ const TagTaskToProjectPopup = (props: any) => {
         LoadAllSiteTasks();
     }
 
-    const loadAdminConfigurations = function () {
-
-        var CurrentSiteType = ''
-
-        axios.get("https://hhhhteams.sharepoint.com/sites/HHHH/sp/_api/web/lists/getbyid('e968902a-3021-4af2-a30a-174ea95cf8fa')/items?$select=Id,Title,Value,Key,Description,DisplayTitle,Configurations&$filter=Key eq 'TaskDashboardConfiguration'")
-            .then((response: AxiosResponse) => {
-                var SmartFavoritesConfig = [];
-                $.each(response.data.value, function (index: any, smart: any) {
-                    if (smart.Configurations != undefined) {
-                        DataSiteIcon = JSON.parse(smart.Configurations);
-                    }
-                });
-
-            },
-                function (error) {
-
-                });
-    }
+   
 
     const callBackData = React.useCallback((elem: any, ShowingData: any) => {
         let MultiSelectedData: any = [];
@@ -83,110 +69,87 @@ const TagTaskToProjectPopup = (props: any) => {
         }
         setSelectedTasks(MultiSelectedData)
     }, []);
-    const LoadAllSiteTasks = function () {
-        loadAdminConfigurations();
+    const LoadAllSiteTasks = async () => {
+
+      try {
         var AllTask: any = []
-        var query = "&$filter=Status ne 'Completed'&$orderby=Created desc&$top=4999";
-        var Counter = 0;
-        let web = new Web(props?.AllListId?.siteUrl);
-        var arraycount = 0;
-        siteConfig.map(async (config: any) => {
-            if (config.Title != 'SDC Sites' && config.Title != 'Master Tasks') {
+        setPageLoader(true)
+        AllTask = await globalCommon?.loadAllSiteTasks(props?.AllListId)
+        AllTask.map((items: any) => {
+            items.TitleNew = items.Title;
+            items.AllTeamMember = [];
+            items.HierarchyData = [];
+            items.descriptionsSearch = '';
+            items.bodys = items.Body != null && items.Body.split('<p><br></p>').join('');
+            if (items?.Body != undefined && items?.Body != null) {
+                items.descriptionsSearch = items?.Body.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
+            }
+            items.commentsSearch = items?.Comments != null && items?.Comments != undefined ? items.Comments.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
 
-                let smartmeta = [];
-                let TaxonomyItems = [];
-                smartmeta = await web.lists
-                    .getById(config?.listId)
-                    .items
-                    .select("Id,Title,FeedBack,PriorityRank,Remark,ParentTask/TaskID,ParentTask/Title,ParentTask/Id,TaskID,Project/PriorityRank,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,Portfolio/PortfolioStructureID,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title")
-                    .expand('AssignedTo,Project,Portfolio,ParentTask,SmartInformation,Author,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory')
-                    .top(4999)
-                    // .filter("Project/Id ne " + props.projectId)
-                    .get();
-                arraycount++;
-                smartmeta.map((items: any) => {
-                    items.TitleNew = items.Title;
-                    items.AllTeamMember = [];
-                    items.HierarchyData = [];
-                    items.descriptionsSearch = '';
-                    items.siteType = config.Title;
-                    items.bodys = items.Body != null && items.Body.split('<p><br></p>').join('');
-                    if (items?.Body != undefined && items?.Body != null) {
-                        items.descriptionsSearch = items?.Body.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
-                    }
-                    items.commentsSearch = items?.Comments != null && items?.Comments != undefined ? items.Comments.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
-                    items.listId = config.listId;
-                    items.siteUrl = config.siteUrl.Url;
-                    items.PercentComplete = (items.PercentComplete * 100).toFixed(0);
-                    items.DisplayDueDate =
-                        items.DueDate != null
-                            ? moment(items.DueDate).format("DD/MM/YYYY")
-                            : "";
-                    items.DisplayCreateDate =
-                        items.Created != null
-                            ? moment(items.Created).format("DD/MM/YYYY")
-                            : "";
+           
+            items.DisplayDueDate =
+                items.DueDate != null
+                    ? moment(items.DueDate).format("DD/MM/YYYY")
+                    : "";
+            items.DisplayCreateDate =
+                items.Created != null
+                    ? moment(items.Created).format("DD/MM/YYYY")
+                    : "";
 
-                    items.portfolio = {};
-                    if (items?.TaskCategories?.length > 0) {
-                        items.TaskTypeValue = items?.TaskCategories?.map((val: any) => val.Title).join(",")
-                        items.Categories = items.TaskTypeValue;
-                    }else{
-                        items.TaskTypeValue ='';
-                        items.Categories ='';
-                    }
-                    if (items?.Portfolio?.Id != undefined) {
-                        items.portfolio = items?.Portfolio;
-                        items.PortfolioTitle = items?.Portfolio?.Title;
-                        // items["Portfoliotype"] = "Component";
-                    }
-                    items["SiteIcon"] = config?.Item_x005F_x0020_Cover?.Url;
+            items.portfolio = {};
+            if (items?.TaskCategories?.length > 0) {
+                items.TaskTypeValue = items?.TaskCategories?.map((val: any) => val.Title).join(",")
+                items.Categories = items.TaskTypeValue;
+            } else {
+                items.TaskTypeValue = '';
+                items.Categories = '';
+            }
+            if (items?.Portfolio?.Id != undefined) {
+                items.portfolio = items?.Portfolio;
+                items.PortfolioTitle = items?.Portfolio?.Title;
+                // items["Portfoliotype"] = "Component";
+            }
 
-                    items.TeamMembersSearch = "";
-                    if (items.AssignedTo != undefined) {
-                        items?.AssignedTo?.map((taskUser: any) => {
-                            AllUser.map((user: any) => {
-                                if (user.AssingedToUserId == taskUser.Id) {
-                                    if (user?.Title != undefined) {
-                                        items.TeamMembersSearch =
-                                            items.TeamMembersSearch + " " + user?.Title;
-                                    }
-                                }
-                            });
-                        });
-                    }
-
-                    items.TaskID = globalCommon.GetTaskId(items);
-                    AllUser?.map((user: any) => {
-                        if (user.AssingedToUserId == items.Author.Id) {
-                            items.createdImg = user?.Item_x0020_Cover?.Url;
-                        }
-                        if (items.TeamMembers != undefined) {
-                            items.TeamMembers.map((taskUser: any) => {
-                                var newuserdata: any = {};
-                                if (user.AssingedToUserId == taskUser.Id) {
-                                    newuserdata["useimageurl"] = user?.Item_x0020_Cover?.Url;
-                                    newuserdata["Suffix"] = user?.Suffix;
-                                    newuserdata["Title"] = user?.Title;
-                                    newuserdata["UserId"] = user?.AssingedToUserId;
-                                    items["Usertitlename"] = user?.Title;
-                                }
-                                items.AllTeamMember.push(newuserdata);
-                            });
+            items.TeamMembersSearch = "";
+            if (items.AssignedTo != undefined) {
+                items?.AssignedTo?.map((taskUser: any) => {
+                    AllUser.map((user: any) => {
+                        if (user.AssingedToUserId == taskUser.Id) {
+                            if (user?.Title != undefined) {
+                                items.TeamMembersSearch =
+                                    items.TeamMembersSearch + " " + user?.Title;
+                            }
                         }
                     });
-                    AllTask.push(items);
                 });
-
-                if (arraycount === 17) {
-                    setAllTasks(sortOnCreated(AllTask))
-                }
-
-            } else {
-                arraycount++
             }
-        })
-        console.log(AllTasks)
+
+            items.TaskID = globalCommon.GetTaskId(items);
+            AllUser?.map((user: any) => {
+                if (user.AssingedToUserId == items.Author.Id) {
+                    items.createdImg = user?.Item_x0020_Cover?.Url;
+                }
+                if (items.TeamMembers != undefined) {
+                    items.TeamMembers.map((taskUser: any) => {
+                        var newuserdata: any = {};
+                        if (user.AssingedToUserId == taskUser.Id) {
+                            newuserdata["useimageurl"] = user?.Item_x0020_Cover?.Url;
+                            newuserdata["Suffix"] = user?.Suffix;
+                            newuserdata["Title"] = user?.Title;
+                            newuserdata["UserId"] = user?.AssingedToUserId;
+                            items["Usertitlename"] = user?.Title;
+                        }
+                        items.AllTeamMember.push(newuserdata);
+                    });
+                }
+            });
+        });
+        setAllTasks(sortOnCreated(AllTask))
+        setPageLoader(false)
+      } catch (error) {
+        setPageLoader(false)
+      }
+
     }
     const sortOnCreated = (Array: any) => {
         Array.sort((a: any, b: any) => new Date(b.Created).getTime() - new Date(a.Created).getTime());
@@ -206,54 +169,61 @@ const TagTaskToProjectPopup = (props: any) => {
 
     const tagSelectedTasks = async () => {
         let selectedTaskId = ''
-        if (props?.meetingPages) {
-            // let confirmation = confirm('Are you sure you want to tagTask')
-            // if(confirmation){
-            props.callBack(selectedTasks);
-            handleClose()
-            // }
-
-        } else {
-            let tasksWithTaggedProjects: any = [];
-            let tasksWithNoProjects: any = [];
-            selectedTasks?.map(async (item: any, index: any) => {
-                if (index == 0) {
-                    selectedTaskId = selectedTaskId + '(' + item?.siteType + ') ' + item?.TaskID
-                } else {
-                    selectedTaskId = selectedTaskId + ',' + '(' + item?.siteType + ') ' + item?.TaskID
-                }
-                if (item?.Project?.Id != undefined) {
-                    tasksWithTaggedProjects.push(item)
-                } else {
-                    tasksWithNoProjects.push(item)
-                }
-            })
-
-            let confirmation = confirm('Are you sure you want to tag ' + selectedTaskId + ' to this project ?')
-            if (confirmation == true) {
-                if (tasksWithTaggedProjects?.length > 0) {
-                    let projectTagedTasks: any = ''
-                    tasksWithTaggedProjects?.map(async (item: any, index: any) => {
-                        if (index == 0) {
-                            projectTagedTasks = projectTagedTasks + '(' + item?.siteType + ') ' + item?.TaskID
-                        } else {
-                            projectTagedTasks = projectTagedTasks + ',' + '(' + item?.siteType + ') ' + item?.TaskID
-                        }
-                    })
-                    let taggedProjectConfirmation = confirm('These Tasks ' + projectTagedTasks + ' are already tagged to some other Projects, Do you want to over ride there project ?')
-                    if (taggedProjectConfirmation) {
-                        updateSelectedTask(selectedTasks);
-                    } else {
-                        updateSelectedTask(tasksWithNoProjects)
-                    }
-                } else {
-                    updateSelectedTask(selectedTasks)
-                }
+    
+        try {
+            setPageLoader(true)
+            if (props?.meetingPages) {
+                // let confirmation = confirm('Are you sure you want to tagTask')
+                // if(confirmation){
+                props.callBack(selectedTasks);
                 handleClose()
+                // }
+    
+            } else {
+                let tasksWithTaggedProjects: any = [];
+                let tasksWithNoProjects: any = [];
+                selectedTasks?.map(async (item: any, index: any) => {
+                    if (index == 0) {
+                        selectedTaskId = selectedTaskId + '(' + item?.siteType + ') ' + item?.TaskID
+                    } else {
+                        selectedTaskId = selectedTaskId + ',' + '(' + item?.siteType + ') ' + item?.TaskID
+                    }
+                    if (item?.Project?.Id != undefined) {
+                        tasksWithTaggedProjects.push(item)
+                    } else {
+                        tasksWithNoProjects.push(item)
+                    }
+                })
+    
+                let confirmation = confirm('Are you sure you want to tag ' + selectedTaskId + ' to this project ?')
+                if (confirmation == true) {
+                    if (tasksWithTaggedProjects?.length > 0) {
+                        let projectTagedTasks: any = ''
+                        tasksWithTaggedProjects?.map(async (item: any, index: any) => {
+                            if (index == 0) {
+                                projectTagedTasks = projectTagedTasks + '(' + item?.siteType + ') ' + item?.TaskID
+                            } else {
+                                projectTagedTasks = projectTagedTasks + ',' + '(' + item?.siteType + ') ' + item?.TaskID
+                            }
+                        })
+                        let taggedProjectConfirmation = confirm('These Tasks ' + projectTagedTasks + ' are already tagged to some other Projects, Do you want to over ride there project ?')
+                        if (taggedProjectConfirmation) {
+                            updateSelectedTask(selectedTasks);
+                        } else {
+                            updateSelectedTask(tasksWithNoProjects)
+                        }
+                    } else {
+                        updateSelectedTask(selectedTasks)
+                    }
+                    handleClose()
+                }
+    
             }
-
+    
+            setPageLoader(false)
+        } catch (error) {
+            setPageLoader(false)
         }
-
     }
 
     const updateSelectedTask = (selectedTasksArray: any) => {
@@ -273,22 +243,19 @@ const TagTaskToProjectPopup = (props: any) => {
     }
 
     const handleClose = () => {
+        setPageLoader(false)
         setLgShow(false);
     }
 
-    const onRenderCustomHeaderMain = (type: any) => {
+const onRenderCustomHeaderMain = (type: any) => {
         return (
-            <div className={"d-flex full-width pb-1"}>
+            <>
                 <div className='subheading'>
-                    <span className="siteColor">
-                        {`Add Existing Tasks -${props?.projectItem?.PortfolioStructureID} ${props.projectTitle}`}
-                    </span>
+                        {`Add Existing Tasks - ${props?.projectItem?.MeetingId ? props?.projectItem?.MeetingId : props?.projectItem?.PortfolioStructureID} ${props?.projectTitle}`}
                 </div>
-            </div>
-
-
+                <Tooltip ComponentId="8902" />
+            </>
         )
-
     }
     const onRenderCustomFooterMain = () => {
         return (
@@ -357,8 +324,11 @@ const TagTaskToProjectPopup = (props: any) => {
                 size: 130,
                 cell: ({ row, getValue }) => (
                     <div>
+                        {/* {row?.original?.TitleNew != "Tasks" ?
+                            <ReactPopperTooltip CMSToolId={getValue()} row={row} AllListId={props?.AllListId} />
+                            : ''} */}
                         {row?.original?.TitleNew != "Tasks" ?
-                            <ReactPopperTooltip ShareWebId={getValue()} row={row} AllListId={props?.AllListId} />
+                            <ReactPopperTooltipSingleLevel AllListId={props?.AllListId} CMSToolId={row?.original?.TaskID} row={row?.original} singleLevel={true} masterTaskData={props?.masterTaskData} AllSitesTaskData={AllTasks} />
                             : ''}
                     </div>
                 ),
@@ -386,13 +356,13 @@ const TagTaskToProjectPopup = (props: any) => {
                 header: "",
             },
             {
-                accessorFn: (row) => row?.Site,
+                accessorFn: (row) => row?.siteType,
                 cell: ({ row }) => (
                     <span>
                         <img className='circularImage rounded-circle' src={row?.original?.SiteIcon} />
                     </span>
                 ),
-                id: "Site",
+                id: "siteType",
                 placeholder: "Site",
                 header: "",
                 resetSorting: false,
@@ -400,7 +370,7 @@ const TagTaskToProjectPopup = (props: any) => {
                 size: 50
             },
             {
-                accessorFn: (row) => row?.Portfolio,
+                accessorFn: (row) => row?.PortfolioTitle,
                 cell: ({ row }) => (
                     <span>
                         <a className="hreflink"
@@ -412,7 +382,7 @@ const TagTaskToProjectPopup = (props: any) => {
                         </a>
                     </span>
                 ),
-                id: "Portfolio",
+                id: "PortfolioTitle",
                 placeholder: "Portfolio",
                 resetColumnFilters: false,
                 resetSorting: false,
@@ -434,8 +404,17 @@ const TagTaskToProjectPopup = (props: any) => {
                     </span>
                 ),
                 placeholder: "Priority",
-                id: 'Priority',
+                id: 'PriorityRank',
                 header: "",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if(( row?.original?.PriorityRank?.toString().charAt(0) == filterValue.toString().charAt(0) )
+                    &&(row?.original?.PriorityRank.toString())?.includes(filterValue)){
+                        return true
+                    }else{
+                        return false
+                    }
+                   
+                },
                 resetColumnFilters: false,
                 resetSorting: false,
                 size: 75
@@ -464,7 +443,7 @@ const TagTaskToProjectPopup = (props: any) => {
             },
 
             {
-                accessorFn: (row) => row?.DueDate,
+                accessorFn: (row) => row?.DisplayDueDate,
                 cell: ({ row }) => (
                     <InlineEditingcolumns
                         AllListId={AllListId}
@@ -475,9 +454,16 @@ const TagTaskToProjectPopup = (props: any) => {
                         pageName={'ProjectManagment'}
                     />
                 ),
-                id: 'DueDate',
+                id: 'DisplayDueDate',
                 resetColumnFilters: false,
                 resetSorting: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if (row?.original?.DisplayDueDate?.includes(filterValue)) {
+                      return true
+                    } else {
+                      return false
+                    }
+                },
                 placeholder: "Due Date",
                 header: "",
                 size: 80
@@ -516,6 +502,9 @@ const TagTaskToProjectPopup = (props: any) => {
                 placeholder: "% Complete",
                 resetColumnFilters: false,
                 resetSorting: false,
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    return row?.original?.PercentComplete == filterValue
+                },
                 header: "",
                 size: 55
             },
@@ -566,6 +555,13 @@ const TagTaskToProjectPopup = (props: any) => {
                 resetSorting: false,
                 isColumnDefultSortingDesc: true,
                 placeholder: "Created",
+                filterFn: (row: any, columnId: any, filterValue: any) => {
+                    if (row?.original?.Author?.Title?.toLowerCase()?.includes(filterValue?.toLowerCase()) || row?.original?.DisplayCreateDate?.includes(filterValue)) {
+                      return true
+                    } else {
+                      return false
+                    }
+                },  
                 header: "",
                 size: 125
             }
@@ -586,11 +582,8 @@ const TagTaskToProjectPopup = (props: any) => {
                 isBlocking={false}
                 onRenderFooter={onRenderCustomFooterMain}
             >
-                {
-                    AllTasks?.length > 0 ? <div className='Alltable'>
-                        <GlobalCommanTable AllListId={props?.AllListId} showPagination={true} headerOptions={headerOptions} columns={column2} data={AllTasks} callBackData={callBackData} TaskUsers={AllTaskUser} showHeader={true} multiSelect={true} />
-                    </div> : 'Loading ...'
-                }
+                  <GlobalCommanTable AllListId={props?.AllListId} showPagination={true} headerOptions={headerOptions} columns={column2} data={AllTasks} callBackData={callBackData} TaskUsers={AllTaskUser} showHeader={true} multiSelect={true} />
+                {pageLoaderActive ? <PageLoader /> : ''}
             </Panel>
 
 

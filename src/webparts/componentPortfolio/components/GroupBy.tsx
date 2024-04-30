@@ -48,7 +48,7 @@ import { Button, Row, Col, Pagination, PaginationLink, PaginationItem, Input } f
 import { HTMLProps } from 'react';
 import HighlightableCell from '../../componentPortfolio/components/highlight'
 import Loader from "react-loader";
-import InlineEditingcolumns from '../../projectmanagementOverviewTool/components/inlineEditingcolumns';
+import InlineEditingcolumns from '../../../globalComponents/inlineEditingcolumns';
 // import { BsFillCaretDownFill, BsFillCaretRightFill } from 'react-icons/bs';
 // import { Tooltip as ReactTooltip } from "react-tooltip";
 // import "react-tooltip/dist/react-tooltip.css";

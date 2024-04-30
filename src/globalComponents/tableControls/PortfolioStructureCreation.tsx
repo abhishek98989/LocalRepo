@@ -18,6 +18,7 @@ export interface IStructureCreationProps {
 
 export interface IStructureCreationState {
     isModalOpen: boolean;
+    deleteShortDescription : boolean;
     AllFilteredAvailableComoponent: any;
     Portfolio_x0020_Type: string;
     textTitle: string;
@@ -39,6 +40,8 @@ export interface IStructureCreationState {
     PortfolioTypeArray: any,
     PortfolioTypeId: any,
     defaultPortfolioType: any,
+    disablebutton:boolean
+    ButtonClicked:any;
 }
 
 const dragItem: any = {}
@@ -48,6 +51,9 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
         super(props);
         this.state = {
             isModalOpen: false,
+            disablebutton: false,
+            deleteShortDescription : true,
+            ButtonClicked:false,
             AllFilteredAvailableComoponent: [],
             Portfolio_x0020_Type: 'Component',
             textTitle: '',
@@ -81,6 +87,19 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
         this.getPortfolioType();
         this.LoadSPComponents();
+        let targetDiv: any = document?.querySelector(".ms-Panel-main");
+        if ( this.props?.SelectedItem?.PortfolioType?.Color != undefined) { //Changes Made by Robin
+          setTimeout(() => {
+            if (targetDiv) {
+              // Change the --SiteBlue variable for elements under the targetDiv
+              // $('.ms-Panel-main').css('--SiteBlue', props?.selectedItem?.PortfolioType?.Color);
+              $(".ms-Panel-main").css(
+                "--SiteBlue",
+                this.props?.SelectedItem?.PortfolioType?.Color    //Changes Made by Robin
+              );
+            }
+          }, 1000);
+        }
 
     }
 
@@ -212,7 +231,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
         return isFolderExists;
     }
-
+   
     private async GetFolderID(folderName: any) {
         let web = new Web(this.state.PropValue.siteUrl);
         let folderDeatils = [];
@@ -245,11 +264,14 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
     private CreateOpenType = '';
     private IconUrl = '';
     private GetportfoliofeatureIdCount = 0;
-
+   
     CreateFolder = async (Type: any) => {
-
+        this.setState({
+            ButtonClicked: true
+        })
         await this.LoadPortfolioitemParentId(undefined, undefined, undefined);
         this.LoadSPComponents();
+       
         let folderURL = '';
         if (this.Portfolio_x0020_Type == 'Component') {
             folderURL = (this.state.webServerRelativeUrl + '/Documents/COMPONENT-PORTFOLIO').toLowerCase();
@@ -267,7 +289,9 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
             let isFolderExists = await this.GetOrCreateFolder(this.folderName);
             if (isFolderExists) {
                 await this.GetFolderID(this.folderName);
-                this.createComponent(Type);
+               
+                 this.createComponent(Type);
+                
             }
         }
 
@@ -470,8 +494,10 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
     private createChildItems = async (Type: any) => {
         let isloadEssentialDeatils = false
-        //$('#CreateChildpoup1').hide();
-        //SharewebCommonFactoryService.showProgressBar();
+        this.setState((prevState) => ({
+            disablebutton: !prevState.disablebutton,
+          }));
+       
 
 
         let self = this;
@@ -644,6 +670,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
         this.setState({
             TeamConfig: dt
         }, () => console.log(this.state.TeamConfig))
+        
     }
 
     addNewTextField = () => {
@@ -681,10 +708,14 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
 
     handleChildItemSD = (e: any, index: any) => {
         let ChildItemTitle = this.state.ChildItemTitle;
-        ChildItemTitle[index].Child[0].Short_x0020_Description_x0020_On = e.target.value;
+        ChildItemTitle[index].Child[0].Short_x0020_Description_x0020_On = e != null ? e.target.value : e;
         this.setState({ ChildItemTitle });
         console.log(this.state.ChildItemTitle);
-
+     if(e == null){
+         this.setState({
+            deleteShortDescription : false,
+         })
+     }
     }
 
     RemoveFeedbackColumn = (index: any, type: any) => {
@@ -707,6 +738,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
     };
 
     public render(): React.ReactElement<IStructureCreationProps> {
+        
         return (
             <>
                 <div id="ExandTableIds" className={this.state.defaultPortfolioType == 'Events' ? 'eventpannelorange' : ((this.state.defaultPortfolioType == 'Service' || this.state.defaultPortfolioType == 'Service Portfolio') ? 'serviepannelgreena' : 'component Portfolio clearfix')}>
@@ -782,7 +814,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                 >
                                     Create & Open
                                 </button>
-                                <button type="button" className="btn btn-default" onClick={() => this.CreateFolder('Create')}
+                                <button type="button" disabled={this.state.ButtonClicked} className="btn btn-default" onClick={() => this.CreateFolder('Create')}
                                 >
                                     Create
                                 </button>
@@ -863,27 +895,29 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                                                         placeholder="Enter Child Item Title" ng-required="true" />
                                                                 </div>
                                                             </div>
-                                                            <div className="row mt-3">
+                                                            {
+                                                                this.state.deleteShortDescription &&
+                                                                <div className="row mb-2">
                                                                 {item.Child.length > 0 &&
                                                                     <div ng-repeat="items in item.Child">
-                                                                        <label className="fw-semibold  titleclrgreen ">Short
-                                                                            Description </label>
+                                                                        <label className="fw-semibold  titleclrgreen ">Short Description 
+                                                                            <span className='svg__icon--cross svg__iconbox dark pull-right' onClick={()=>this.handleChildItemSD(null, index)}></span></label>
                                                                         <div className="col">
                                                                             <textarea className='full-width' rows={4}
                                                                                 value={this.state.ChildItemTitle[index].Child[0].Short_x0020_Description_x0020_On} onChange={(e) => this.handleChildItemSD(e, index)}></textarea>
                                                                         </div>
                                                                     </div>
                                                                 }
-
-
-                                                            </div>
+                                                                 </div>
+                                                            }
+                                                            
                                                         </div>
                                                     </div>
                                                     {index == 0 &&
                                                         <div className="col-sm-12  ">
-                                                            {/* <TeamConfigurationCard ItemInfo={this.state.SelectedItem} Sitel={this.state.PropValue} parentCallback={this.DDComponentCallBack}  />
+                                                            <TeamConfigurationCard ItemInfo={this.state.SelectedItem} AllListId={this.state.PropValue} parentCallback={this.DDComponentCallBack}  />
                                                             <div className="clearfix">
-                                                            </div> */}
+                                                            </div>
                                                         </div>
                                                     }
                                                 </div>
@@ -906,7 +940,7 @@ export class PortfolioStructureCreationCard extends React.Component<IStructureCr
                                         </button>
                                     }
 
-                                    <button type="button" className="btn btn-default" onClick={() => this.createChildItems('Create')} >
+                                    <button type="button" className="btn btn-default" disabled={this.state.disablebutton} onClick={() => this.createChildItems('Create')} >
                                         Create
                                     </button>
 

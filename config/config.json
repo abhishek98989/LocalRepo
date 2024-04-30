@@ -2,43 +2,19 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
   "version": "2.0",
   "bundles": {
-    "taskprofile-web-part": {
+    "projectmanagement-overview-tool-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/taskprofile/TaskprofileWebPart.js",
-          "manifest": "./src/webparts/taskprofile/TaskprofileWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/projectmanagementOverviewTool/ProjectmanagementOverviewToolWebPart.js",
+          "manifest": "./src/webparts/projectmanagementOverviewTool/ProjectmanagementOverviewToolWebPart.manifest.json"
         }
       ]
     },
-    "service-portfolio-web-part": {
+    "task-notification-management-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/servicePortfolio/ServicePortfolioWebPart.js",
-          "manifest": "./src/webparts/servicePortfolio/ServicePortfolioWebPart.manifest.json"
-        }
-      ]
-    },
-    "component-profile-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/componentProfile/ComponentProfileWebPart.js",
-          "manifest": "./src/webparts/componentProfile/ComponentProfileWebPart.manifest.json"
-        }
-      ]
-    },
-    "component-edit-popup-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/componentEditPopup/ComponentEditPopupWebPart.js",
-          "manifest": "./src/webparts/componentEditPopup/ComponentEditPopupWebPart.manifest.json"
-        }
-      ]
-    },
-    "component-comments-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/componentComments/ComponentCommentsWebPart.js",
-          "manifest": "./src/webparts/componentComments/ComponentCommentsWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/taskNotificationManagement/TaskNotificationManagementWebPart.js",
+          "manifest": "./src/webparts/taskNotificationManagement/TaskNotificationManagementWebPart.manifest.json"
         }
       ]
     },
@@ -50,22 +26,6 @@
         }
       ]
     },
-    "task-dashboard-hhhh-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/taskDashboardHhhh/TaskDashboardHhhhWebPart.js",
-          "manifest": "./src/webparts/taskDashboardHhhh/TaskDashboardHhhhWebPart.manifest.json"
-        }
-      ]
-    },
-    "projectmanagement-overview-tool-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/projectmanagementOverviewTool/ProjectmanagementOverviewToolWebPart.js",
-          "manifest": "./src/webparts/projectmanagementOverviewTool/ProjectmanagementOverviewToolWebPart.manifest.json"
-        }
-      ]
-    },
     "project-management-web-part": {
       "components": [
         {
@@ -73,41 +33,7 @@
           "manifest": "./src/webparts/projectManagement/ProjectManagementWebPart.manifest.json"
         }
       ]
-    },
-    "meeting-overview-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/meetingOverview/MeetingOverviewWebPart.js",
-          "manifest": "./src/webparts/meetingOverview/MeetingOverviewWebPart.manifest.json"
-        }
-      ]
-    },
-    "test-web-part-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/testWebPart/TestWebPartWebPart.js",
-          "manifest": "./src/webparts/testWebPart/TestWebPartWebPart.manifest.json"
-        }
-      ]
-    },
-  
-    "custom-dashboard-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/customDashboard/CustomDashboardWebPart.js",
-          "manifest": "./src/webparts/customDashboard/CustomDashboardWebPart.manifest.json"
-        }
-      ]
-    },
-    "hhhh-quick-web-part": {
-      "components": [
-        {
-          "entrypoint": "./lib/webparts/hhhhQuick/HhhhQuickWebPart.js",
-          "manifest": "./src/webparts/hhhhQuick/HhhhQuickWebPart.manifest.json"
-        }
-      ]
     }
-    
   },
   "externals": {
     "bootstrap-css": {
@@ -128,19 +54,11 @@
     }
   },
   "localizedResources": {
-    "TaskprofileWebPartStrings": "lib/webparts/taskprofile/loc/{locale}.js",
-    "ComponentProfileWebPartStrings": "lib/webparts/componentProfile/loc/{locale}.js",
-    "ComponentCommentsWebPartStrings": "lib/webparts/componentComments/loc/{locale}.js",
-    "HhhhQuickWebPartStrings": "lib/webparts/hhhhQuick/loc/{locale}.js",
+    "TaskNotificationManagementWebPartStrings": "lib/webparts/taskNotificationManagement/loc/{locale}.js",
     "CreateTaskWebPartStrings": "lib/webparts/createTask/loc/{locale}.js",
-    "ComponentEditPopupWebPartStrings": "lib/webparts/componentEditPopup/loc/{locale}.js",
-    "ServicePortfolioWebPartStrings": "lib/webparts/servicePortfolio/loc/{locale}.js",
-    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
-    "ProjectManagementWebPartStrings": "lib/webparts/projectManagement/loc/{locale}.js",
-    "TaskDashboardHhhhWebPartStrings": "lib/webparts/taskDashboardHhhh/loc/{locale}.js",
     "ProjectmanagementOverviewToolWebPartStrings": "lib/webparts/projectmanagementOverviewTool/loc/{locale}.js",
-    "MeetingOverviewWebPartStrings": "lib/webparts/meetingOverview/loc/{locale}.js",
-    "TestWebPartWebPartStrings": "lib/webparts/testWebPart/loc/{locale}.js",
-    "CustomDashboardWebPartStrings": "lib/webparts/customDashboard/loc/{locale}.js"
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
+    "ProjectManagementWebPartStrings": "lib/webparts/projectManagement/loc/{locale}.js"
+  
   }
 }

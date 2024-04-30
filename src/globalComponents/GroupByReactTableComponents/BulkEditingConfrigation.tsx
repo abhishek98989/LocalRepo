@@ -1,11 +1,10 @@
 import * as React from "react";
 import { Panel, PanelType } from 'office-ui-fabric-react';
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "react-datepicker/dist/react-datepicker-cssmodules.css";
-import { FaFilter } from "react-icons/fa";
+import Tooltip from "../Tooltip";
 const BulkEditingConfrigation = (item: any) => {
-    const [checkboxValues, setCheckboxValues] = React.useState({ priority: false, status: false, dueDate: false, itemRank: false, categories: false, clientCategories: false, Project: false });
+    const [checkboxValues, setCheckboxValues] = React.useState(Object?.keys(item?.bulkEditingCongration)?.length > 0 ? item?.bulkEditingCongration : { priority: false, status: false, dueDate: false, itemRank: false, categories: false, clientCategories: false, Project: false, FeatureType: false });
 
     const handleCheckboxChange = (checkboxName: any) => {
         setCheckboxValues((prevValues: any) => ({
@@ -13,8 +12,6 @@ const BulkEditingConfrigation = (item: any) => {
             [checkboxName]: !prevValues[checkboxName],
         }));
     };
-
-
     const handleClosePopup = () => {
         item?.bulkEditingSetting('close')
     };
@@ -25,6 +22,7 @@ const BulkEditingConfrigation = (item: any) => {
         return (
             <>
                 <div className="alignCenter subheading"><span className="siteColor">Bulk Editing Configurations</span></div>
+                <Tooltip ComponentId={6797} />
             </>
         );
     };
@@ -60,6 +58,16 @@ const BulkEditingConfrigation = (item: any) => {
                                 <label>
                                     <input type="checkbox" className="cursor-pointer form-check-input rounded-0 me-1" checked={checkboxValues.Project} onChange={() => handleCheckboxChange('Project')} />
                                     Project
+                                </label>
+                                <br />
+                                <label>
+                                    <input type="checkbox" className="cursor-pointer form-check-input rounded-0 me-1" checked={checkboxValues.categories} onChange={() => handleCheckboxChange('categories')} />
+                                    Categories
+                                </label>
+                                <br />
+                                <label>
+                                    <input type="checkbox" className="cursor-pointer form-check-input rounded-0 me-1" checked={checkboxValues.FeatureType} onChange={() => handleCheckboxChange('FeatureType')} />
+                                    Feature Type
                                 </label>
                                 {/* <label>
                                     <input type="checkbox" className="cursor-pointer form-check-input rounded-0" checked={checkboxValues.itemRank} onChange={() => handleCheckboxChange('itemRank')} />

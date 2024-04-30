@@ -8,6 +8,7 @@ import CreateActivity from "../CreateActivity";
 import * as globalCommon from "../globalCommon"
 import CreateWS from '../CreateWS'
 import { SlArrowDown, SlArrowRight } from "react-icons/sl";
+import { MdAdd, MdRemove } from "react-icons/Md";
 import { Web } from "sp-pnp-js";
 import $ from 'jquery';
 let AllMatsterAndTaskData: any = [];
@@ -51,18 +52,20 @@ export const getTooltiphierarchyWithoutGroupByTable = (row: any, completeTitle: 
 
 let scrollToolitem: any = false
 let pageName: any = 'hierarchyPopperToolTip'
-export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterTaskData, AllSitesTaskData, AllListId }: any) {
+export default function ReactPopperTooltipSingleLevel({ CMSToolId, row, masterTaskData, AllSitesTaskData, AllListId }: any) {
     let paddingCount: number = -1;
     let marginCount: number = 0;
-    AllMatsterAndTaskData = [...masterTaskData];
+    
+    masterTaskData=masterTaskData?.concat(AllSitesTaskData)
+    // AllMatsterAndTaskData = [...masterTaskData];
     // AllMatsterAndTaskData = JSON.parse(JSON.stringify(AllMatsterAndTaskData?.concat(AllSitesTaskData)));
     const [controlledVisible, setControlledVisible] = React.useState(false);
     const [action, setAction] = React.useState("");
     const [hoverOverInfo, setHoverOverInfo] = React.useState("");
     const [openActivity, setOpenActivity] = React.useState(false);
     const [openWS, setOpenWS] = React.useState(false);
-    
-    const [expandDataTooltip, setExpandDataTooltip] = React.useState(false); 
+
+    const [expandDataTooltip, setExpandDataTooltip] = React.useState(false);
     const [allValue, setallValue] = React.useState([])
 
     const {
@@ -80,71 +83,73 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
         onVisibleChange: setControlledVisible,
     });
 
-    // React.useEffect(() => {
-    //     if(AllListId!=undefined && action=='click'){
-    //         masterFunction() 
-    //     getAlldata(row)
-    // }
-    //   }, [action]);
+    React.useEffect(() => {
+        let targetDiv: any = document?.querySelector('.ms-Panel-main');
+        setTimeout(() => {
+            if (targetDiv && row?.PortfolioType?.Color != undefined) {
+                // Change the --SiteBlue variable for elements under the targetDiv
+                targetDiv?.style?.setProperty('--SiteBlue', row?.PortfolioType?.Color); // Change the color to your desired value
+            }
+        }, 1000)
+    }, [action]);
 
-    
 
-    const getTooltiphierarchyAllData =async (item: any):Promise<any>=> {
-        let web = new Web(AllListId?.siteUrl);
+
+    const getTooltiphierarchyAllData = async (item: any): Promise<any> => {
+        let web = new Web(item?.siteUrl || AllListId?.siteUrl);
         let Object: any;
-        item.isExpanded=true;
-        item.siteUrl=AllListId?.siteUrl
-         if(item?.ParentTask!=undefined || item?.ParentTask!=null){
-            try{
-            Object = await web.lists.getById(item?.listId)
-                .items.getById(item?.ParentTask.Id).select(
-                    "Id, TaskID, TaskId, Title, ParentTask/Id, ParentTask/Title, Portfolio/Id, Portfolio/Title, Portfolio/PortfolioStructureID"
-                )
-                .expand("ParentTask, Portfolio")
-                .get();
-            }catch (error) {
+        item.isExpanded = true;
+        item.siteUrl = item?.siteUrl || AllListId?.siteUrl;
+        if (item?.ParentTask != undefined || item?.ParentTask != null) {
+            try {
+                Object = await web.lists.getById(item?.listId)
+                    .items.getById(item?.ParentTask.Id).select(
+                        "Id, TaskID, TaskId, Title, ParentTask/Id, ParentTask/Title, Portfolio/Id, Portfolio/Title, Portfolio/PortfolioStructureID"
+                    )
+                    .expand("ParentTask, Portfolio")
+                    .get();
+            } catch (error) {
                 console.error(error)
             }
         }
-       else if (item.Parent != undefined ||item?.Portfolio!=undefined) {
-            let useId =item.Portfolio!=undefined?item?.Portfolio?.Id:item?.Parent?.Id;
-            try{
-            Object =  await web.lists.getById(AllListId?.MasterTaskListID)
-                .items.getById(useId).select("Id, Title, Parent/Id, Parent/Title, PortfolioStructureID, Item_x0020_Type")
-                .expand("Parent")
-                .get()
+        else if (item.Parent != undefined || item?.Portfolio != undefined) {
+            let useId = item.Portfolio != undefined ? item?.Portfolio?.Id : item?.Parent?.Id;
+            try {
+                Object = await web.lists.getById(AllListId?.MasterTaskListID)
+                    .items.getById(useId).select("Id, Title, Parent/Id, Parent/Title, PortfolioStructureID, Item_x0020_Type")
+                    .expand("Parent")
+                    .get()
             }
             catch (error) {
                 console.error(error)
             }
         }
-        
-        if(Object!=undefined){
-        if (
-            Object?.Id === item?.ParentTask?.Id
-        ) {
-            Object.subRows = [item];
-            Object.listId=item?.listId;
-            Object.SiteIcon=item?.SiteIcon;
-            Object.siteType=item?.siteType; 
-            return getTooltiphierarchyAllData(Object);
-        } else if (Object?.Id === item?.Parent?.Id) {
-            Object.subRows = [item];
-            return getTooltiphierarchyAllData(Object);
-        } else if (
-            item?.Portfolio != undefined &&
-            Object?.Id === item?.Portfolio?.Id &&
-            (item?.ParentTask?.TaskID == null || item?.ParentTask?.TaskID == undefined)
-        ) {
-            Object.subRows = [item];
-            return getTooltiphierarchyAllData(Object);
+
+        if (Object != undefined) {
+            if (Object?.Id === item?.ParentTask?.Id) {
+                Object.subRowsFirst = [item];
+                Object.listId = item?.listId;
+                Object.SiteIcon = item?.SiteIcon;
+                Object.siteType = item?.siteType;
+                Object.siteUrl = item?.siteUrl;
+                return getTooltiphierarchyAllData(Object);
+            } else if (Object?.Id === item?.Parent?.Id) {
+                Object.listId = item?.listId;
+                Object.siteUrl = item?.siteUrl;
+                Object.subRowsFirst = [item];
+                return getTooltiphierarchyAllData(Object);
+            } else if (item?.Portfolio != undefined && Object?.Id === item?.Portfolio?.Id && (item?.ParentTask?.TaskID == null || item?.ParentTask?.TaskID == undefined)) {
+                Object.listId = item?.listId;
+                Object.siteUrl = item?.siteUrl;
+                Object.subRowsFirst = [item];
+                return getTooltiphierarchyAllData(Object);
+            }
+
         }
-        
-    }
         return item;
     }
 
-    
+
 
     const handlAction = (newAction: any) => {
         if (newAction === "click" && newAction === "hover") return;
@@ -161,12 +166,15 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
             rowOrg = { ...row };
         }
         if (newAction === "click" && newAction === "hover") return;
-            getTooltiphierarchyAllData(rowOrg).then((response:any)=>{
-               setAction(newAction);
-               setControlledVisible(true);
-               setallValue(response);
-            });
+        getTooltiphierarchyAllData(rowOrg).then((response: any) => {
+
+            checkAllChilds(response)
+            setAction(newAction);
+            setControlledVisible(true);
+            setallValue(response);
+        });
     };
+    
     const handleMouseLeave = () => {
         if (action === "click") return;
         setAction("");
@@ -179,7 +187,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
     };
 
     const openActivityPopup = (row: any) => {
-        if (row.TaskType == undefined) {
+        if (row?.TaskType?.Title == undefined) {
             setOpenActivity(true)
             row['NoteCall'] = 'Task'
             row['PageType'] = 'ProjectManagement'
@@ -215,7 +223,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
             rowOrg = { ...row };
         }
         let completeTitle = '';
-     
+
         if (action === "hover") {
             let result = getTooltiphierarchyWithoutGroupByTable(rowOrg, completeTitle);
             let TaskId = rowOrg?.SiteIcon != undefined ? globalCommon.GetCompleteTaskId(rowOrg) : rowOrg?.PortfolioStructureID;
@@ -225,92 +233,144 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
         return [];
     }, [action]);
 
+   
 
-    const onToggle = (data: any) => {
 
-        data.isExpanded = !data.isExpanded
+
+    
+    const checkAllChilds=(data:any)=>{
+         const haveSubrows=data?.subRowsFirst?.length>0;
+         data.subRows=[]
+         data.openAllChilds = false;
+        data.subRows=masterTaskData?.filter((AllData:any)=> {
+            AllData.siteUrl=data?.siteUrl;  
+         return((data?.SiteIcon==undefined && AllData?.Parent?.Id==data?.Id)||
+         (( (data?.ParentTask?.Id==undefined || data?.ParentTask?.Id==null) &&(data?.Item_x0020_Type!=undefined && data?.Item_x0020_Type?.toLowerCase()!="tasks" && AllData?.Portfolio?.Id==data?.Id)))
+         ||(data?.SiteIcon!=undefined && AllData?.siteType==data?.siteType && AllData?.ParentTask?.Id ==data.Id) 
+         )
+        })
+        if(haveSubrows==true){
+            checkAllChilds(data?.subRowsFirst[0])
+        }
+    }
+    const onToggle = (data: any, type: any) => {
+        if (type == "CurentHirearchy") {     
+            data.isExpanded = !data.isExpanded
+        }
+        if (type == "AllHirearchy") {
+            data.openAllChilds = !data.openAllChilds
+            childsAllHirearchy(data)
+        }
         setExpandDataTooltip(!expandDataTooltip)
 
     }
-
+    const childsAllHirearchy=(data:any)=>{
+        if(data?.subRows?.length>0){
+            data?.subRows.map((item:any)=>{
+                item.openAllChilds = false;
+                item.subRows=[];
+               item.subRows=masterTaskData.filter((AllData:any)=>(item?.SiteIcon==undefined && AllData?.Parent?.Id==item?.Id)||
+               ((AllData?.ParentTask?.Id==undefined || AllData?.ParentTask?.Id==null) && (item?.Item_x0020_Type!=undefined && item?.Item_x0020_Type?.toLowerCase()!="tasks" && AllData?.Portfolio?.Id==item?.Id)) ||
+               (item?.SiteIcon!=undefined && AllData?.siteType==item?.siteType
+                && AllData?.ParentTask?.Id ==item.Id))
+                
+                
+            })
+            
+          
+        }
+    }
+    
 
     const expandData = (itemData: any) => {
-        const hasChildren = itemData?.subRows?.length > 0;
+        const hasChildren = itemData?.subRowsFirst?.length > 0;
+        const haveAllChildren = itemData?.subRows?.length > 0;
         let lastChild = false;
-        let firstChild = false;
-        if (paddingCount >= 0) {
-            firstChild = true
+        // let firstChild = false;
+        // if (paddingCount >= 0) {
+        //     firstChild = true
+        // }
+        // if (hasChildren == true) {
+        //     paddingCount++
+        // } else{
+        //     if (paddingCount == 0) {
+        //         paddingCount++
+        //     }
+        //     if (firstChild == true) {
+        //         marginCount = paddingCount;
+        //         lastChild = true
+        //     }
+        // }
+        if (hasChildren != true) {
+            lastChild = true;
         }
-        if (hasChildren == true) {
-            paddingCount++
-        } else{
-            if (paddingCount == 0) {
-                paddingCount++
-            }
-            if (firstChild == true) {
-                marginCount = paddingCount;
-                lastChild = true
-            }
-        }
-
         return (
 
             <>
-                <div className="d-flex py-1">
-                    <div className="d-grid" style={{ maxWidth: "200px", width: "100%" }}>
-                        <div className={firstChild == false ? 'alignCenter' : lastChild == true ? `alignCenter levelml-${marginCount} bg-siteColor py-1 ps-2 roundLeft lastlevel ` : `alignCenter levelpl-${paddingCount}`}>
+                <div className={itemData.Item_x0020_Type == "Component" ? ' d-flex p-1 f-bg borderBottomWhite' :
+                    itemData.Item_x0020_Type == "SubComponent" ? 'd-flex p-1 a-bg borderBottomWhite' : itemData.Item_x0020_Type == 'Feature' ? "d-flex p-1 borderBottomWhite w-bg" : "d-flex p-1 border-top"}>
+                    <div style={{ flex: "0 0 160px" }}>
+                        <div className={lastChild == true ? `alignCenter levelml-1` : `alignCenter`}>
                             {hasChildren &&
-                                <div style={{ width: "20px" }} className="mt--5" onClick={() => onToggle(itemData)}>
+                                <span style={{ width: "20px" }} className="mt--3" onClick={() => onToggle(itemData, "CurentHirearchy")}>
                                     {hasChildren && (
                                         itemData.isExpanded ? <SlArrowDown style={{ color: "#000" }} /> : <SlArrowRight style={{ color: "#000" }} />
                                     )}
-                                </div>
+
+                                </span>
                             }
+
+                            {haveAllChildren==true?
+                                <span style={{ width: "20px" }} className="mt--3" onClick={() => onToggle(itemData, "AllHirearchy")}>
+                                    {haveAllChildren&&(
+                                    itemData?.openAllChilds!=true?<MdAdd />:<MdRemove />
+                                    )}
+                                </span>
+                                :<span style={{ width: "20px" }} className="mt--3"></span>
+                            }
+
                             {itemData?.SiteIcon != undefined ? <>
-                                <img className="icon-sites-img ml20 me-1" src={itemData?.SiteIcon}></img>
+                                <img className="icon-sites-img ml20 mx-1" src={itemData?.SiteIcon}></img>
                                 <span className="fw-normal">{itemData?.TaskId != undefined ? itemData?.TaskId : itemData?.TaskID}</span>
-                              
                             </> : <>{itemData?.Title != "Others" ? <>
-                                <div className='Dyicons me-1'>{itemData?.Item_x0020_Type?.toUpperCase()?.charAt(0)}
-                                </div>
+                                <span className='Dyicons mx-1 '>{itemData?.Item_x0020_Type?.toUpperCase()?.charAt(0)}
+                                </span>
                                 <span className="fw-normal">{itemData?.PortfolioStructureID}</span>
-                                
                             </>
                                 : ""}</>}
+
+
                         </div>
+
                     </div>
-                    <div className={lastChild == true ? "bg-siteColor py-1 lastlevel" : ''} style={{ width: "325px" }}>
-                        <div className="aligncenter">
+
+                    <div className={lastChild == true ? "lastlevel" : ''} style={{ flex: "0 0 330px" }}>
+                        <div className="aligncenter textDotted" style={{ width: "330px" }}>
                             {itemData?.SiteIcon != undefined ? <>
-                                
-                                <a className={lastChild == true ? "hreflink fw-normal text-white" : "hreflink fw-normal"}
+
+                                <a
                                     href={`${itemData?.siteUrl}/SitePages/Task-Profile.aspx?taskId=${itemData?.Id}&Site=${itemData?.siteType}`}
-                                    data-interception="off"
+                                    data-interception="off" className="fw-normal hreflink" title={`${itemData?.Title}`}
                                     target="_blank">
                                     {itemData?.Title}
-                                </a> </> : <>{itemData?.Title != "Others" && itemData?.Item_x0020_Type != "Sprint" && itemData?.Item_x0020_Type  != "Project" ? <>
-                                
-                                    <a className={lastChild == true ? "hreflink fw-normal text-white" : "hreflink fw-normal"}
+                                </a> </> : <>{itemData?.Title != "Others" && itemData?.Item_x0020_Type != "Sprint" && itemData?.Item_x0020_Type != "Project" ? <>
+
+                                    <a className="fw-normal hreflink" title={`${itemData?.Title}`}
                                         data-interception="off"
                                         target="blank"
                                         href={`${itemData?.siteUrl}/SitePages/Portfolio-Profile.aspx?taskId=${itemData?.Id}`}>
-                                        <span className="d-flex">
-                                            {itemData?.Title}
-                                        </span>
+                                        {itemData?.Title}
                                     </a>
                                 </>
                                  :itemData?.Item_x0020_Type == "Sprint" || itemData.Item_x0020_Type == "Project" ?
-                                 <a className={lastChild == true ? "hreflink fw-normal text-white" : "hreflink fw-normal"} data-interception="off" target="blank"
-                                     href={`${itemData?.siteUrl}/SitePages/Project-Management.aspx?ProjectId=${itemData?.Id}`}>
-                             
-                                     <span className="d-flex">
+                                 <a className="fw-normal hreflink" title={`${itemData?.Title}`} data-interception="off" target="blank"
+                                     href={`${itemData?.siteUrl}/SitePages/PX-Profile.aspx?ProjectId=${itemData?.Id}`}>
                                          {itemData?.Title}
-                                     </span>
                                  </a>   : ""}</>}
                         </div>
                     </div>
-                    <div className={lastChild == true ? "bg-siteColor py-1 roundRight lastlevel text-white" : ''} style={{ width: "25px" }}>
-                        {itemData?.TaskType?.Title != 'Task'&& itemData?.Item_x0020_Type != "Sprint" && itemData?.Item_x0020_Type  != "Project" ?
+                    <div className={lastChild == true ? "roundRight lastlevel" : ''} style={{ flex: "0 0 25px" }}>
+                        {itemData?.TaskType?.Title != 'Task' && itemData?.Item_x0020_Type != "Sprint" && itemData?.Item_x0020_Type != "Project" ?
                             <svg onClick={() => openActivityPopup(itemData)} className={lastChild == true ? "hreflink text-white" : "hreflink"} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" fill="#333333">
                                 <title>Open Activity Popup</title>
                                 <path d="M27.9601 22.2H26.0401V26.0399H22.2002V27.9599H26.0401V31.8H27.9601V27.9599H31.8002V26.0399H27.9601V22.2Z" fill="#333333" />
@@ -322,14 +382,17 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                     </div>
                 </div>
 
-                {hasChildren && itemData?.isExpanded && (
+                {hasChildren && itemData?.isExpanded && itemData?.openAllChilds!=true &&  (
 
-                    itemData?.subRows.map((items: any) => (
-
+                    itemData?.subRowsFirst.map((items: any) => (
                         expandData(items)
 
                     ))
-
+                )}
+                {haveAllChildren && itemData?.openAllChilds && (
+                    itemData?.subRows?.map((items: any) => (
+                        expandData(items)
+                    ))
                 )}
             </>
 
@@ -347,22 +410,24 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                 onMouseLeave={() => handleMouseLeave()}
                 onClick={() => handlClick("click")}
             >
-                {ShareWebId}
+                {CMSToolId}
             </span>
 
             {action === "click" && visible && (
-                <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container p-3 m-0" })}>
+                <div ref={setTooltipRef} {...getTooltipProps({ className: "tooltip-container clickTooltip p-3 m-0" })}>
                     <div className="alignCenter mb-2">
                         <span className="fw-normal">{row?.Title}</span>
                         <span onClick={handleCloseClick} style={{ marginRight: "3px" }} title="Close" className="ml-auto hreflink svg__iconbox svg__icon--cross dark"></span>
                     </div>
-                    { allValue != undefined && allValue != null && 
-                 
-                                expandData(allValue) 
-                            
+                    <div className="maXh-300 scrollbar">
+                    {allValue != undefined && allValue != null &&
+
+                        expandData(allValue)
+
                     }
 
                     <div {...getArrowProps({ className: "tooltip-arrow" })} />
+                </div>
                 </div>
             )}
             {action === "hover" && visible && (
@@ -382,6 +447,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                     AllListId={AllListId}
                     context={AllListId?.Context}
                 ></CreateActivity>
+                
             )}
             {openWS && (
                 <CreateWS
@@ -390,6 +456,7 @@ export default function ReactPopperTooltipSingleLevel({ ShareWebId, row, masterT
                     AllListId={AllListId}
                     context={AllListId?.Context}
                 ></CreateWS>
+                
             )}
         </>
     );

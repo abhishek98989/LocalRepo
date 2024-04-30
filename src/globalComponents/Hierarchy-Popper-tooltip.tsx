@@ -14,7 +14,7 @@ export const getTooltiphierarchy = (row: any) => {
     while (true) {
         // if (row?.parentRow) {
         if (row?.getParentRow()) {
-            // const temp = { ...row.parentRow.original };
+        // const temp = { ...row.parentRow.original };
             const temp = { ...row.getParentRow().original };
             temp.subRows = [rowOrg];
             rowOrg = temp;
@@ -28,7 +28,7 @@ export const getTooltiphierarchy = (row: any) => {
 };
 let scrollToolitem: any = false
 let pageName: any = 'hierarchyPopperToolTip'
-export default function ReactPopperTooltip({ ShareWebId, row, projectToolShow, AllListId }: any) {
+export default function ReactPopperTooltip({ CMSToolId, row, projectToolShow, AllListId }: any) {
     const [controlledVisible, setControlledVisible] = React.useState(false);
     const [openActivity, setOpenActivity] = React.useState(false);
     const [openWS, setOpenWS] = React.useState(false);
@@ -116,7 +116,7 @@ export default function ReactPopperTooltip({ ShareWebId, row, projectToolShow, A
                 size: 140,
                 canSort: false,
                 placeholder: "",
-                id: 'TaskID',
+                id: '',
                 cell: ({ row, getValue }) => (
                     <div>
                         <><> {row?.original?.SiteIcon != undefined ?
@@ -190,14 +190,14 @@ export default function ReactPopperTooltip({ ShareWebId, row, projectToolShow, A
                 onMouseEnter={() => handlAction("hover")}
                 onMouseLeave={() => handleMouseLeave()}
             >
-                {ShareWebId}
+                {CMSToolId}
             </span> :
                 <span
                     ref={setTriggerRef}
                     onMouseEnter={() => handlAction("hover")}
                     onMouseLeave={() => handleMouseLeave()}
                 >
-                    {ShareWebId}
+                    {CMSToolId}
                 </span>}
 
             {action === "click" && visible && (

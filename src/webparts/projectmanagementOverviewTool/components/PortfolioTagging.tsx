@@ -240,7 +240,6 @@ const PortfolioTagging = (item: any) => {
             //  ungetFilterLength();
             // setData(data => ([...maidataBackup]));
             setComponentsData(maidataBackup);
-            //setData(ComponentsData)= SharewebCommonFactoryService.ArrayCopy($scope.CopyData);
         }
         }
     const handleOpen = (item: any) => {
@@ -339,11 +338,11 @@ const PortfolioTagging = (item: any) => {
                         })
                     }
     
-                    if (result.ClientCategory != undefined && result.ClientCategory.length > 0) {
-                        $.each(result.TeamMembers, function (index: any, catego: any) {
-                            result.ClientCategory.push(catego);
-                        })
-                    }
+                    // if (result.ClientCategory != undefined && result.ClientCategory.length > 0) {
+                    //     $.each(result.TeamMembers, function (index: any, catego: any) {
+                    //         result.ClientCategory.push(catego);
+                    //     })
+                    // }
                     if (result.Item_x0020_Type == 'Root Component') {
                         result['Child'] = [];
                         RootComponentsData.push(result);

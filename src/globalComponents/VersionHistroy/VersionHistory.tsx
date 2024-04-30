@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Web } from "sp-pnp-js";
 import Tooltip from '../Tooltip';
 import * as moment from 'moment';
+import { isEmpty } from 'lodash';
 import InfoIconsToolTip from '../InfoIconsToolTip/InfoIconsToolTip';
 import { SlArrowDown, SlArrowRight } from 'react-icons/sl';
 import * as globalCommon from "../globalCommon";
@@ -19,6 +20,15 @@ export default function VersionHistory(props: any) {
     const siteTypeUrl = props.siteUrls;
     const listId = props?.listId
     const ItemId = props?.taskId;
+    var sitetype = window?.location?.search !== '' ? window?.location?.search?.split("&Site=")[1] || "Master Tasks" : 'Task Users';
+    try {
+        if (window?.location?.search?.split("&Site=")[1]?.indexOf("&OR") > -1) {
+            sitetype = window?.location?.search?.split("&Site=")[1]?.split("&OR")[0];
+        } 
+    }
+    catch (e) {
+        console.log(e);
+    }
     const RequiredListIds: any = props?.RequiredListIds;
     let tempEstimatedArrayData: any;
     const [show, setShow] = React.useState(false);
@@ -32,6 +42,7 @@ export default function VersionHistory(props: any) {
     const [IsUserFromHHHHTeam, setIsUserFromHHHHTeam] = React.useState(false);
     const usedFor: any = props?.usedFor;
     const Context = props?.context;
+    
 
     const handleClose = () => setShow(false);
     const handleShow = () => {
@@ -41,16 +52,16 @@ export default function VersionHistory(props: any) {
         }, 100);
     };
     React.useEffect(() => {
-       
         GetItemsVersionHistory();
         loadTaskUsers();
         LoadAllClientCategories();
     }, [show]);
+
     //------------------------this use used for getting Version History for Selected Item from backend--------------------------------
     const GetItemsVersionHistory = async () => {
         var versionData: any = []
         try {
-           let web = new Web(siteTypeUrl)
+            let web = new Web(siteTypeUrl);
             web.lists.getById(listId).items.getById(ItemId).versions.get().then(versions => {
                 console.log('Version History:', versions);
                 versions.map((ItemVersion: any) => {
@@ -64,25 +75,30 @@ export default function VersionHistory(props: any) {
 
                 const employeesWithoutLastName = result.map(employee => {
                     employee.childs = []
-                    const { VersionId, IsCurrentVersion, ClientTime, PreviouslyAssignedTo, Portfolio_x005f_x0020_x005f_Type, Project_x005f_x003a_x005f_ID, VersionLabel, UniqueId, ParentUniqueId, ScopeId, SMLastModifiedDate, GUID, FileRef, FileDirRef, OData__x005f_Moderation, WorkflowVersion, OData__x005f_IsCurrentVersion, OData__x005f_UIVersion, OData__x005f_UIVersionString, odata, ...rest } = employee;
+                    const { VersionId, IsCurrentVersion, MetaInfo, Parent_x005f_x003a_x005f_ID, ClientTime,FeatureType_x005f_x003a_x005f_Title, SmartInformation_x005f_x003a_x005f_ID,PreviouslyAssignedTo,Portfolio_x005f_x003a_x005f_ID, Project_x005f_x003a_x005f_ID, VersionLabel, UniqueId, ParentUniqueId, ScopeId, SMLastModifiedDate, GUID, FileRef, FileDirRef, OData__x005f_Moderation, WorkflowVersion, OData__x005f_IsCurrentVersion, OData__x005f_UIVersion, OData__x005f_UIVersionString, odata, ...rest } = employee;
                     return rest;
                 });
                 console.log(employeesWithoutLastName)
                 // setSCVersionHistoryData
                 let TempSCDataItems: any = [];
                 employeesWithoutLastName?.forEach((val: any) => {
-                    if (val?.Sitestagging?.length > 0) {
+                    if (val?.Sitestagging?.length > 5) {
                         TempSCDataItems.push(val);
                     }
-                    if (val.FeedBack !== undefined && val.FeedBack !== null && val.FeedBack !== '[]') {
-                        val.FeedBackDescription = JSON.parse(val?.FeedBack)[0].FeedBackDescriptions
-                        if (val.FeedBackDescription !== undefined) {
-                            val?.FeedBackDescription?.map((feedback: any) => {
-                                if (feedback.Title != '')
-                                    feedback.Title = $.parseHTML(feedback?.Title)[0].textContent;
-                            })
+                    try{
+                        if (val.FeedBack !== undefined && val.FeedBack !== null && val.FeedBack !== '[]') {
+                            val.FeedBackDescription = JSON.parse(val?.FeedBack)[0].FeedBackDescriptions
+                            if (val.FeedBackDescription !== undefined) {
+                                val?.FeedBackDescription?.map((feedback: any) => {
+                                    if (feedback.Title != '')
+                                        feedback.Title = $.parseHTML(feedback?.Title)[0].textContent;
+                                })
+                            }
                         }
                     }
+                    catch(e){
+                        console.log(e);
+                    }                   
                     if (val?.BasicImageInfo != undefined) {
                         try {
                             val.BasicImageInfoArray = JSON.parse(val?.BasicImageInfo)
@@ -97,22 +113,30 @@ export default function VersionHistory(props: any) {
 
                         }
                     }
-
                     if (val.EstimatedTimeDescription !== undefined && val.EstimatedTimeDescription !== null && val.EstimatedTimeDescription !== '[]') {
-                        tempEstimatedArrayData = JSON.parse(val?.EstimatedTimeDescription);
-                        let TotalEstimatedTimecopy: any = 0;
-                        if (tempEstimatedArrayData?.length > 0) {
-                            tempEstimatedArrayData?.map((TimeDetails: any) => {
-                                TotalEstimatedTimecopy = TotalEstimatedTimecopy + Number(TimeDetails.EstimatedTime);
-                            })
+                        try{
+                            tempEstimatedArrayData = JSON.parse(val?.EstimatedTimeDescription);
+                            let TotalEstimatedTimecopy: any = 0;
+                            if (tempEstimatedArrayData?.length > 0) {
+                                tempEstimatedArrayData?.map((TimeDetails: any) => {
+                                    TotalEstimatedTimecopy = TotalEstimatedTimecopy + Number(TimeDetails.EstimatedTime);
+                                })
+                            }
+                            val.EstimatedTimeDescriptionArray = tempEstimatedArrayData
+                            val.TotalEstimatedTime = TotalEstimatedTimecopy
                         }
-                        val.EstimatedTimeDescriptionArray = tempEstimatedArrayData
-                        val.TotalEstimatedTime = TotalEstimatedTimecopy
+                        catch(e){
+
+                        }                        
                     }
                     if (val.Comments !== undefined && val.Comments !== null && val.Comments !== '[]') {
-                        val.CommentsDescription = JSON.parse(val?.Comments)
-                    }
+                        try{
+                            val.CommentsDescription = JSON.parse(val?.Comments)
+                        }
+                        catch(e){
 
+                        }                           
+                    }                                        
                     val.No = val.owshiddenversion;
                     val.ModifiedDate = moment(val?.Modified).format("DD/MM/YYYY h:mmA");
                     val.ModifiedBy = val?.Editor?.LookupValue;
@@ -121,10 +145,25 @@ export default function VersionHistory(props: any) {
 
                 employeesWithoutLastName?.forEach((val: any) => {
                     val.childs?.forEach((ele: any) => {
-                        const { VersionId, IsCurrentVersion, ClientTime, PreviouslyAssignedTo, Portfolio_x005f_x0020_x005f_Type, VersionLabel, Project_x005f_x003a_x005f_ID, UniqueId, ParentUniqueId, ScopeId, SMLastModifiedDate, GUID, FileRef, FileDirRef, OData__x005f_Moderation, WorkflowVersion, OData__x005f_IsCurrentVersion, OData__x005f_UIVersion, OData__x005f_UIVersionString, odata, Editor, ...rest } = ele;
+                        const { VersionId, IsCurrentVersion, MetaInfo, Parent_x005f_x003a_x005f_ID,ClientTime,FeatureType_x005f_x003a_x005f_Title,SmartInformation_x005f_x003a_x005f_ID ,PreviouslyAssignedTo, Portfolio_x005f_x003a_x005f_ID, VersionLabel, Project_x005f_x003a_x005f_ID, UniqueId, ParentUniqueId, ScopeId, SMLastModifiedDate, GUID, FileRef, FileDirRef, OData__x005f_Moderation, WorkflowVersion, OData__x005f_IsCurrentVersion, OData__x005f_UIVersion, OData__x005f_UIVersionString, odata, Editor, ...rest } = ele;
                         return rest;
                     })
                 })
+                try{
+                    employeesWithoutLastName.map((itm:any)=>{
+                        if(itm.childs != undefined){
+                            itm.childs.map((childitem:any)=>{
+                                taskUsers.map((user:any)=>{
+                                    if(childitem.Editor.LookupId === user.AssingedToUserId){
+                                        childitem.ItemImage = user.Item_x0020_Cover.Url;
+                                        childitem.UserId = user.AssingedToUserId;
+                                    }
+                                })
+                            })
+                        }
+                    })
+                }
+                catch(e){}             
                 setSCVersionHistoryData(TempSCDataItems)
                 setData(employeesWithoutLastName);
 
@@ -136,14 +175,13 @@ export default function VersionHistory(props: any) {
         }
     }
 
-
     // this is used for getting all tagged CC from Smart Meta Data List 
 
     const LoadAllClientCategories = async () => {
         let TempCCData: any = [];
         let AllCCFromCall: any = [];
         try {
-            let web = new Web(siteTypeUrl)
+            let web = new Web(siteTypeUrl);
             AllCCFromCall = await web.lists
                 .getById(RequiredListIds?.SmartMetadataListID)
                 .items.select(
@@ -196,7 +234,7 @@ export default function VersionHistory(props: any) {
                     }
                     AllTaskUsers.push(user);
                 }
-                AllTaskUser = taskUsers;
+                AllTaskUser = taskUsers;                
                 if (user.AssingedToUserId == currentUserId) {
                     let temp: any = [];
                     temp.push(user);
@@ -228,26 +266,170 @@ export default function VersionHistory(props: any) {
                 const currentObj = data[i];
                 const nextObj = data[i + 1];
                 const differingPairs: any = {};
-                differingPairs['TaskID'] = currentObj.ID;
+                // differingPairs['TaskID'] = currentObj.ID;
                 differingPairs['TaskTitle'] = currentObj.Title;
-                for (const key in currentObj) {
-                    differingPairs['version'] = currentObj.VersionId;
-                    differingPairs['ID'] = currentObj.ID;
-                    if (currentObj.hasOwnProperty(key) && (!nextObj.hasOwnProperty(key) || !isEqual(currentObj[key], nextObj[key]))) {
-                        differingPairs[key] = currentObj[key];
-                        differingPairs['Editor'] = currentObj.Editor;
-                    }
-                }
+                differingPairs['version'] = currentObj.VersionId;
+                differingPairs['Modified'] = currentObj.Modified;
+                differingPairs['ID'] = currentObj.ID;
+                let editor = currentObj.Editor;
+                let ID = currentObj.ID;
 
+                for (let key in currentObj) {
+                    let newKey;
+                    let status;
+                    // Apply key transformations
+                    switch (key) {
+                        case 'Team_x005f_x0020_x005f_Members':
+                            newKey = 'TeamMembers';
+                            break;
+                        case 'Reference_x005f_x0020_x005f_Item_x005f_x0020_x005f_Json':
+                            newKey = 'Reference Item Json';
+                            break;
+                        case 'component_x005f_x0020_x005f_link':
+                            newKey = 'ComponentLink';
+                            break;
+                        case 'Responsible_x005f_x0020_x005f_Team':
+                            newKey = 'ResponsibleTeam';
+                            break;
+                        case 'SharewebCategories':
+                            newKey = 'TaskCategories';
+                            break;
+                        case 'Portfolio_x005f_x0020_x005f_Type':
+                            newKey = 'PortfolioType';
+                            break;
+                        case 'Created_x005f_x0020_x005f_Date':
+                            newKey = 'Created';
+                            break;
+                        case 'SmartInformation_x005f_x003a_x005f_Title':
+                            newKey = 'SmartInformation';
+                            break;                       
+                        case 'Shareweb_x005f_x0020_x005f_ID':
+                            newKey = 'TaskID';
+                            break;
+                        case 'Priority_x005f_x0020_x005f_Rank':
+                            newKey = 'PriorityRank';
+                            break;   
+                        case 'Item_x005f_x0020_x005f_Type':
+                            newKey = 'ItemType';
+                            break;
+                        case 'PortfolioType_x005f_x003a_x005f_Color':
+                            newKey = 'PortfolioTypeColor';
+                            break; 
+                        case 'PortfolioType_x005f_x003a_x005f_IdRange':
+                            newKey = 'PortfolioTypeIdRange';
+                            break;  
+                        case 'Item_x005f_x002d_x005f_Image':
+                            newKey = 'ItemImage';
+                            break; 
+                        case 'Item_x005f_x0020_x005f_Cover':
+                            newKey = 'ItemCover';
+                            break; 
+                        case 'FeatureType_x005f_x003a_x005f_ID':
+                            newKey = 'FeatureTypeID';
+                            break;  
+                        case 'Client_x005f_x003a_x005f_Category':
+                            newKey = 'ClientCategory';
+                            break;  
+                        case 'Item_x005f_x005F_x005f_x0020_x005f_Cover':
+                            newKey = 'ItemCover';
+                            break;                       
+                        default:
+                            newKey = key; // If no transformation needed, keep the same key
+                            break;
+                    }     
+                    if (currentObj.hasOwnProperty(key) && (!nextObj.hasOwnProperty(key) || !isEqual(currentObj[key], nextObj[key]))) {                       
+                        if (key === 'PercentComplete') {
+                            newKey = '%Complete';                        
+                        } else if (key === 'Status' && (currentObj['PercentComplete'] !== undefined && currentObj['PercentComplete'] !== 'NaN' && currentObj['PercentComplete'] !== null)) {
+                            if(currentObj['Status'] !== undefined && currentObj['Status'] !== '' && currentObj['Status'] !== null){
+                                newKey = 'Status';
+                                const status = (currentObj['PercentComplete'] * 100) + '% ' + currentObj['Status'];
+                                differingPairs[newKey] = status;
+                            }
+                            else{
+                                newKey = 'Status';
+                                const status = (currentObj['PercentComplete'] * 100) + '% ';
+                                differingPairs[newKey] = status;
+                            }
+                        }else if(key === 'Body'){
+                            newKey = 'Body';
+                            try {
+                                const Bodyvalue = currentObj.Body.replace(/<[^>]*>/g, '');
+                                differingPairs[newKey] = Bodyvalue;
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }                                                        
+                        }                         
+                        else if(key === 'Short_x005f_x0020_x005f_Description_x005f_x0020_x005f_On'){
+                            newKey = 'ShortDescriptionOnline';
+                            try {
+                                const shortvalue = currentObj.Short_x005f_x0020_x005f_Description_x005f_x0020_x005f_On.replace(/<[^>]*>/g, '');
+                                differingPairs[newKey] = shortvalue;
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }     
+                            
+                        }
+                        else if(key === 'TechnicalExplanations'){
+                            newKey = 'TechnicalExplanations';                 
+                            try {
+                                const shortvalue = $.parseHTML(currentObj.TechnicalExplanations)[0].textContent;
+                                differingPairs[newKey] = shortvalue;
+                            }   
+                            catch (e) {
+                                console.log(e);
+                            }
+                            
+                        }    
+                        else if(key === 'Deliverables'){
+                            newKey = 'Deliverables';             
+                            try {
+                                const Deliverablesvalue = $.parseHTML(currentObj.Deliverables)[0].textContent;
+                                differingPairs[newKey] = Deliverablesvalue;
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }
+                            
+                        } 
+                        else if (key === 'CategoriesItemsJson' && currentObj.CategoriesItemsJson != undefined && currentObj.CategoriesItemsJson != '[]') {
+                            const newKey = 'CategoriesItems';
+                            let Deliverablesvalue = '';
+                            try {
+                                if (currentObj?.CategoriesItemsJson != undefined && currentObj?.CategoriesItemsJson != null && currentObj?.CategoriesItemsJson != '[]')
+                                  var parsedItems = JSON.parse(currentObj?.CategoriesItemsJson);
+                                if (parsedItems.length >= 2) {
+                                    parsedItems.forEach((item: any) => {
+                                        Deliverablesvalue += ';' + item.Title;
+                                    });
+                                } else if (parsedItems.length === 1) {
+                                    Deliverablesvalue = parsedItems[0].Title + ';';
+                                }
+                            }
+                            catch (e) {
+                                console.log(e);
+                            }
+                            
+                            differingPairs[newKey] = Deliverablesvalue;
+                        }    
+                        else {
+                            differingPairs[newKey] = currentObj[key];
+                        }
+                        
+                    }                         
+                }
+                
                 // Check for properties in n+1 but not in n           
                 for (const key in nextObj) {
                     if (nextObj.hasOwnProperty(key) && !currentObj.hasOwnProperty(key)) {
-                        differingPairs[key] = currentObj[key];
-                        differingPairs['Editor'] = currentObj.Editor;
+                        differingPairs[key] = currentObj[key];                       
                     }
                 }
-
-                if (Object.keys(differingPairs).length > 0) {
+                differingPairs['Editor'] = editor;
+                differingPairs['TaskID'] = ID;
+                if (Object.keys(differingPairs).length > 0) {                                        
                     differingValues.push(differingPairs);
                 }
             }
@@ -255,20 +437,157 @@ export default function VersionHistory(props: any) {
                 const currentObj = data[i];
                 const prevObj = data[i - 1];
                 const differingPairs: any = {};
-                differingPairs['TaskID'] = currentObj.ID;
+                //differingPairs['TaskID'] = currentObj.ID;
                 differingPairs['TaskTitle'] = currentObj.Title;
-                for (const key in currentObj) {
-                    differingPairs['version'] = currentObj.VersionId;
-                    differingPairs['ID'] = currentObj.ID;
-                    differingPairs['owshiddenversion'] = currentObj.owshiddenversion;
-                    if (currentObj.PercentComplete != undefined && currentObj.PercentComplete != null && currentObj.PercentComplete !== 'NaN')
-                        differingPairs['PercentComplete'] = currentObj.PercentComplete;
+                differingPairs['version'] = currentObj.VersionId;
+                differingPairs['ID'] = currentObj.ID;
+                differingPairs['owshiddenversion'] = currentObj.owshiddenversion;
+                let editor = currentObj.Editor;
+                let ID = currentObj.ID;
+
+                for (const key in currentObj) {   
+                    let newKey;
+                    switch (key) {
+                        case 'Team_x005f_x0020_x005f_Members':
+                            newKey = 'TeamMembers';
+                            break;
+                        case 'Reference_x005f_x0020_x005f_Item_x005f_x0020_x005f_Json':
+                            newKey = 'Reference Item Json';
+                            break;
+                        case 'component_x005f_x0020_x005f_link':
+                            newKey = 'ComponentLink';
+                            break;
+                        case 'Responsible_x005f_x0020_x005f_Team':
+                            newKey = 'ResponsibleTeam';
+                            break;
+                        case 'SharewebCategories':
+                            newKey = 'TaskCategories';
+                            break;
+                        case 'Portfolio_x005f_x0020_x005f_Type':
+                            newKey = 'PortfolioType';
+                            break;
+                        case 'Item_x005f_x0020_x005f_Type':
+                            newKey = 'ItemType';
+                            break;  
+                        case 'PortfolioType_x005f_x003a_x005f_Color':
+                            newKey = 'PortfolioTypeColor';
+                            break; 
+                        case 'PortfolioType_x005f_x003a_x005f_IdRange':
+                            newKey = 'PortfolioTypeIdRange';
+                            break; 
+                        case 'Item_x005f_x002d_x005f_Image':
+                            newKey = 'ItemImage';
+                            break; 
+                        case 'Item_x005f_x0020_x005f_Cover':
+                            newKey = 'ItemCover';
+                            break; 
+                        case 'FeatureType_x005f_x003a_x005f_ID':
+                            newKey = 'FeatureTypeID';
+                            break;  
+                        case 'Client_x005f_x003a_x005f_Category':
+                            newKey = 'ClientCategory';
+                            break; 
+                        case "Item_x005f_x005F_x005f_x0020_x005f_Cover":
+                            newKey = "ItemCover";
+                            break;
+                        default:
+                            newKey = key; // If no transformation needed, keep the same key
+                            break;
+                    }                                                               
                     if ((currentObj[key] !== undefined && currentObj[key] !== null && currentObj[key] !== '' && currentObj.hasOwnProperty(key)) && (key !== 'Checkmark' && key !== 'odata.type' && key !== 'ItemChildCount' && key !== 'SMTotalFileStreamSize' && key !== 'ContentVersion' && key !== 'FolderChildCount' && key !== 'NoExecute' && key !== 'FSObjType' && key !== 'FileLeafRef' && key !== 'Order' && key !== 'Created_x005f_x0020_x005f_Date' && key !== 'Last_x005f_x0020_x005f_Modified')) {
-                        if (currentObj[key]?.length > 0 && key != 'Project_x005f_x003a_x005f_ID') {
-                            differingPairs[key] = currentObj[key];
-                            differingPairs['Editor'] = currentObj.Editor;
-                        }
+                        if (!isEmpty(currentObj[key]) && key != 'Project_x005f_x003a_x005f_ID' && key != 'SyncClientId' && key != 'SMTotalSize' && key != 'SMTotalFileCount') {
+                            // if (key === 'PercentComplete')
+                            //     newKey = '%Complete';
+                            // differingPairs[newKey] = currentObj[key];
+                            // differingPairs['Editor'] = currentObj.Editor;
+                            if (key === 'PercentComplete') {
+                                newKey = '%Complete';
+                            } else if (key === 'Status' && (currentObj['PercentComplete'] !== undefined && currentObj['PercentComplete'] !== 'NaN' && currentObj['PercentComplete'] !== null)) {
+                                if(currentObj['Status'] !== undefined && currentObj['Status'] !== '' && currentObj['Status'] !== null){
+                                    newKey = 'Status';
+                                    const status = (currentObj['PercentComplete'] * 100) + '% ' + currentObj['Status'];
+                                    differingPairs[newKey] = status;
+                                }
+                                else{
+                                    newKey = 'Status';
+                                    const status = (currentObj['PercentComplete'] * 100) + '% ';
+                                    differingPairs[newKey] = status;
+                                }
+                                
+                            }else if(key === 'Body'){
+                                newKey = 'Body';
+                                try {
+                                    const Bodyvalue = currentObj.Body.replace(/<[^>]*>/g, '');
+                                    differingPairs[newKey] = Bodyvalue;
+                                }
+                                catch (e) {
+                                    console.log(e);
+                                }
+                                
+                            }                           
+                            else if(key === 'Short_x005f_x0020_x005f_Description_x005f_x0020_x005f_On'){
+                                newKey = 'ShortDescriptionOnline';
+                                try {
+                                    const shortvalue = currentObj.Short_x005f_x0020_x005f_Description_x005f_x0020_x005f_On.replace(/<[^>]*>/g, '');
+                                    differingPairs[newKey] = shortvalue;
+                                }
+                                catch (e) {
+                                    console.log(e);
+                                }
+                               
+                            }
+                            else if(key === 'TechnicalExplanations'){
+                                newKey = 'TechnicalExplanations';   
+                                try {
+                                    const shortvalue = $.parseHTML(currentObj.TechnicalExplanations)[0].textContent;
+                                    differingPairs[newKey] = shortvalue;
+                                }
+                                catch (e) {
+                                    console.log(e);
+                                }
+                                
+                            }
+                            else if(key === 'Deliverables'){
+                                newKey = 'Deliverables';                            
+                                try {
+                                    const Deliverablesvalue = $.parseHTML(currentObj.Deliverables)[0].textContent;
+                                    differingPairs[newKey] = Deliverablesvalue;
+                                }
+                                catch (e) {
+                                    console.log(e);
+                                }
+                            }    
+                            else if (key === 'CategoriesItemsJson' && currentObj.CategoriesItemsJson != undefined && currentObj.CategoriesItemsJson != '[]') {
+                                const newKey = 'CategoriesItems';
+                                let Deliverablesvalue = '';                                
+                                try {
+                                    if (currentObj?.CategoriesItemsJson != undefined && currentObj?.CategoriesItemsJson != null && currentObj?.CategoriesItemsJson != '[]')
+                                        var parsedItems = JSON.parse(currentObj?.CategoriesItemsJson);
+                                    if (parsedItems.length >= 2) {
+                                        parsedItems.forEach((item: any) => {
+                                            Deliverablesvalue += ';' + item.Title;
+                                        });
+                                    } else if (parsedItems.length === 1) {
+                                        Deliverablesvalue = parsedItems[0].Title + ';';
+                                    }
+                                }
+                                catch (e) {
+                                    console.log(e);
+                                }
+                                differingPairs[newKey] = Deliverablesvalue;
+                            }   
+                            else if (key === 'DraftCategory') {
+                                newKey = 'DraftCategory';                                                       
+                                const Deliverablesvalue: any = JSON.parse(currentObj.DraftCategory)[0];                            
+                                differingPairs[newKey] = Deliverablesvalue;
+                            }   
+                            else {
+                                differingPairs[newKey] = currentObj[key];
+                            }
+                        }                        
                     }
+                    differingPairs['Editor'] = editor;
+                    differingPairs['TaskID'] = ID;
                 }
                 if (Object.keys(differingPairs).length > 0) {
                     differingValues.push(differingPairs);
@@ -321,8 +640,8 @@ export default function VersionHistory(props: any) {
             <>
                 <div className='subheading mb-0'>
                     Version History
-                </div>
-                <Tooltip />
+                </div>  
+                <Tooltip ComponentId='1950' />
             </>
         );
     };
@@ -331,14 +650,13 @@ export default function VersionHistory(props: any) {
             <>
                 <div className='subheading mb-0'>
                     All Comments
-                </div>
-                <Tooltip />
+                </div>               
             </>
         );
     };
-    const renderArray = (arr: any[]) => {
+    const renderArray = (arr: any[],key:any) => {
         return arr.map((item, index) => (
-            <div key={index}>{typeof item === 'object' ? item?.LookupValue : item}</div>
+            <div key={index}>{typeof item === 'object' ? item.LookupValue : item} </div>
         ));
     };
     const renderSiteComposition = (itm: any) => {
@@ -355,7 +673,7 @@ export default function VersionHistory(props: any) {
             })
         }
 
-        if (itm?.Sitestagging != undefined) {
+        if (itm?.Sitestagging != undefined && itm?.Sitestagging != false) {
             try {
                 SitesTaggingArray = JSON.parse(itm?.Sitestagging)
                 SitesTaggingArray?.map((AllSCItem: any) => {
@@ -376,11 +694,11 @@ export default function VersionHistory(props: any) {
 
         return (
             <>
-                {(SitesTaggingArray != undefined && SitesTaggingArray != null) && <dl className="Sitecomposition w-50">
+                {(SitesTaggingArray != undefined && SitesTaggingArray != null && SitesTaggingArray.length > 0) && <dl className={usedFor == "Site-Composition" ? "Sitecomposition" : "Sitecomposition"}>
                     <div className='dropdown'>
                         <div className="spxdropdown-menu" style={{ display: showComposition ? 'block' : 'none' }}>
                             <ul>
-                                {SitesTaggingArray.map((site: any, indx: any) => {
+                                {SitesTaggingArray?.map((site: any, indx: any) => {
                                     return <li className="Sitelist">
                                         <span>
                                             <img style={{ width: "22px" }} title={site?.Title} src={site?.SiteImages} />
@@ -500,12 +818,17 @@ export default function VersionHistory(props: any) {
         )
     }
 
-    const renderObject = (obj: any, visited: Set<object> = new Set()) => {
+    const renderObject = (obj: any,key:any) => {
         if (obj != null && obj != undefined) {
             if (obj?.Url != undefined && obj?.Url != null) {
                 return <a href={obj?.Url} target='_blank' data-interception="off"> {obj?.Url} </a>
             }
-            return <div>{obj?.LookupValue}</div>
+            return (
+            <div>
+                {key === 'Project' ? <a href={`${siteTypeUrl}/SitePages/Project-Management.aspx?ProjectId=${obj.LookupId}`} target='_blank' data-interception="off">{obj.LookupValue}</a>:
+                key === 'Portfolio' ? <a href={`${siteTypeUrl}/SitePages/Portfolio-Profile.aspx?taskId=${obj.LookupId}`} target='_blank' data-interception="off">{obj.LookupValue}</a> :
+                obj?.LookupValue}
+            </div>)
         }
 
 
@@ -520,15 +843,17 @@ export default function VersionHistory(props: any) {
                 isOpen={show}
                 onDismiss={handleClose}
                 isBlocking={false}
-                type={PanelType.large}>
+                type={PanelType.custom}
+                customWidth={usedFor == "Site-Composition" ? "900px" : "1200px"}
+            >
 
                 <table className="table VersionHistoryTable mt-2">
                     <thead>
                         <tr>
-                            <th style={{ width: "80px" }} scope="col">No</th>
-                            <th style={{ width: "170px" }} scope="col">Modified</th>
+                            <th style={{ width: "50px" }} scope="col">No</th>
+                            {/* <th style={{ width: "210px" }} scope="col">Modified</th> */}
                             <th scope="col">Info</th>
-                            <th style={{ width: "170px" }} scope="col">Modified by</th>
+                            <th style={{ width: "220px" }} scope="col">Modified by</th>
                         </tr>
                     </thead>
                     {usedFor === "Site-Composition" ?
@@ -563,9 +888,9 @@ export default function VersionHistory(props: any) {
                                             <td>
                                                 {itm?.No}
                                             </td>
-                                            <td>
-                                                <span className="siteColor"><a href={`https://hhhhteams.sharepoint.com/sites/HHHH/SP/Lists/HHHH/DispForm.aspx?ID=${itm.ID}&VersionNo=${itm.version}`}>{itm?.ModifiedDate}</a></span>
-                                            </td>
+                                            {/* <td>
+                                                <span className="siteColor"><a href={`${siteTypeUrl}/Lists/${sitetype}/DispForm.aspx?ID=${itm.ID}&VersionNo=${itm.version}`} target='_blank' data-interception="off">{itm?.ModifiedDate}</a></span>
+                                            </td> */}
                                             <td>
                                                 <div className='Info-VH-Col'>
                                                     {itm?.childs.map((item: any, index: any) => {
@@ -577,17 +902,17 @@ export default function VersionHistory(props: any) {
                                                                     return (
                                                                         <>
                                                                             {(key != 'odata.editLink' && key != 'odata.id' && key != 'owshiddenversion' && key != 'Editor' && key != 'childs' &&
-                                                                                key != 'Modified' && key != 'ModifiedDate' && key != 'BasicImageInfoArray' && key != 'OffshoreImageUrlArray' && key != 'No' && key != 'CommentsDescription' && key != 'Created' && key != 'ModifiedBy' && key !== 'version' && key !== 'TaskTitle' && key !== 'TaskID' && key !== 'FeedBackDescription' && key !== 'ID' && key !== 'EstimatedTimeDescriptionArray' && key !== 'TotalEstimatedTime') &&
+                                                                                key != 'Modified' && key != 'ItemImage' && key != 'UserId' && key != 'TaskID' && key != 'ModifiedDate' && key != 'BasicImageInfoArray' && key != 'OffshoreImageUrlArray' && key != 'No' && key != 'CommentsDescription' && key != 'Created' && key != 'ModifiedBy' && key !== 'version' && key !== 'TaskTitle' && key !== 'FeedBackDescription' && key !== 'ID' && key !== 'EstimatedTimeDescriptionArray' && key !== 'TotalEstimatedTime') &&
                                                                                 <li key={index}>
                                                                                     <span className='vh-textLabel'>{key}</span>
                                                                                     <span className='vh-textData'>{Array.isArray(item[key])
-                                                                                        ? renderArray(item[key])
+                                                                                        ? renderArray(item[key],key)
                                                                                         : typeof item[key] === 'object'
-                                                                                            ? renderObject(item[key])
+                                                                                            ? renderObject(item[key],key)
                                                                                             : key === 'FeedBack'
                                                                                                 ? <div className='feedbackItm-text'>
                                                                                                     {(item?.FeedBackDescription != undefined && item?.FeedBackDescription != '' && item?.FeedBackDescription?.length > 0) ? <span className='d-flex'><p className='text-ellips mb-0'>{`${item?.FeedBackDescription[0]?.Title}`}</p> <InfoIconsToolTip Discription='' row={item} versionHistory={true} /></span> : ''}
-                                                                                                </div> : key === 'PercentComplete' ? (item?.PercentComplete) * 100 : key === 'BasicImageInfo'
+                                                                                                </div> : key === '%Complete' ? (item['%Complete']) * 100 : key === 'BasicImageInfo'
                                                                                                     ? <div className='BasicimagesInfo_groupImages'>
                                                                                                         {item?.BasicImageInfoArray != undefined && item?.BasicImageInfoArray.map((image: any, indx: any) => {
                                                                                                             return (
@@ -608,7 +933,7 @@ export default function VersionHistory(props: any) {
                                                                                                                         <p className="pb-0 mb-0 ">Estimated Task Time Details</p>
                                                                                                                     </div>
                                                                                                                 </a>
-                                                                                                                <div className="spxdropdown-menu" style={{ display: ShowEstimatedTimeDescription ? 'block' : 'none' }}>
+                                                                                                                <div className="spxdropdown-menu">
                                                                                                                     <div className="col-12" style={{ fontSize: "14px" }}>
                                                                                                                         {item?.EstimatedTimeDescriptionArray != null && item?.EstimatedTimeDescriptionArray?.length > 0 ?
                                                                                                                             <div>
@@ -685,7 +1010,10 @@ export default function VersionHistory(props: any) {
 
                                             </td>
                                             <td>
-                                                <span className="siteColor">{itm?.ModifiedBy}</span>
+                                                <div className="alignCenter">
+                                                    <a href={`${siteTypeUrl}/Lists/${sitetype}/DispForm.aspx?ID=${itm.ID}&VersionNo=${itm.version}`} target='_blank' data-interception="off">{itm?.ModifiedDate}</a>
+                                                    <a href={`${siteTypeUrl}/SitePages/TaskDashboard.aspx?UserId=${itm.UserId}`} target='_blank' data-interception='off'>{itm?.ItemImage ? <img className='workmember hreflink ms-1' src={itm?.ItemImage} title={itm?.ModifiedBy} /> : <span title={itm?.ModifiedBy ? itm?.ModifiedBy : "Default user icons"} className="alignIcon svg__iconbox svg__icon--defaultUser "></span> }</a>
+                                                </div>
                                             </td>
                                         </tr>
                                     </>
@@ -730,6 +1058,34 @@ export default function VersionHistory(props: any) {
                                                 <h6 className='userid m-0 fs-6'>   {cmtData?.Header != '' && <b>{cmtData?.Header}</b>}</h6>
                                                 <p className='m-0' id="pageContent"> <span dangerouslySetInnerHTML={{ __html: cmtData?.Description }}></span></p>
                                             </div>
+                                        </div>
+                                        <div className="commentMedia">
+                                            {cmtData?.ReplyMessages != null && cmtData?.ReplyMessages != undefined && cmtData?.ReplyMessages?.length > 0 &&
+                                                <div>
+                                                <ul className="list-unstyled subcomment">
+                                                    {cmtData?.ReplyMessages != null && cmtData?.ReplyMessages?.length > 0 && cmtData?.ReplyMessages?.map((ReplyMsg: any, j: any) => {
+                                                    return <li className="media  p-1 my-1">
+                                                        <div className="media-bodyy">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="comment-date ng-binding">
+                                                            <span className="round  pe-1">
+                                                                <img className="align-self-start " title={ReplyMsg?.AuthorName}
+                                                                src={ReplyMsg?.AuthorImage != undefined && ReplyMsg?.AuthorImage != '' ?
+                                                                    ReplyMsg?.AuthorImage :
+                                                                    "https://hhhhteams.sharepoint.com/sites/HHHH/SiteCollectionImages/ICONS/32/icon_user.jpg"}
+                                                                />
+                                                            </span>
+                                                            {ReplyMsg?.Created}</span>                                                           
+                                                        </div>
+                                                        <div className="media-text">                                                            
+                                                            {ReplyMsg?.Description}
+                                                        </div>
+                                                        </div>
+                                                    </li>
+                                                    })}
+                                                </ul>
+                                                </div>
+                                            }
                                         </div>
                                     </div>
                                 })}

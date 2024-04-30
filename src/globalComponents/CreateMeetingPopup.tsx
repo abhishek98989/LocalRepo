@@ -4,14 +4,13 @@ import { Panel, PanelType } from '@fluentui/react'
 import * as globalcommon from './globalCommon'
 import { myContextValue } from './globalCommon'
 var MyContextdata: any
-var isCompleted = false
 var backupInputData: any = [];
 var AllListId: any = {}
 let groupedComponentData: any = [];
 const CallNotes = (props: any) => {
     MyContextdata = React.useContext(myContextValue)
     const [IsOpenPortfolio, setIsOpenPortfolio] = React.useState(false);
-    const [ShareWebComponent, setShareWebComponent] = React.useState('');
+    const [CMSToolComponent, setCMSToolComponent] = React.useState('');
     const [masterTasks, setMasterTasks] = React.useState<any>([])
     const [SearchedServiceCompnentKey, setSearchedServiceCompnentKey] = React.useState<any>('');
     const [SearchedServiceCompnentData, setSearchedServiceCompnentData] = React.useState<any>([]);
@@ -217,7 +216,6 @@ const CallNotes = (props: any) => {
                 },
                 FeedBack: JSON.stringify(task?.FeedBack),
                 PortfolioId: task?.PortfolioId,
-                SharewebCategoriesId: { results: [286] },
                 TaskCategoriesId: { results: [286] },
                 TaskTypeId: 2,
             };
@@ -264,7 +262,7 @@ const CallNotes = (props: any) => {
 
     const EditPortfolio = (item: any, Type: any) => {
         setIsOpenPortfolio(true);
-        setShareWebComponent(item);
+        setCMSToolComponent(item);
     }
 
     const removePortfolioAndActivateInput = (index: any) => {
@@ -390,7 +388,7 @@ const CallNotes = (props: any) => {
             </Panel>
             {/* {IsOpenPortfolio &&
         <ServiceComponentPortfolioPopup
-          props={ShareWebComponent}
+          props={CMSToolComponent}
           Dynamic={AllListId}
           Call={ComponentServicePopupCallBack}
           groupedData={groupedComponentData}

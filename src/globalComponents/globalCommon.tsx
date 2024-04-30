@@ -8,7 +8,6 @@ import { GlobalConstants } from '../globalComponents/LocalCommon';
 import { PageContext } from "@microsoft/sp-page-context";
 import { spfi } from "@pnp/sp/presets/all";
 import { MSGraphClientV3 } from '@microsoft/sp-http';
-import { map } from "jquery";
 export const myContextValue: any = React.createContext<any>({})
 export const pageContext = async () => {
     let result;
@@ -32,16 +31,18 @@ export const docxUint8Array = async () => {
     return result
 }
 export const SendTeamMessage = async (mention_To: any, txtComment: any, Context: any) => {
+    let currentUser: any = {}
     try {
         let pageContent = await pageContext()
         let web = new Web(pageContent?.WebFullUrl);
-        let currentUser = await web.currentUser?.get()
-        if (currentUser) {
-            if (currentUser.Email?.length > 0) {
-            } else {
-                currentUser.Email = currentUser.UserPrincipalName;
-            }
-        }
+        //let currentUser = await web.currentUser?.get()
+        currentUser.Email = Context.pageContext._legacyPageContext.userPrincipalName
+        // if (currentUser) {
+        //     if (currentUser.Email?.length > 0) {
+        //     } else {
+        //         currentUser.Email = currentUser.UserPrincipalName;
+        //     }
+        // }
         // const client: MSGraphClientV3 = await Context.msGraphClientFactory.getClient();
         await Context.msGraphClientFactory.getClient().then((client: MSGraphClientV3) => {
             client.api(`/users`).version("v1.0").get(async (err: any, res: any) => {
@@ -731,7 +732,7 @@ export const loadTaskUsers = async () => {
         taskUser = await web.lists
             .getById('b318ba84-e21d-4876-8851-88b94b9dc300')
             .items
-            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
+            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name,UserGroup/Id,UserGroup/Title&$expand=AssingedToUser,Approver,UserGroup")
             .get();
     }
     catch (error) {
@@ -740,15 +741,14 @@ export const loadTaskUsers = async () => {
     return taskUser;
 }
 export const loadAllTaskUsers = async (AllListId: any) => {
-
+  
     let taskUser;
     try {
         let web = new Web(AllListId?.siteUrl);
         taskUser = await web.lists
-            .getById(AllListId?.TaskUsertListID)
+            .getById(AllListId?.TaskUsertListID!==undefined? AllListId?.TaskUsertListID:AllListId?.TaskUserListId)
             .items
-            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name&$expand=AssingedToUser,Approver")
-            .get();
+            .select("Id,UserGroupId,Suffix,Title,Email,SortOrder,Role,Company,ParentID1,Status,Item_x0020_Cover,AssingedToUserId,isDeleted,AssingedToUser/Title,AssingedToUser/Id,AssingedToUser/EMail,ItemType,Approver/Id,Approver/Title,Approver/Name,UserGroup/Id,UserGroup/Title,TeamLeader/Id,TeamLeader/Title&$expand=UserGroup,AssingedToUser,Approver,TeamLeader").get();
     }
     catch (error) {
         return Promise.reject(error);
@@ -1051,6 +1051,16 @@ export const sendImmediateEmailNotifications = async (
     taskUsers: any,
     Context: any
 ) => {
+    let clientTaskDetails :any= [];
+    if(item?.ClientActivityJson!=undefined){
+        try{
+            clientTaskDetails= JSON.parse(item?.ClientActivityJson);
+            clientTaskDetails= clientTaskDetails[0]
+        }catch(e){
+
+        }
+    }
+   
     await GetImmediateTaskNotificationEmails(
         item,
         isLoadNotification,
@@ -1339,16 +1349,25 @@ export const sendImmediateEmailNotifications = async (
                                 UpdateItem?.Category.toLowerCase("approval") > -1
                             )
                                 item.CategoriesType = item?.Category?.replace("Approval,", "");
-                            Subject =
-                                "[" +
-                                siteType +
-                                " - " +
-                                UpdateItem?.Category +
-                                " (" +
-                                UpdateItem?.PercentComplete +
-                                "%)] " +
-                                UpdateItem?.Title +
-                                "";
+                                if (
+                                    UpdateItem?.Category?.toLowerCase()?.indexOf("immediate") > -1
+                                ) {
+                                    Subject =
+                                    `[Immediate - ${UpdateItem.siteType} - ${UpdateItem.TaskID} ${UpdateItem.Title}] New Immediate Task Created`
+                                }
+                                else{
+                                    Subject =
+                                    "[" +
+                                    siteType +
+                                    " - " +
+                                    UpdateItem?.Category +
+                                    " (" +
+                                    UpdateItem?.PercentComplete +
+                                    "%)] " +
+                                    UpdateItem?.Title +
+                                    "";
+                                }
+                           
                         }
                         if (UpdateItem?.PercentComplete != 1) {
                             Subject = Subject?.replaceAll("Approval,", "");
@@ -1376,15 +1395,11 @@ export const sendImmediateEmailNotifications = async (
                                 "] " +
                                 UpdateItem?.Title +
                                 "";
-                            if (isLoadNotification == "Client Task") {
-                                Subject =
-                                    "[ SDC Client Task - " +
-                                    siteType +
-                                    " - " +
-                                    item?.SDCAuthor +
-                                    " ] " +
-                                    UpdateItem?.Title +
-                                    "";
+                            if (isLoadNotification == "Client Task" && clientTaskDetails?.ClientActivityId!=undefined) {
+                                Subject =  `[Client Task - ${clientTaskDetails?.ClientSite} - ${clientTaskDetails?.SDCTaskId} ${clientTaskDetails?.SDCTitle} by ${clientTaskDetails?.SDCCreatedBy}] New Client Task`
+                            }
+                            if (isLoadNotification == "Client Task Completed" && clientTaskDetails?.ClientActivityId!=undefined) {
+                                Subject =  `[Client Task - ${clientTaskDetails?.ClientSite} - ${clientTaskDetails?.SDCTaskId} ${clientTaskDetails?.SDCTitle} by ${clientTaskDetails?.SDCCreatedBy}] Client Task completed`
                             }
                             if (
                                 UpdateItem?.Category?.toLowerCase()?.indexOf(
@@ -1417,24 +1432,18 @@ export const sendImmediateEmailNotifications = async (
                                 UpdateItem?.Category?.toLowerCase()?.indexOf("immediate") > -1
                             ) {
                                 Subject =
-                                    "[" +
-                                    siteType +
-                                    " - " +
-                                    "Approval,Immediate" +
-                                    "] " +
-                                    UpdateItem?.Title +
-                                    "";
+                                `[Immediate - ${UpdateItem.siteType} - ${UpdateItem.TaskId} ${UpdateItem.Title} New Immediate Task Created]`
                             }
                         } else if (
                             UpdateItem?.PercentComplete == 0 &&
-                            UpdateItem?.Category?.toLowerCase()?.indexOf("design") > -1
+                            UpdateItem?.Category?.toLowerCase()?.indexOf("user experience - ux") > -1
                         ) {
                             if (isLoadNotification == "DesignMail") {
                                 Subject =
                                     "[" +
                                     siteType +
                                     " - " +
-                                    "Design" +
+                                    "User Experience - UX" +
                                     "]" +
                                     UpdateItem?.Title +
                                     "";
@@ -1594,28 +1603,27 @@ export const sendImmediateEmailNotifications = async (
                             let extraBody = "";
                             if (UpdateItem?.ClientActivityJson?.SDCCreatedBy?.length > 0) {
                                 SDCDetails = UpdateItem?.ClientActivityJson;
-                                Subject =
-                                    "[ SDC Client Task - " +
-                                    siteType +
-                                    " - " +
-                                    SDCDetails?.SDCCreatedBy +
-                                    " ] " +
-                                    UpdateItem?.Title +
-                                    "";
+                                if (isLoadNotification == "Client Task" && clientTaskDetails?.ClientActivityId!=undefined) {
+                                    Subject =  `[Client Task - ${clientTaskDetails?.ClientSite} - ${clientTaskDetails?.SDCTaskId} ${clientTaskDetails?.SDCTitle} by ${clientTaskDetails?.SDCCreatedBy}] New Client Task`
+                                }
+                                if (isLoadNotification == "Client Task Completed" && clientTaskDetails?.ClientActivityId!=undefined) {
+                                    Subject =  `[Client Task - ${clientTaskDetails?.ClientSite} - ${clientTaskDetails?.SDCTaskId} ${clientTaskDetails?.SDCTitle} by ${clientTaskDetails?.SDCCreatedBy}] Client Task completed`
+                                }
                                 if (UpdateItem?.PercentComplete < 90) {
-                                    extraBody = `<div>
-                                      <h2>Email Subject : Your Task has been seen - [${SDCDetails?.SDCTaskId} ${UpdateItem?.Title}]</h2>
-                                      <p>Message:</p>
-                                      <p>Dear ${SDCDetails?.SDCCreatedBy},</p>
-                                      <p>Thank you for your Feedback!</p>
-                                      <p>Your Task - [${UpdateItem?.Title}] has been seen by our Team and we are now working on it.</p>
-                                      <p>You can track your Task Status here: <a href="${SDCDetails?.SDCTaskUrl}">${SDCDetails?.SDCTaskUrl}</a></p>
-                                      <p>If you want to see all your Tasks or all Sharweb Tasks click here: <a href="${SDCDetails?.SDCTaskDashboard}">Team Dashboard - Task View</a></p>
-                                      <p>Best regards,<br />Your HHHH Support Team</p>
-                                      <br>
-                                      <h4>Client Email : - ${SDCDetails?.SDCEmail}
-                                  </div><br><br>`;
+                                //     extraBody = `<div>
+                                //       <h2>Email Subject : Your Task has been seen - [${SDCDetails?.SDCTaskId} ${UpdateItem?.Title}]</h2>
+                                //       <p>Message:</p>
+                                //       <p>Dear ${SDCDetails?.SDCCreatedBy},</p>
+                                //       <p>Thank you for your Feedback!</p>
+                                //       <p>Your Task - [${UpdateItem?.Title}] has been seen by our Team and we are now working on it.</p>
+                                //       <p>You can track your Task Status here: <a href="${SDCDetails?.SDCTaskUrl}">${SDCDetails?.SDCTaskUrl}</a></p>
+                                //       <p>If you want to see all your Tasks or all Sharweb Tasks click here: <a href="${SDCDetails?.SDCTaskDashboard}">Team Dashboard - Task View</a></p>
+                                //       <p>Best regards,<br />Your HHHH Support Team</p>
+                                //       <br>
+                                //       <h4>Client Email : - ${SDCDetails?.SDCEmail}
+                                //   </div><br><br>`;
                                 } else if (UpdateItem?.PercentComplete == 90) {
+                                    Subject =  `[Client Task - ${clientTaskDetails?.ClientSite} - ${clientTaskDetails?.SDCTaskId} ${clientTaskDetails?.SDCTitle} by ${clientTaskDetails?.SDCCreatedBy}] Client Task completed`
                                     extraBody = `<div>
                                       <h2>Email Subject : Your Task has been completed - [${SDCDetails?.SDCTaskId} ${UpdateItem?.Title}]</h2>
                                       <p>Message:</p>
@@ -1632,6 +1640,20 @@ export const sendImmediateEmailNotifications = async (
 
                                 body = extraBody + body;
                             }
+                           
+                        }
+                        if(UpdateItem?.Category?.toLowerCase()?.indexOf("immediate") > -1){
+
+                            let headercontain = 
+                            `<div style="margin-top: 11.25pt;">
+                                <div style="margin-top: 2pt;">Hello ${UpdateItem?.Author1},</div>
+                                <div style="margin-top: 5pt;">Your task has been set to  ${UpdateItem?.PercentComplete}%  by ${UpdateItem?.Author1}, team will process it further.</div>
+                                <div style="margin-top: 5pt;">Have a nice day !</div>
+                                <div style="margin-top: 5pt;">Regards,</div>
+                                <div style="margin-top: 5pt;">Task Management Team,</div>
+                            </div>`
+
+                            body = headercontain + body;
                         }
                         var from = "",
                             to = ToEmails,
@@ -1806,20 +1828,27 @@ export const getPortfolio = async (type: any) => {
 
 
 // ********************* This is for the Getting All Component And Service Portfolio Data ********************
-export const GetServiceAndComponentAllData = async (Props: any) => {
+export const GetServiceAndComponentAllData = async (Props?: any | null, filter?: any | null) => {
     var ComponentsData: any = [];
     var AllPathGeneratedData: any = [];
     let AllPathGeneratedProjectdata: any = [];
     // let TaskUsers: any = [];
     let AllMasterTaskData: any = [];
     try {
+         let AllListId=Props
+        let Response: ArrayLike<any> = [];
+        Response = await loadAllTaskUsers(AllListId);
         let ProjectData: any = [];
         let web = new Web(Props.siteUrl);
         AllMasterTaskData = await web.lists
             .getById(Props.MasterTaskListID)
             .items
-            .select("ID", "Id", "Title", "PortfolioLevel", "PortfolioStructureID", "Comments", "ItemRank", "Portfolio_x0020_Type", "Parent/Id", "Parent/Title", "DueDate", "Created", "Body", "SiteCompositionSettings", "Sitestagging", "Item_x0020_Type", "Categories", "Short_x0020_Description_x0020_On", "PriorityRank", "Priority", "AssignedTo/Title", "TeamMembers/Id", "TeamMembers/Title", "ClientCategory/Id", "ClientCategory/Title", "PercentComplete", "ResponsibleTeam/Id", "Author/Id", "Author/Title", "ResponsibleTeam/Title", "PortfolioType/Id", "PortfolioType/Color", "PortfolioType/IdRange", "PortfolioType/Title", "AssignedTo/Id")
-            .expand("Parent", "PortfolioType", "AssignedTo", "Author", "ClientCategory", "TeamMembers", "ResponsibleTeam")
+            .select("ID", "Id", "Title", "PortfolioLevel", "PortfolioStructureID", "HelpInformationVerifiedJson", "HelpInformationVerified", "Comments", "ItemRank", "Portfolio_x0020_Type", "Parent/Id", "Parent/Title", "DueDate",
+                "Created", "Body", "SiteCompositionSettings", "Sitestagging", "Item_x0020_Type", "Categories", "Short_x0020_Description_x0020_On", "Help_x0020_Information", "PriorityRank",
+                "Priority", "AssignedTo/Title", "TeamMembers/Id","FoundationPageUrl", "TeamMembers/Title", "ClientCategory/Id", "ClientCategory/Title", "PercentComplete", "ResponsibleTeam/Id", "Author/Id",
+                "Author/Title", "ResponsibleTeam/Title", "PortfolioType/Id", "PortfolioType/Color", "PortfolioType/IdRange", "PortfolioType/Title", "AssignedTo/Id", "Deliverables",
+                "TechnicalExplanations", "Help_x0020_Information", "AdminNotes", "Background", "Idea", "ValueAdded", "FeatureType/Title", "FeatureType/Id", "Portfolios/Id", "Portfolios/Title", "Editor/Id", "Modified", "Editor/Title")
+            .expand("Parent", "PortfolioType", "AssignedTo", "Author", "ClientCategory", "TeamMembers", "FeatureType", "ResponsibleTeam", "Editor", "Portfolios").filter(filter != null ? filter : '')
             .getAll();
 
         // console.log("all Service and Coponent data form global Call=======", AllMasterTaskData);
@@ -1830,10 +1859,12 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
             result["siteType"] = "Master Tasks";
             result.AllTeamName = "";
             result.listId = Props.MasterTaskListID;
+            result.TaskID = result?.PortfolioStructureID;
             result.portfolioItemsSearch = result.Item_x0020_Type;
             result.isSelected = Props?.selectedItems?.find((obj: any) => obj.Id === result.ID);
             result.TeamLeaderUser = [];
-            result.TaskID = result?.PortfolioStructureID;
+            result.SmartPriority;
+
             result.DisplayDueDate = moment(result.DueDate).format("DD/MM/YYYY");
             result.DisplayCreateDate = moment(result.Created).format("DD/MM/YYYY");
             result.DueDate = moment(result.DueDate).format('DD/MM/YYYY')
@@ -1881,10 +1912,55 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
             if (result?.Item_x0020_Type != undefined) {
                 result.SiteIconTitle = result?.Item_x0020_Type?.charAt(0);
             }
+            result.FeatureTypeTitle = ''
+            if (result?.FeatureType?.Id != undefined) {
+                result.FeatureTypeTitle = result?.FeatureType?.Title
+            }
 
+            result.PortfolioTitle=''
+            result.TaskTypeValue=''
+            result.SmartInformationTitle=''
+            result.SmartPriority=''
             result.descriptionsSearch = '';
+            result.commentsSearch = "";
+            result.descriptionsDeliverablesSearch = '';
+            result.descriptionsHelpInformationSarch = '';
+            result.descriptionsShortDescriptionSearch = '';
+            result.descriptionsTechnicalExplanationsSearch = '';
+            result.descriptionsBodySearch = '';
+            result.descriptionsAdminNotesSearch = '';
+            result.descriptionsValueAddedSearch = '';
+            result.descriptionsIdeaSearch = '';
+            result.descriptionsBackgroundSearch = '';
             try {
                 result.descriptionsSearch = portfolioSearchData(result)
+                if (result?.Deliverables != undefined) {
+                    result.descriptionsDeliverablesSearch = `${removeHtmlAndNewline(result.Deliverables)}`;
+                }
+                if (result.Help_x0020_Information != undefined) {
+                    result.descriptionsHelpInformationSarch = `${removeHtmlAndNewline(result?.Help_x0020_Information)}`;
+                }
+                if (result.Short_x0020_Description_x0020_On != undefined) {
+                    result.descriptionsShortDescriptionSearch = ` ${removeHtmlAndNewline(result.Short_x0020_Description_x0020_On)} `;
+                }
+                if (result.TechnicalExplanations != undefined) {
+                    result.descriptionsTechnicalExplanationsSearch = `${removeHtmlAndNewline(result.TechnicalExplanations)}`;
+                }
+                if (result.Body != undefined) {
+                    result.descriptionsBodySearch = `${removeHtmlAndNewline(result.Body)}`;
+                }
+                if (result.AdminNotes != undefined) {
+                    result.descriptionsAdminNotesSearch = `${removeHtmlAndNewline(result.AdminNotes)}`;
+                }
+                if (result.ValueAdded != undefined) {
+                    result.descriptionsValueAddedSearch = `${removeHtmlAndNewline(result.ValueAdded)}`;
+                }
+                if (result.Idea != undefined) {
+                    result.descriptionsIdeaSearch = `${removeHtmlAndNewline(result.Idea)}`;
+                }
+                if (result.Background != undefined) {
+                    result.descriptionsBackgroundSearch = `${removeHtmlAndNewline(result.Background)}`;
+                }
                 result.commentsSearch = result?.Comments != null && result?.Comments != undefined ? result.Comments.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '') : '';
             } catch (error) {
 
@@ -1950,11 +2026,9 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
             //         result.ClientCategory.push(categoryData);
             //     })
             // }
-
             if (result?.Item_x0020_Type != undefined) {
                 result.SiteIconTitle = result?.Item_x0020_Type?.charAt(0);
             }
-
             if (result.Item_x0020_Type == 'Component' && Props?.projectSelection != true) {
                 const groupedResult = componentGrouping(result, AllMasterTaskData)
                 AllPathGeneratedData = [...AllPathGeneratedData, ...groupedResult?.PathArray];
@@ -1969,7 +2043,25 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
                 const groupedResult = componentGrouping(result, AllMasterTaskData)
                 AllPathGeneratedProjectdata = [...AllPathGeneratedProjectdata, ...groupedResult?.PathArray];
             }
-
+            let checkIsSCProtected: any = false;
+            if (result?.SiteCompositionSettings != undefined) {
+                let TempSCSettingsData: any = JSON.parse(result?.SiteCompositionSettings);
+                if (TempSCSettingsData?.length > 0) {
+                    checkIsSCProtected = TempSCSettingsData[0].Protected;
+                }
+                result.compositionType = siteCompositionType(result?.SiteCompositionSettings);
+            } else {
+                result.compositionType = '';
+            }
+            if (Props?.usedFor !== undefined && Props?.usedFor == "Site-Composition") {
+                if (checkIsSCProtected) {
+                    result.IsSCProtected = true;
+                    result.IsSCProtectedStatus = "Protected";
+                } else {
+                    result.IsSCProtected = false;
+                    result.IsSCProtectedStatus = "";
+                }
+            }
         });
         ProjectData = AllMasterTaskData?.filter(
             (projectItem: any) => projectItem.Item_x0020_Type === "Project"
@@ -1990,7 +2082,8 @@ export const GetServiceAndComponentAllData = async (Props: any) => {
 }
 
 
-const componentGrouping = (Portfolio: any, AllProtFolioData: any, path: string = "") => {
+
+export const componentGrouping = (Portfolio: any, AllProtFolioData: any, path: string = "") => {
     let pathArray: any = [];
     Portfolio.subRows = [];
     let subComFeat = AllProtFolioData?.filter((comp: any) => comp?.Parent?.Id === Portfolio?.Id);
@@ -2076,15 +2169,17 @@ export const GetCompleteTaskId = (Item: any) => {
     }
     return taskIds;
 };
+
 export const GetTaskId = (Item: any) => {
-    const { TaskID, ParentTask, Id, TaskType } = Item;
+    const { TaskID, ParentTask, Id, TaskType, Item_x0020_Type } = Item;
     let taskIds = "";
     if (TaskType?.Title === 'Activities' || TaskType?.Title === 'Workstream') {
         taskIds += taskIds.length > 0 ? `-${TaskID}` : `${TaskID}`;
     }
     if (ParentTask?.TaskID != undefined && TaskType?.Title === 'Task') {
         taskIds += taskIds.length > 0 ? `-${ParentTask?.TaskID}-T${Id}` : `${ParentTask?.TaskID}-T${Id}`;
-    } else if (ParentTask?.TaskID == undefined && TaskType?.Title === 'Task') {
+    }
+    else if (ParentTask?.TaskID == undefined && TaskType?.Title === 'Task') {
         taskIds += taskIds.length > 0 ? `-T${Id}` : `T${Id}`;
     } else if (taskIds?.length <= 0) {
         taskIds += `T${Id}`;
@@ -2145,86 +2240,89 @@ export const loadAllTimeEntry = async (timesheetListConfig: any) => {
 
     }
 }
-
-
-export const loadAllSiteTasks = async (allListId: any, filter: any) => {
-    let query = "Id,Title,FeedBack,PriorityRank,Remark,Project/PriorityRank,ParentTask/Id,ParentTask/Title,ParentTask/TaskID,TaskID,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Sitestagging,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title&$expand=AssignedTo,Project,ParentTask,SmartInformation,Author,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory"
+export const loadAllSiteTasks = async (allListId?: any | null, filter?: any | null, pertiCularSites?: any | null, showOffShore?: any | undefined) => {
+    let query = "Id,Title,Comments,FeedBack,WorkingAction,PriorityRank,Remark,Project/PriorityRank,EstimatedTimeDescription,ClientActivityJson,Project/PortfolioStructureID,ParentTask/Id,ParentTask/Title,ParentTask/TaskID,TaskID,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,SiteCompositionSettings,Sitestagging,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,TaskType/Level,Created,Modified,Author/Id,Author/Title,Editor/Id,Editor/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title&$expand=AssignedTo,Project,ParentTask,SmartInformation,Author,Portfolio,Editor,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory"
     if (filter != undefined) {
         query += `&$filter=${filter}`
     }
-    let AllSiteTasks: any = []
     let siteConfig: any = await loadSmartMetadata(allListId, "Sites")
-    let filteredSiteConfig = siteConfig.filter((site: any) => site?.Title != "Master Tasks" && site?.Title != "SDC Sites" )
-    if (filteredSiteConfig != undefined && filteredSiteConfig.length > 0) {
-        const fetchPromises = map(filteredSiteConfig, async (site: any) => {
+    let filteredSiteConfig = [];
+    if (pertiCularSites != null && pertiCularSites != undefined) {
+        filteredSiteConfig = siteConfig.filter((site: any) => pertiCularSites?.find((item: any) => site?.Title?.toLowerCase() == item?.toLowerCase()))
+    } else if (showOffShore == true) {
+        filteredSiteConfig = siteConfig.filter((site: any) => site?.Title != "Master Tasks" && site?.Title != "SDC Sites")
+    } else {
+        filteredSiteConfig = siteConfig.filter((site: any) => site?.Title != "Master Tasks" && site?.Title != "SDC Sites" && site?.Title != "Offshore Tasks")
+    }
+    let AllSiteTasks: any = []
+    if (filteredSiteConfig?.length > 0) {
+        const fetchPromises = filteredSiteConfig.map(async (site: any) => {
             let web = new Web(allListId?.siteUrl);
-            let AllTasksMatches: any = [];
             try {
-                AllTasksMatches = await web.lists
-                    .getById(site?.listId)
-                    .items.select(query).getAll();
-                if (AllTasksMatches != undefined && AllTasksMatches.length > 0) {
-                    $.each(AllTasksMatches, function (index: any, task: any) {
-                        task.siteType = site.Title;
-                        task.listId = site.listId;
-                        task.siteUrl = site.siteUrl.Url;
-                        if (task?.Portfolio?.Id != undefined) {
-                            task.portfolio = task?.Portfolio;
-                            task.PortfolioTitle = task?.Portfolio?.Title;
-                            // task["Portfoliotype"] = "Component";
+                const data = await web.lists.getById(site?.listId).items.select(query).getAll();
+                data?.map((task: any) => {
+                    task.siteType = site.Title;
+                    task.listId = site.listId;
+                    task.siteUrl = site.siteUrl.Url;
+                    task.SmartPriority;
+                    task.TaskTypeValue = '';
+                    task.projectPriorityOnHover = '';
+                    task.taskPriorityOnHover = task?.PriorityRank;
+                    task.showFormulaOnHover;
+                    task["SiteIcon"] = site?.Item_x005F_x0020_Cover?.Url;
+                    if (task.PercentComplete != undefined) {
+                        task.PercentComplete = (task.PercentComplete * 100).toFixed(0);
+                    }
+                    if (task?.Portfolio?.Id != undefined) {
+                        task.portfolio = task?.Portfolio;
+                        task.PortfolioTitle = task?.Portfolio?.Title;
+                    }
+                    let checkIsSCProtected: any = false;
+                    task.DisplayDueDate = moment(task?.DueDate).format("DD/MM/YYYY");
+                    if (task.DisplayDueDate == "Invalid date" || "") {
+                        task.DisplayDueDate = task?.DisplayDueDate.replaceAll("Invalid date", "");
+                    }
+                    task.DisplayCreateDate = moment(task.Created).format("DD/MM/YYYY");
+                    task.descriptionsSearch = descriptionSearchData(task);
+                    if (task.Project) {
+                        task.ProjectTitle = task?.Project?.Title;
+                        task.ProjectId = task?.Project?.Id;
+                        task.projectStructerId =
+                            task?.Project?.PortfolioStructureID;
+                        const title = task?.Project?.Title || "";
+                        const dueDate = task?.DueDate;
+                        task.joinedData = [];
+                        if (title) task.joinedData.push(`Title: ${title}`);
+                        if (dueDate) task.joinedData.push(`Due Date: ${dueDate}`);
+                    }
+                    if (task?.SiteCompositionSettings != undefined) {
+                        let TempSCSettingsData: any = JSON.parse(task?.SiteCompositionSettings);
+                        if (TempSCSettingsData?.length > 0) {
+                            checkIsSCProtected = TempSCSettingsData[0].Protected;
                         }
-                        task["SiteIcon"] = site?.Item_x005F_x0020_Cover?.Url;
-                        task.TaskID = GetTaskId(task);
-                        // if (item?.TaskCategories?.some((category: any) => category.Title.toLowerCase() === "draft")) { item.isDrafted = true; }
-                    });
-                    AllSiteTasks = [...AllSiteTasks, ...AllTasksMatches];
-                }
-            }catch(e){
-                console.error(e);
+                        task.compositionType = siteCompositionType(task?.SiteCompositionSettings);
+                    } else {
+                        task.compositionType = '';
+                    }
+                    if (checkIsSCProtected) {
+                        task.IsSCProtected = true;
+                        task.IsSCProtectedStatus = "Protected";
+                    } else {
+                        task.IsSCProtected = false;
+                        task.IsSCProtectedStatus = "";
+                    }
+                    task.portfolioItemsSearch = site.Title;
+                    task.TaskID = GetTaskId(task);
+                })
+                AllSiteTasks = [...AllSiteTasks, ...data];
+            } catch (error) {
+                console.log(error, 'HHHH Time');
             }
         });
         await Promise.all(fetchPromises)
         return AllSiteTasks
     }
-
-};
-
-
-
-// export const loadAllSiteTasks = async (allListId: any, filter: any) => {
-//     let query = "Id,Title,FeedBack,PriorityRank,Remark,Project/PriorityRank,ParentTask/Id,ParentTask/Title,ParentTask/TaskID,TaskID,SmartInformation/Id,SmartInformation/Title,Project/Id,Project/Title,workingThisWeek,EstimatedTime,TaskLevel,TaskLevel,OffshoreImageUrl,OffshoreComments,ClientTime,Sitestagging,Priority,Status,ItemRank,IsTodaysTask,Body,Portfolio/Id,Portfolio/Title,Portfolio/PortfolioStructureID,PercentComplete,Categories,StartDate,PriorityRank,DueDate,TaskType/Id,TaskType/Title,Created,Modified,Author/Id,Author/Title,TaskCategories/Id,TaskCategories/Title,AssignedTo/Id,AssignedTo/Title,TeamMembers/Id,TeamMembers/Title,ResponsibleTeam/Id,ResponsibleTeam/Title,ClientCategory/Id,ClientCategory/Title&$expand=AssignedTo,Project,ParentTask,SmartInformation,Author,Portfolio,TaskType,TeamMembers,ResponsibleTeam,TaskCategories,ClientCategory"
-//     if (filter != undefined) {
-//         query += `&$filter=${filter}`
-//     }
-//     let siteConfig: any = await loadSmartMetadata(allListId, "Sites")
-//     let filteredSiteConfig = siteConfig.filter((site: any) => site?.Title != "Master Tasks" && site?.Title != "SDC Sites")
-//     let AllSiteTasks: any = []
-//     if (filteredSiteConfig?.length > 0) {
-//         const fetchPromises = filteredSiteConfig.map(async (site: any) => {
-//             let web = new Web(allListId?.siteUrl);
-//             try {
-//                 const data = await web.lists.getById(site?.listId).items.select(query).getAll();
-//                 data?.map((task: any) => {
-//                     task.siteType = site.Title;
-//                     task.listId = site.listId;
-//                     task.siteUrl = site.siteUrl.Url;
-//                     if (task?.Portfolio?.Id != undefined) {
-//                         task.portfolio = task?.Portfolio;
-//                         task.PortfolioTitle = task?.Portfolio?.Title;
-//                         // task["Portfoliotype"] = "Component";
-//                     }
-//                     task["SiteIcon"] = site?.Item_x005F_x0020_Cover?.Url;
-//                     task.TaskID = GetTaskId(task);
-//                 })
-//                 AllSiteTasks = [...AllSiteTasks, ...data];
-//             } catch (error) {
-//                 console.log(error, 'HHHH Time');
-//             }
-//         });
-//         await Promise.all(fetchPromises)
-//         return AllSiteTasks
-//     }
-// }
+}
 
 export const descriptionSearchData = (result: any) => {
     let descriptionSearchData = '';
@@ -2279,11 +2377,19 @@ export const portfolioSearchData = (items: any) => {
 }
 function removeHtmlAndNewline(text: any) {
     if (text) {
-        return text.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
+        let testValue = text.replace(/(<([^>]+)>)/gi, "").replace(/\n/g, '');
+        return testValue?.trim()
     } else {
         return ''; // or any other default value you prefer
     }
 }
+
+
+//// make sure task object most have bilow properies//////
+//// requrired result?.PriorityRank ////
+//// requrired result?.Project?.PriorityRank ////
+//// next Project array it is a lookup columns where project//////
+///// next result?.TaskCategories ////
 
 export const calculateSmartPriority = (result: any) => {
     let smartPriority = result.SmartPriority;
@@ -2328,6 +2434,22 @@ export const calculateSmartPriority = (result: any) => {
     }
     return smartPriority;
 }
+
+function siteCompositionType(jsonStr: any) {
+    var data = JSON.parse(jsonStr);
+    try {
+        data = data[0];
+        for (var key in data) {
+            if (data?.hasOwnProperty(key) && data[key] === true) {
+                return key;
+            }
+        }
+        return '';
+    } catch (error) {
+        console.log(error)
+        return '';
+    }
+}
 export const deepCopy = (obj: any, originalReferences = new WeakMap()) => {
     if (obj === null || typeof obj !== 'object') {
         return obj;
@@ -2343,4 +2465,905 @@ export const deepCopy = (obj: any, originalReferences = new WeakMap()) => {
         }
     }
     return copy;
+}
+
+export const openUsersDashboard = (siteUrl?: any | undefined, AssignedUserId?: any | undefined, AssignedUserTitle?: any | undefined, AllTaskUsers?: any | undefined) => {
+    let AssignedToUserId: any = AssignedUserId
+    if (AllTaskUsers?.length > 0) {
+        let AssignToUserDetail = AllTaskUsers?.find((user: any) => user?.AssingedToUser?.Title === AssignedUserTitle)
+        AssignedToUserId = AssignToUserDetail?.AssingedToUser?.Id
+    }
+    if (AssignedToUserId != undefined) {
+        window?.open(`${siteUrl}/SitePages/TaskDashboard.aspx?UserId=${AssignedToUserId}`, '_blank')
+    } else {
+        window?.open(`${siteUrl}/SitePages/TaskDashboard.aspx`, '_blank')
+    }
+}
+
+
+//   use csae for openUsersDashboard function
+// if have the AssignedUserId
+// 1. openUsersDashboard(siteUrl:"Https....................", AssignedUserId:Number )
+
+// if don't have the AssignedUserId
+// 1. openUsersDashboard(siteUrl:"Https....................", AssignedUserId:Undefined,  AssignedUserTitle:"UserName", AllTaskUsers=[alltaskuserData])
+export const getBreadCrumbHierarchyAllData = async (item: any, AllListId: any, AllItems?: any | []): Promise<any> => {
+    let web = new Web(AllListId?.siteUrl);
+    let Object: any;
+
+    item.isExpanded = true;
+    item.siteUrl = AllListId?.siteUrl
+    if (item?.ParentTask != undefined || item?.ParentTask != null) {
+        try {
+            Object = await web.lists.getById(item?.listId)
+                .items.getById(item?.ParentTask.Id).select(
+                    "Id, TaskID, TaskId, Title, ParentTask/Id, ParentTask/Title, Portfolio/Id, Portfolio/Title, Portfolio/PortfolioStructureID"
+                )
+                .expand("ParentTask, Portfolio")
+                .get();
+        } catch (error) {
+            console.error(error)
+        }
+    }
+    else if (item.Parent != undefined || item?.Portfolio != undefined) {
+        let useId = item.Portfolio != undefined ? item?.Portfolio?.Id : item?.Parent?.Id;
+        try {
+            Object = await web.lists.getById(AllListId?.MasterTaskListID)
+                .items.getById(useId).select("Id, Title, Parent/Id, Parent/Title, PortfolioStructureID, PortfolioType/Id,PortfolioType/Title,PortfolioType/Color")
+                .expand("Parent", "PortfolioType")
+                .get()
+        }
+        catch (error) {
+            console.error(error)
+        }
+    }
+
+    if (Object != undefined) {
+        if (
+            Object?.Id === item?.ParentTask?.Id
+        ) {
+            Object.subRows = [item]; AllItems?.push(item)
+            Object.listId = item?.listId;
+            Object.SiteIcon = item?.SiteIcon;
+            Object.siteType = item?.siteType;
+            return getBreadCrumbHierarchyAllData(Object, AllListId, AllItems);
+        } else if (Object?.Id === item?.Parent?.Id) {
+            item.siteType = "Master Tasks"
+            Object.subRows = [item]; AllItems?.push(item)
+            if (Object?.Parent == undefined) {
+                Object.siteType = "Master Tasks"
+                Object.subRows = [item]; AllItems?.push(Object)
+            } else {
+                return getBreadCrumbHierarchyAllData(Object, AllListId, AllItems);
+            }
+
+        } else if (
+            item?.Portfolio != undefined &&
+            Object?.Id === item?.Portfolio?.Id &&
+            (item?.ParentTask?.TaskID == null || item?.ParentTask?.TaskID == undefined)
+        ) {
+            Object.subRows = [item];
+            AllItems?.push(item)
+            if (Object?.Parent == undefined) {
+                Object.siteType = "Master Tasks"
+                Object.subRows = [Object];
+                AllItems?.push(Object)
+            }
+            return getBreadCrumbHierarchyAllData(Object, AllListId, AllItems);
+        }
+
+    }
+    return { withGrouping: item, flatdata: AllItems };
+}
+export const AwtGroupingAndUpdatePrarticularColumn = async (findGrouping: any, AllTask: any, UpdateColumnObject?: any) => {
+    let flatdata: any = []
+    if (findGrouping?.TaskType?.Title == "Activities") {
+        findGrouping.subRows = AllTask?.filter((ws: any) => {
+            if (ws.TaskType?.Title == "Workstream" && ws?.ParentTask?.Id == findGrouping?.Id) {
+                flatdata.push(ws)
+                return true
+            }
+        })
+
+        findGrouping?.subRows?.map((ws: any) => {
+            ws.subRows = AllTask?.filter((task: any) => {
+                if (task.TaskType?.Title == "Task" && task?.ParentTask?.Id == ws?.Id) {
+                    flatdata.push(task)
+                    return true
+                }
+            })
+        })
+        let directTask = AllTask?.filter((task: any) => {
+            if (task.TaskType?.Title == "Task" && task?.ParentTask?.Id == findGrouping?.Id) {
+                flatdata.push(task)
+                return true
+            }
+        })
+        // findGrouping.subRows = findGrouping?.subRows?.concat(directTask)
+        // flatdata.push(directTask)
+    }
+    if (findGrouping?.TaskType?.Title == "Workstream") {
+        findGrouping.subRows = AllTask?.filter((task: any) => {
+            if (task.TaskType?.Title == "Task" && task?.ParentTask?.Id == findGrouping?.Id) {
+                flatdata.push(task)
+                return true
+            }
+        })
+    }
+
+    if (UpdateColumnObject != undefined) {
+
+        for (let i = 0; i < flatdata?.length;) {
+
+            let web = new Web(findGrouping.siteUrl);
+            await web.lists
+                .getById(findGrouping?.listId)
+                // .getById(this.props.SiteTaskListID)
+                .items
+                .getById(flatdata[i]?.Id)
+                .update(UpdateColumnObject).then(async (data: any) => {
+                    console.log(data)
+                    i++;
+                }).catch((error: any) => {
+                    console.log(error)
+                });
+        }
+    }
+    return { findGrouping, flatdata }; 
+}
+export const replaceURLsWithAnchorTags = (text:any) => {
+    // Regular expression to match URLs
+    var urlRegex = /(https?:\/\/[^\s<>"]+)(?=["'\s.,]|$)/g;
+    // Replace URLs with anchor tags
+    let textToIgnore :any= ''
+    var replacedText = text.replace(urlRegex, function (url:any) {
+        if (!isURLInsideAnchorTag(url, text) && !textToIgnore.includes(url)) {
+            console.log(url,'in if')
+            return '<a href="' + url + '" target="_blank" data-interception="off" class="hreflink">' + url + '</a>';
+        } else{
+            textToIgnore += `${url} `
+            return url;
+        }
+    });
+    return replacedText;
+}
+
+function isURLInsideAnchorTag(url:any, text:any) {
+    // Regular expression to match anchor tags
+    var anchorRegex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/i;
+    return anchorRegex.test(text) && anchorRegex.exec(text)[2] === url;
+}
+//--------------------------------------Share TimeSheet Report-----------------------------------------------------------------------
+
+export const ShareTimeSheet = async (totalTimeDay:any,AllTaskTimeEntries: any, taskUser: any, Context: any, type: any) => {
+    let AllData: any = []
+    var isCustomDate = false;
+    const currentLoginUserId = Context.pageContext?._legacyPageContext.userId;
+    const CurrentUserTitle = Context.pageContext?._legacyPageContext?.userDisplayName;
+
+    var startDateMid =''
+    var eventDateMid = ''
+    if (type == "Today" || type == "Yesterday" || type == "This Week" ||  type == "Last Week" || type == "This Month"){
+        const startDate = getStartingDate(type);
+        const endDate = getEndingDate(type);
+        const startDateMidnight = new Date(startDate.setHours(0, 0, 0, 0));
+        const endDateMidnight = new Date(endDate.setHours(0, 0, 0, 0));
+    
+         startDateMid = moment(startDateMidnight).format("DD/MM/YYYY")
+         eventDateMid = moment(endDateMidnight).format("DD/MM/YYYY")
+      }
+      else{
+        var splitDate = type.split(' - ')
+         startDateMid = splitDate[0]
+         eventDateMid = splitDate[1]
+         day = 'Custom'
+         if(splitDate[0] == splitDate[1]){
+            isCustomDate = false
+         }
+         else{
+            isCustomDate = true;
+         }
+        
+      }
+     
+    
+    var NewStartDate = startDateMid.split("/")
+    var NewEndDate = eventDateMid.split("/")
+
+    var End = NewEndDate[2] + NewEndDate[1] + NewEndDate[0]
+    var starts = NewStartDate[2] + NewStartDate[1] + NewStartDate[0]
+    const { weekTimeEntries, totalTime } = AllTaskTimeEntries?.reduce(
+        (acc: any, timeEntry: any) => {
+            try {
+                if (timeEntry?.AdditionalTimeEntry) {
+                    const AdditionalTime = JSON.parse(timeEntry?.AdditionalTimeEntry);
+
+                    AdditionalTime?.forEach((filledTime: any) => {
+                        const [day, month, year] = filledTime?.TaskDate?.split('/');
+                        const timeFillDate = new Date(+year, +month - 1, +day);
+                        var b = moment(timeFillDate).format("DD/MM/YYYY")
+                        var newDate = b.split("/")
+                        var seleteddate = newDate[2] + newDate[1] + newDate[0]
+
+                        if (
+                            filledTime?.AuthorId == currentLoginUserId &&
+                            seleteddate >= starts &&
+                            seleteddate <= End && timeEntry?.taskDetails[0]
+
+                        ) {
+                            const data = { ...timeEntry.taskDetails[0] } || {};
+                            const taskTime = parseFloat(filledTime.TaskTime);
+
+                            data.TaskTime = taskTime;
+                            data.timeDate = filledTime.TaskDate;
+                            data.Description = filledTime.Description;
+                            data.timeFillDate = timeFillDate;
+
+                            acc.weekTimeEntries.push(data);
+                            acc.totalTime += taskTime;
+                        }
+                    });
+                }
+
+            } catch (error) {
+
+            }
+            return acc;
+        },
+        { weekTimeEntries: [], totalTime: 0 }
+    );
+    weekTimeEntries.sort((a: any, b: any) => {
+        return b.timeFillDate - a.timeFillDate;
+    });
+    AllData = weekTimeEntries;
+    var input = `${type}time entries`
+    var day = type;
+    let currentDate = moment(new Date()).format("DD/MM/YYYY")
+    var today = new Date();
+    const yesterdays = new Date(today.setDate(today.getDate() - 1))
+    const yesterday = moment(yesterdays).format("DD/MM/YYYY")
+    let body: any = '';
+    let text = '';
+    let to: any = [];
+    let body1: any = [];
+    let userApprover: any = '';
+    let email: any = [];
+
+    taskUser?.map((user: any) => {
+        user.UserManagerMail = [];
+        user.UserManagerName = ''
+        user?.Approver?.map((Approver: any, index: any) => {
+            if (index == 0) {
+
+                user.UserManagerName = Approver?.Title;
+            } else {
+                user.UserManagerName += ' ,' + Approver?.Title
+            }
+            let Mail = Approver?.Name?.split('|')[2]
+            user.UserManagerMail.push(Mail)
+        })
+        if (user?.AssingedToUser?.Id == currentLoginUserId && user?.Title != undefined) {
+            to = user?.UserManagerMail;
+            userApprover = user?.UserManagerName;
+            email.push(user?.UserManagerMail)
+        }
+    });
+
+
+    body = body.replaceAll('>,<', '><').replaceAll(',', '')
+
+
+    // var subject = currentLoginUser + `- ${selectedTimeReport} Time Entries`;
+    let timeSheetData: any = await currentUserTimeEntryCalculation(AllTaskTimeEntries, currentLoginUserId);
+    var updatedCategoryTime: any = {};
+    for (const key in timeSheetData) {
+        if (timeSheetData.hasOwnProperty(key)) {
+            let newKey = key;
+
+            // Replace 'this month' with 'thisMonth'
+            newKey = newKey.replace('this month', 'thisMonth');
+
+            // Replace 'this week' with 'thisWeek'
+            newKey = newKey.replace('this week', 'thisWeek');
+
+            updatedCategoryTime[newKey] = timeSheetData[key];
+        }
+    }
+    var subject: any;
+    // if (day == 'Today') {
+    //     subject = "Daily Timesheet - " + CurrentUserTitle + ' - ' + currentDate + ' - ' + (updatedCategoryTime.today) + ' hours '
+    // }
+    // if (day == 'Yesterday') {
+    //     subject = "Daily Timesheet - " + CurrentUserTitle + ' - ' + yesterday + ' - ' + (updatedCategoryTime.yesterday) + ' hours '
+    // }
+    function padWithZero(num: number): string {
+        return num < 10 ? '0' + num : num.toString();
+    }
+    
+    function formatDate(date: Date): string {
+        const day = padWithZero(date.getDate());
+        const month = padWithZero(date.getMonth() + 1); 
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+      if (day == "Today") {
+        subject = "Daily Timesheet - " + CurrentUserTitle + " - " + currentDate + " - " + updatedCategoryTime.today +  " hours ";
+      } else if (day == "Yesterday") {
+        subject =
+          "Daily Timesheet - " +
+          CurrentUserTitle +
+          " - " +
+          yesterday +
+          " - " +
+          updatedCategoryTime.yesterday +
+          " hours ";
+      } else {
+        subject =
+          "Daily Timesheet - " +
+          CurrentUserTitle +
+          " - " +
+          type;
+          day = 'Custom'
+      }
+    AllData.map((item: any) => {
+        item.ClientCategories = ''
+        item.ClientCategory.forEach((val: any, index: number) => {
+            item.ClientCategories += val.Title;
+
+            // Add a comma only if it's not the last item
+            if (index < item.ClientCategory.length - 1) {
+                item.ClientCategories += '; ';
+            }
+        });
+
+
+        text =
+            '<tr>' +
+            '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:40px;text-align:center">' + item?.siteType + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:250px;text-align:center">' + '<p style="margin:0px;">' + '<a style="text-decoration:none;" href =' + item.siteUrl + '/SitePages/PX-Profile.aspx?ProjectId=' + item.Project?.Id + '><span style="font-size:13px">' + (item?.Project == undefined ? '' : item?.Project.Title) + '</span></a>' + '</p>' + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:135px;text-align:center">' + '<p style="margin:0px;">' + '<a style="text-decoration:none;" href =' + item.siteUrl + '/SitePages/Portfolio-Profile.aspx?taskId=' + item?.Portfolio?.Id + '><span style="font-size:13px">' + (item.Portfolio == undefined ? '' : item.Portfolio.Title) + '</span></a>' + '</p>' + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:250px;text-align:center">' + '<p style="margin:0px;">' + '<a style="text-decoration:none;" href =' + item.siteUrl + '/SitePages/Task-Profile.aspx?taskId=' + item.Id + '&Site=' + item.siteType + '><span style="font-size:13px">' + item.Title + '</span></a>' + '</p>' + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:40px;text-align:center">' + item?.TaskTime + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;text-align:center">' + item?.Description + '</td>'
+            + '<td style="border:1px solid #ccc;border-right:0px;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:120px;text-align:center">' + (item?.SmartPriority !== undefined ? item?.SmartPriority : '') + '</td>'
+            + '<td style="border:1px solid #ccc;border-top:0px;line-height:24px;font-size:13px;padding:5px;width:130px;text-align:center">' + item.ClientCategories + '</td>'
+
+        body1.push(text);
+
+    });
+    body =
+        `<table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
+            <thead>
+            <tr valign="middle" style="font-size:15px;"><td style="font-weight:600; padding: 5px 0px;width: 210px;">Username: </td><td style="padding: 5px 0px;"> <a style="text-decoration:none;" href='${Context?.pageContext?.web?.absoluteUrl}/SitePages/TaskDashboard.aspx?UserId=${currentLoginUserId}'>${CurrentUserTitle}</a></td></tr>
+            <tr valign="middle" style="font-size:15px;"><td style="font-weight:600; padding: 5px 0px;width: 210px;">Total hours ${day=='Custom'?day:'Total Time'} :</td><td style="padding: 5px 0px;">${totalTimeDay} Hours</td></tr>
+            <tr valign="middle" style="font-size:15px;"><td style="font-weight:600; padding: 5px 0px;width: 210px;">Total hours this week :</td><td style="padding: 5px 0px;">${updatedCategoryTime.thisWeek} Hours</td></tr>
+            <tr valign="middle" style="font-size:15px;"><td style="font-weight:600;padding: 5px 0px;width: 210px;">Total hours this month :</td><td style="padding: 5px 0px;">${updatedCategoryTime.thisMonth} Hours</td></tr>
+            <tr valign="middle" style="font-size:15px;"><td colspan="2" style="padding: 5px 0px;"><a style="text-decoration:none;" href ='${Context.pageContext?.web?.absoluteUrl}/SitePages/UserTimeEntry.aspx?userId=${currentLoginUserId}'>Click here to open Online-Timesheet</a></td></tr>
+            </thead>
+            </table> `
+        + '<table style="margin-top:20px;" cellspacing="0" cellpadding="0" width="100%" border="0">'
+        + '<thead>'
+        + '<tr>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:40px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Site' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:250px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Project Title' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:135px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Component' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:250px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Task Name' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:40px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Time' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Time Entry Description' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:120px;border:1px solid #ccc;border-right:0px;" bgcolor="#f5f5f5">' + 'Smart Priority' + '</th>'
+        + '<th style="line-height:24px;font-size:15px;padding:5px;width:130px;border:1px solid #ccc;" bgcolor="#f5f5f5">' + 'Client Category' + '</th>'
+        + '</tr>'
+        + '</thead>'
+        + '<tbody>'
+        + '<tr>'
+        + body1
+        + '</tr>'
+        + '</tbody>'
+        + '</table>'
+
+    body = body.replaceAll('>,<', '><').replaceAll(',', '')
+    let EmailSubject: string = `TimeSheet : ${currentDate}`;
+
+    let confirmation = confirm('Your' + ' ' + input + ' ' + 'will be automatically shared with your approver' + ' ' + '(' + userApprover + ')' + '.' + '\n' + 'Do you want to continue?')
+    if (confirmation) {
+        if (body1.length > 0 && body1 != undefined) {
+            //SendEmailFinal(to, subject, body,Context);
+            let sp = spfi().using(spSPFx(Context));
+            sp.utility.sendEmail({
+                //Body of Email  
+                Body: body,
+                //Subject of Email  
+                Subject: subject,
+                //Array of string for To of Email  
+                To: to,
+                AdditionalHeaders: {
+                    "content-type": "text/html",
+                    'Reply-To': 'santosh.kumar@smalsus.com'
+                },
+            }).then(() => {
+                console.log("Email Sent!");
+                alert('Email sent sucessfully');
+            }).catch((err) => {
+                console.log(err.message);
+            });
+        } else {
+            alert("No entries available");
+        }
+    }
+
+}
+
+const currentUserTimeEntryCalculation = async (AllTaskTimeEntries: any, currentLoginUserId: any) => {
+    const timesheetDistribution = ['Today', 'Yesterday', 'This Week', 'This Month'];
+    const allTimeCategoryTime = timesheetDistribution?.reduce((totals, start) => {
+        const startDate = getStartingDate(start);
+        const startDateMidnight = new Date(startDate.setHours(0, 0, 0, 0));
+        const endDate = getEndingDate(start);
+        const endDateMidnight = new Date(endDate.setHours(0, 0, 0, 0));
+
+        const total = AllTaskTimeEntries?.reduce((acc: any, timeEntry: any) => {
+
+            if (timeEntry?.AdditionalTimeEntry) {
+                const AdditionalTime = JSON.parse(timeEntry.AdditionalTimeEntry);
+
+                const taskTime = AdditionalTime?.reduce((taskAcc: any, filledTime: any) => {
+                    const [day, month, year] = filledTime?.TaskDate?.split('/');
+                    const timeFillDate = new Date(+year, +month - 1, +day);
+
+                    if (
+                        filledTime?.AuthorId == currentLoginUserId &&
+                        timeFillDate >= startDateMidnight &&
+                        timeFillDate <= endDateMidnight
+
+                    ) {
+                        return taskAcc + parseFloat(filledTime.TaskTime);
+                    }
+
+                    return taskAcc;
+                }, 0);
+
+                return acc + taskTime;
+            }
+
+            return acc;
+        }, 0);
+
+        return { ...totals, [start.toLowerCase()]: total };
+    }, {
+        today: 0,
+        yesterday: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+    });
+
+    return allTimeCategoryTime;
+};
+function getStartingDate(startDateOf: any) {
+    const startingDate = new Date();
+    let formattedDate = startingDate;
+    if (startDateOf == 'This Week') {
+        startingDate.setDate(startingDate.getDate() - startingDate.getDay());
+        formattedDate = startingDate;
+    } else if (startDateOf == 'Today') {
+        formattedDate = startingDate;
+    } else if (startDateOf == 'Yesterday') {
+        startingDate.setDate(startingDate.getDate() - 1);
+        formattedDate = startingDate;
+    } else if (startDateOf == 'This Month') {
+        startingDate.setDate(1);
+        formattedDate = startingDate;
+    } else if (startDateOf == 'Last Month') {
+        const lastMonth = new Date(startingDate.getFullYear(), startingDate.getMonth() - 1);
+        const startingDateOfLastMonth = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+        var change = (moment(startingDateOfLastMonth).add(17, 'days').format())
+        var b = new Date(change)
+        formattedDate = b;
+    } else if (startDateOf == 'Last Week') {
+        const lastWeek = new Date(startingDate.getFullYear(), startingDate.getMonth(), startingDate.getDate() - 7);
+        const startingDateOfLastWeek = new Date(lastWeek.getFullYear(), lastWeek.getMonth(), lastWeek.getDate() - lastWeek.getDay() + 1);
+        formattedDate = startingDateOfLastWeek;
+    }
+
+    return formattedDate;
+}
+function getEndingDate(startDateOf: any): Date {
+    const endingDate = new Date();
+    let formattedDate = endingDate;
+
+    if (startDateOf === 'This Week') {
+        endingDate.setDate(endingDate.getDate() + (6 - endingDate.getDay()));
+        formattedDate = endingDate;
+    } else if (startDateOf === 'Today') {
+        formattedDate = endingDate;
+    } else if (startDateOf === 'Yesterday') {
+        endingDate.setDate(endingDate.getDate() - 1);
+        formattedDate = endingDate;
+    } else if (startDateOf === 'This Month') {
+        endingDate.setMonth(endingDate.getMonth() + 1, 0);
+        formattedDate = endingDate;
+    } else if (startDateOf === 'Last Month') {
+        const lastMonth = new Date(endingDate.getFullYear(), endingDate.getMonth() - 1);
+        endingDate.setDate(0);
+        formattedDate = endingDate;
+    } else if (startDateOf === 'Last Week') {
+        const lastWeek = new Date(endingDate.getFullYear(), endingDate.getMonth(), endingDate.getDate() - 7);
+        endingDate.setDate(lastWeek.getDate() - lastWeek.getDay() + 7);
+        formattedDate = endingDate;
+    }
+
+    return formattedDate;
+}
+
+//----------------------------End Time Report function------------------------------------------------------------------------------------
+
+
+export const ShareTimeSheetMultiUser = async (AllTimeEntry: any, TaskUser: any, Context: any, DateType: any, selectedUser: any) => {
+    let DevloperTime: any = 0.00;
+    let QATime: any = 0.00;
+    let QAMembers: any = 0;
+    let DesignMembers: any = 0;
+    let DesignTime: any = 0;
+    let TotleTaskTime: any = 0;
+    let DevelopmentMembers: any = 0;
+    let TotalQAMember: any = 0;
+    let TotalDesignMember: any = 0;
+    let TotalDevelopmentMember: any = 0;
+    let QAleaveHours: any = 0;
+    let DevelopmentleaveHours: any = 0;
+    let DesignMemberleaveHours: any = 0;
+    let startDate: any = ''
+    let DevCount: any = 0;
+    let Trainee: any = 0;
+    let DesignCount: any = 0;
+    let QACount: any = 0;
+    let TranineesNum: any = 0;
+    const LeaveUserData = await GetleaveUser(TaskUser, Context)
+    console.log(LeaveUserData)
+    //-------------------------leave User Data---------------------------------------------------------------------------------------
+    //-----------------------End--------------------------------------------------------------------------------------------------------------
+    if (DateType == 'Yesterday' || DateType == 'Today') {
+        startDate = getStartingDate(DateType);
+    }
+    startDate = getStartingDate(DateType);
+    startDate = moment(startDate).format('DD/MM/YYYY')
+    let endDate: any = getEndingDate(DateType);
+    endDate = moment(endDate).format('DD/MM/YYYY')
+    var selectedDate = startDate.split("/")
+    var select = selectedDate[2] + selectedDate[1] + selectedDate[0]
+
+    const currentLoginUserId = Context.pageContext?._legacyPageContext.userId;
+    selectedUser?.forEach((items: any) => {
+        if (items?.UserGroup?.Title == 'Senior Developer Team' || items?.UserGroup?.Title == 'Smalsus Lead Team' || items?.UserGroup?.Title == 'Junior Developer Team' || items?.UserGroup?.Title == 'Trainees') {
+            DevCount++
+        }
+        if ((items?.TimeCategory == 'Design' && items.Company == 'Smalsus') || items?.UserGroup?.Title == 'Design Team') {
+            DesignCount++
+        }
+        if ((items?.TimeCategory == 'QA' && items.Company == 'Smalsus') && items?.UserGroup?.Title != 'Ex-Staff') {
+            QACount++
+        }
+
+    })
+    TaskUser?.forEach((val: any) => {
+        AllTimeEntry?.map((item: any) => {
+
+            if (item?.AuthorId == val?.AssingedToUserId) {
+
+                if (val?.UserGroup?.Title == 'Senior Developer Team' || val?.UserGroup?.Title == 'Smalsus Lead Team' || val?.UserGroup?.Title == 'External Staff')
+                    item.Department = 'Developer';
+                item.userName = val?.Title
+                if (val?.UserGroup?.Title == 'Junior Developer Team')
+                    item.Department = 'Junior Developer';
+                item.userName = val?.Title
+
+                if (val?.UserGroup?.Title == 'Design Team')
+                    item.Department = 'Design';
+                item.userName = val?.Title
+
+                if (val?.UserGroup?.Title == 'QA Team')
+                    item.Department = 'QA';
+                item.userName = val?.Title
+
+            }
+        })
+
+    })
+    if (AllTimeEntry != undefined) {
+        AllTimeEntry?.forEach((time: any) => {
+            if (time?.Department == 'Developer' || time?.Department == 'Junior Developer') {
+                DevloperTime = DevloperTime + parseFloat(time.Effort)
+            }
+
+            if (time?.Department == 'Design') {
+                DesignTime = DesignTime + parseFloat(time.Effort)
+            }
+            if (time?.Department == 'QA') {
+                QATime = QATime + parseFloat(time.Effort)
+            }
+
+        })
+        TotleTaskTime = QATime + DevloperTime + DesignTime
+    }
+    LeaveUserData?.forEach((items: any) => {
+        if (select >= items.Start && select <= items.EndDate) {
+            items.TaskDate = startDate
+            if (items?.Department == 'Development') {
+                DevelopmentMembers++
+                DevelopmentleaveHours += items.totaltime
+            }
+
+            if (items?.Department == 'Design') {
+                DesignMembers++
+                DesignMemberleaveHours += items.totaltime
+            }
+
+            if (items?.Department == 'QA') {
+                QAMembers++
+                QAleaveHours += items.totaltime
+            }
+
+
+            AllTimeEntry.push(items)
+        }
+    })
+    var body1: any = []
+    var body2: any = []
+    var To: any = []
+    var MyDate: any = ''
+    var ApprovalId: any = []
+    var TotlaTime = QATime + DevloperTime + DesignTime
+    var TotalleaveHours = DesignMemberleaveHours + DevelopmentleaveHours + QAleaveHours;
+    TaskUser?.forEach((items: any) => {
+        if (currentLoginUserId == items.AssingedToUserId) {
+            items.Approver?.forEach((val: any) => {
+                ApprovalId.push(val)
+            })
+
+        }
+
+    })
+    ApprovalId?.forEach((va: any) => {
+        TaskUser?.forEach((ba: any) => {
+            if (ba.AssingedToUserId == va.Id) {
+                To.push(ba?.Email)
+            }
+        })
+
+    })
+
+    AllTimeEntry?.forEach((item: any) => {
+
+
+        if (item.PriorityRank == undefined || item.PriorityRank == '') {
+            item.PriorityRank = '';
+        }
+        if (item.TaskTitle == undefined || item.TaskTitle == '') {
+            item.TaskTitle = '';
+        }
+        if (item.ComponentName == undefined || item.ComponentName == '') {
+            item.ComponentName = '';
+        }
+        if (item.ClientCategorySearch == undefined || item.ClientCategorySearch == '') {
+            item.ClientCategorySearch = '';
+        }
+        if (item.PercentComplete == undefined || item.PercentComplete == '') {
+            item.PercentComplete = '';
+        }
+        if (item.Status == undefined || item.Status == null) {
+            item.Status = '';
+        }
+        if (item.Status == undefined || item.Status == null) {
+            item.Status = '';
+        }
+
+        if (item.Department == undefined || item.Department == '') {
+            item.Department = ''
+        }
+        var text = '<tr>' +
+            '<td width="7%" style="border: 1px solid #aeabab;padding: 4px">' + item?.TaskDate + '</td>'
+            + '<td width="7%" style="border: 1px solid #aeabab;padding: 4px">' + item.siteType + '</td>'
+            + '<td width="10%" style="border: 1px solid #aeabab;padding: 4px">' + item?.ComponentName + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + `<a href='https://hhhhteams.sharepoint.com/sites/HHHH/sp/SitePages/Task-Profile.aspx?taskId=${item.Id}&Site=${item.siteType}'>` + '<span style="font-size:11px; font-weight:600">' + item.TaskTitle + '</span>' + '</a >' + '</td>'
+            + '<td align="left" style="border: 1px solid #aeabab;padding: 4px">' + item?.Description + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + item?.PriorityRank + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + item?.Effort + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + item?.PercentComplete + '%' + '</td>'
+            + '<td width="7%" style="border: 1px solid #aeabab;padding: 4px">' + item?.Status + '</td>'
+            + '<td width="10%" style="border: 1px solid #aeabab;padding: 4px">' + item?.userName + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + item?.Department + '</td>'
+            + '<td style="border: 1px solid #aeabab;padding: 4px">' + item?.ClientCategorySearch + '</td>'
+            + '</tr>'
+        body1.push(text);
+    })
+    var text2 =
+        '<tr>'
+        + '<td style="border: 1px solid #aeabab;padding: 5px;width: 50%;" bgcolor="#f5f5f5">' + '<strong>' + 'Team' + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + 'Total Employees' + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + 'Employees on leave' + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + 'Hours' + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + 'Leave Hours' + '</strong>' + '</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<td style="border: 1px solid #aeabab;padding: 5px;width: 50%;" bgcolor="#f5f5f5">' + 'Design' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DesignCount + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DesignMembers + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DesignTime.toFixed(2) + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DesignMemberleaveHours + '</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<td style="border: 1px solid #aeabab;padding: 5px;width: 50%;" bgcolor="#f5f5f5">' + 'Development' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DevCount + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DevelopmentMembers + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DevloperTime.toFixed(2) + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + DevelopmentleaveHours + '</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<td style="border: 1px solid #aeabab;padding: 5px;width: 50%;" bgcolor="#f5f5f5">' + 'QA' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + QACount + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + QAMembers + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + QATime.toFixed(2) + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + QAleaveHours + '</td>'
+        + '</tr>'
+        + '<tr>'
+        + '<td style="border: 1px solid #aeabab;padding: 5px;width: 50%;" bgcolor="#f5f5f5">' + '<strong>' + 'Total' + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + (DesignCount + DevCount + QACount).toFixed(2) + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + (DesignMembers + DevelopmentMembers + QAMembers).toFixed(2) + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + TotlaTime.toFixed(2) + '</strong>' + '</td>'
+        + '<td style="border: 1px solid #aeabab;padding: 4px">' + '<strong>' + TotalleaveHours + '</strong>' + '</td>'
+        + '</tr>';
+    body2.push(text2);
+
+
+
+    var bodyA =
+        '<table cellspacing="0" cellpadding="1" width="30%" style="margin: 0 auto;border-collapse: collapse;">'
+        + '<tbody align="center">' +
+        body2 +
+        '</tbody>' +
+        '</table>'
+    var pageurl = "https://hhhhteams.sharepoint.com/sites/HHHH/SP/SitePages/UserTimeEntry.aspx";
+    var ReportDatetime: any;
+    if (DateType == 'Yesterday' || DateType == 'Today') {
+        ReportDatetime = startDate;
+    }
+    else {
+        ReportDatetime = `${startDate} - ${endDate}`
+    }
+
+    var body: any =
+        '<p style="text-align: center;margin-bottom: 1px;">' + 'TimeSheet of  date' + '&nbsp;' + '<strong>' + ReportDatetime + '</strong>' + '</p>' +
+        '<p style="text-align: center;margin: 0 auto;">' + '<a  href=' + pageurl + ' >' + 'Online version of timesheet' + '</a >' + '</p>' +
+        '<br>'
+
+        + '</br>' +
+        bodyA +
+        '<br>' + '</br>'
+        + '<table cellspacing="0" cellpadding="1" width="100%" style="border-collapse: collapse;">' +
+        '<thead>' +
+        '<tr style="font-size: 11px;">' +
+        '<th  style="border: 1px solid #aeabab;padding: 5px;" width = "7%" bgcolor="#f5f5f5">' + 'Date' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" width = "7%" bgcolor="#f5f5f5">' + 'Sites' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" width = "8%" bgcolor="#f5f5f5">' + 'Component' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'Task' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'FullDescription' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'Priority' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'Effort' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'Complete' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" width = "7%" bgcolor="#f5f5f5">' + 'Status' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" width = "8%" bgcolor="#f5f5f5">' + 'TimeEntryUser' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'Designation' + '</th>'
+        + '<th style="border: 1px solid #aeabab;padding: 5px;" bgcolor="#f5f5f5">' + 'ClientCategory' + '</th>'
+        + '</thead>' +
+        '<tbody align="center">' +
+        '<tr>' +
+        body1 +
+        '</tr>' +
+        '</tbody>' +
+        '</table>' +
+        '<p>' + '<strong>' + 'Thank You' + '</strong>' + '</p>'
+    var cc: any = []
+    var ReplyTo: any = ""
+    var from: any = undefined
+    var subject = 'TimeSheet :' + ' ' + ReportDatetime;
+    body = body.replaceAll(',', '');
+    sendEmailToUser(from, To, body, subject, ReplyTo, cc, Context);
+    alert('Email sent sucessfully');
+
+}
+
+const sendEmailToUser = (from: any, to: any, body: any, subject: any, ReplyTo: any, cc: any, Context: any) => {
+    let sp = spfi().using(spSPFx(Context));
+    sp.utility.sendEmail({
+        Body: body,
+        Subject: subject,
+        To: to,
+        CC: cc,
+        AdditionalHeaders: {
+            "content-type": "text/html"
+        },
+    }).then(() => {
+        console.log("Email Sent!");
+
+    }).catch((err) => {
+        console.log(err.message);
+    });
+}
+const GetleaveUser = async (TaskUser: any, Context: any) => {
+    var myData: any = []
+    let finalData: any = []
+    var leaveData: any = []
+    var leaveUser: any = []
+    let todayLeaveUsers: any = []
+    let web = new Web("https://hhhhteams.sharepoint.com/sites/HHHH/SP");
+
+    myData = await web.lists
+        .getById('72ABA576-5272-4E30-B332-25D7E594AAA4')
+        .items
+        .select("RecurrenceData,Duration,Author/Title,Editor/Title,Category,HalfDay,Description,ID,EndDate,EventDate,Location,Title,fAllDayEvent,EventType,UID,fRecurrence,Event_x002d_Type,Employee/Id")
+        .top(499)
+        .expand("Author,Editor,Employee")
+        .getAll()
+    console.log(myData);
+
+    myData?.forEach((val: any) => {
+        val.EndDate = new Date(val?.EndDate);
+        val?.EndDate.setHours(val?.EndDate.getHours() - 9);
+        var itemDate = moment(val.EventDate)
+        val.endDate = moment(val?.EndDate).format("DD/MM/YYYY")
+        var eventDate = moment(val.EventDate).format("DD/MM/YYYY")
+        const date = val.EndDate
+        var NewEndDate = val.endDate.split("/")
+        var NewEventDate = eventDate.split("/")
+        val.End = NewEndDate[2] + NewEndDate[1] + NewEndDate[0]
+        val.start = NewEventDate[2] + NewEventDate[1] + NewEventDate[0]
+        leaveData.push(val)
+
+    })
+    console.log(leaveData)
+    leaveData?.forEach((val: any) => {
+        if (val?.fAllDayEvent == true) {
+            val.totaltime = 8
+        }
+        else {
+            val.totaltime = 8
+        }
+        if (val?.HalfDay == true) {
+            val.totaltime = 4
+        }
+        var users: any = {}
+        TaskUser?.forEach((item: any) => {
+            if (item?.AssingedToUserId != null && val?.Employee?.Id == item?.AssingedToUserId && item.UserGroup?.Title != 'Ex Staff') {
+                users['userName'] = item.Title
+                users['ComponentName'] = ''
+                users['Department'] = item.TimeCategory
+                users['Effort'] = val.totaltime !== undefined && val.totaltime <= 4 ? val.totaltime : 8
+                users['Description'] = 'Leave'
+                users['ClientCategoryy'] = 'Leave'
+                users['siteType'] = ''
+                users['Status'] = ''
+                users['EndDate'] = val.End
+                users['Start'] = val.start
+                users['totaltime'] = val.totaltime
+                todayLeaveUsers.push(users)
+            }
+        })
+    })
+    finalData = todayLeaveUsers.filter((val: any, TaskId: any, array: any) => {
+        return array.indexOf(val) == TaskId;
+    })
+    console.log(finalData)
+    return finalData
+}
+export const findTaskCategoryParent = (taskCategories: any, result: any) => {
+    if (taskCategories?.length > 0 && result.TaskCategories?.length > 0) {
+        let newTaskCat = taskCategories?.filter((val: any) => result?.TaskCategories?.some((elem: any) => val.Id === elem.Id));
+        newTaskCat.map((elemVal: any) => {
+            if (result[elemVal?.Parent?.Title]) {
+                result[elemVal?.Parent?.Title] +=' '+` ${elemVal?.Title}`
+            } else {
+                result[elemVal?.Parent?.Title] = elemVal?.Title;
+            }
+        })
+    }
+    return result;
 }

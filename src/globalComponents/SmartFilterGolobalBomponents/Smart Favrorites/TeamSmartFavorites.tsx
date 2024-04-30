@@ -1,10 +1,10 @@
 import * as React from 'react';
+import Tooltip from '../../Tooltip';
 import { Panel, PanelType } from 'office-ui-fabric-react';
 import CheckboxTree from 'react-checkbox-tree';
 import { SlArrowDown, SlArrowRight } from 'react-icons/sl';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col'
-import Tooltip from '../../Tooltip';
 const TeamSmartFavorites = (items: any) => {
     const onRenderCustomHeader = () => {
         return (
